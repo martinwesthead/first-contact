@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T21:10:45.889465+00:00'
+updated_at: '2026-06-12T21:17:15.424842+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -250,6 +250,33 @@ This keeps the door open without inviting the AI through it.
 The honest tradeoff for the customer is: "you give up pixel control; in exchange, your site updates itself, never breaks, costs $50/month, and you talk to it in plain English." For your target market (solo founders who currently have no site or a Wix mess), that's a clear win. For an art-directed photographer who wants a hand-composed portfolio — this isn't their product.
 
 Want to look at what the per-instance token surface should be in full, or move on to the GenDev Labs Phase 0 plan?
+
+
+<!-- xgd-turn id="a09ab061-239f-4335-b0c2-03792bbdc435" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T21:17:15.386Z" -->
+#### You
+If this is done correctly customer requests for incremental missing features could be fielded directly by XGD and automatically added to the core system...but lets crawl first
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T21:17:15.386Z" -->
+#### Claude
+Yes — that's the flywheel that makes this product distinctively XGD's:
+
+```
+customer asks for X
+  → request becomes a ticket in the platform
+  → XGD develops new module / variant / token in shared framework
+  → all customer sites gain the capability
+  → next customer's "I want X" is now in-catalog
+```
+
+It also turns the catalog gap from a *complaint* into a *demonstration*. "We don't have that yet, but here's the build going through review" is a stronger story than a brittle one-off override. And it's a natural moat — the catalog compounds with use.
+
+Worth noting two governance levers we'll want when we get there:
+- **Variant vs. module decision** — most requests should become variants of existing modules, not new modules. A discipline so the catalog doesn't sprawl.
+- **Vertical-specific vs. general** — some requests are universal ("circle image"), some are vertical-only ("menu with allergen tags"). Tag them so we can keep the general set lean.
+
+Crawling now. Want to spec out the GenDev Labs Phase 0 site — module list, theme tokens, content brief — or start on the broader module/token surface spec?
 
 
 <!-- xgd-chat-end -->
