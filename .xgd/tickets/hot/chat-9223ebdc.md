@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T22:09:01.729269+00:00'
+updated_at: '2026-06-12T22:12:58.232515+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -570,6 +570,33 @@ Before I write the body, here's the structure I'd cover — flag anything missin
 13. **Open Questions Carried Forward** — first showcase vertical, AI intent-layer above structured edits, escape hatch design when needed
 
 Look right? Anything to add or cut before I draft?
+
+
+<!-- xgd-turn id="08eeeb71-8e22-4f91-b0a7-2bac6910313e" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T22:12:58.187Z" -->
+#### You
+Do it
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T22:12:58.187Z" -->
+#### Claude
+Created **DOC-7 — Website Framework Architecture Principles**.
+
+It captures:
+- Composition model (Site → Pages → Modules → {variant, dials, content}), single primitive for single-page and multi-page, file-backed and D1-backed paths
+- Module contract (finite variants/dials, structured content schema, scoped CSS, no inline styles, no per-instance overrides)
+- Two-layer token system (site-wide + per-instance dials), CSS custom properties, generated per-site CSS file, mobile-first responsive
+- Navigation pattern enumeration (in-page-anchors and top-tabs in v1)
+- Structured-changes-only discipline with explicit allow/forbid lists, escape-hatch policy deferred and operator-only when added
+- Customer-driven catalog evolution with variant-first discipline
+- Module versioning: pin, explicit upgrade
+- Stack: Astro for sites, Astro + React + Tailwind + shadcn for control app, CI mobile budget
+- Repo layout with dependency direction
+- Build pipeline (wrangler dev local, GitHub Action on xgd-stable)
+- Explicit out-of-scope list (pixel positioning, art-directed layouts, custom CSS, etc.)
+- Open questions carried forward
+
+Ready to draft the REQ ticket for the first iteration next — that's where we lock the Phase 0 module list, theme token surface, contact-form lead pipeline depth, and the first-contact marketing site target.
 
 
 <!-- xgd-chat-end -->
