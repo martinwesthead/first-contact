@@ -5,7 +5,7 @@ type: doc
 title: Website Framework Architecture Principles
 created_by: xgd
 created_at: '2026-06-12T22:12:47.112839+00:00'
-updated_at: '2026-06-12T22:31:46.176782+00:00'
+updated_at: '2026-06-12T22:32:41.390158+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -268,6 +268,8 @@ Operators and AI should reach for `text-block` for any prose-shaped content whil
 
 Per DOC-5: Cloudflare Workers for the API, D1 for structured product data, R2 for assets and snapshots, Queues for background jobs, Durable Objects where coordination is needed, magic links for auth, Stripe for payments.
 
+The API is not a separate Worker — instead, public-facing endpoints live on the `public-site` Worker (form submission, magic-link initiation) and authenticated endpoints live on the `control-app` Worker (CRUD on site definitions, leads, customers, AI orchestration). This keeps the boundary between public and authenticated surfaces at the Worker level rather than as application-layer middleware.
+
 ---
 
 ## 10. Repo Structure
@@ -275,26 +277,41 @@ Per DOC-5: Cloudflare Workers for the API, D1 for structured product data, R2 fo
 ```
 1stcontact/
 ├── apps/
-│   ├── control-app/      React + Astro builder UI and portal
-│   └── public-site/      Cloudflare Worker serving the 1st Contact marketing site
+│   ├── public-site/       Cloudflare Worker for 1stcontact.io
+│   │                      (serves the marketing site + public form/API endpoints)
+│   └── control-app/       Cloudflare Worker for app.1stcontact.io
+│                          (serves the builder/portal SPA + authenticated API endpoints)
 ├── packages/
-│   ├── framework/        Module catalog, theme system, layout primitives
-│   ├── site-schema/      JSON schema + TypeScript types for site definitions
-│   └── renderer/         Site-definition → static output (Astro build harness)
-└── sites/
-    └── 1stcontact/       The 1st Contact marketing site definition
-        ├── site.json
-        └── assets/
+│   ├── framework/         Module catalog, theme system, layout primitives
+│   ├── site-schema/       JSON schema + TypeScript types for site definitions
+│   ├── builder-ui/        React components for the chat builder + portal
+│   └── ui-kit/            Shared design-system components (shadcn-based)
+├── sites/
+│   └── 1stcontact/        The 1st Contact marketing site definition
+│       ├── site.json
+│       └── assets/
+├── tools/
+│   └── generate/          Static generator: site-def → static output
+└── db/
+    └── migrations/        D1 schema migrations
 ```
 
 **Dependency direction:**
 
-- `apps/*` depend on `packages/*`.
-- `packages/renderer` depends on `packages/framework` and `packages/site-schema`.
+- `apps/public-site` depends on `tools/generate` (build-time) and `packages/framework`.
+- `apps/control-app` depends on `packages/builder-ui` and `packages/ui-kit`.
+- `tools/generate` depends on `packages/framework` and `packages/site-schema`.
+- `packages/builder-ui` depends on `packages/ui-kit` and `packages/site-schema`.
 - `packages/framework` depends only on `packages/site-schema`.
-- `sites/1stcontact` is data — consumed by `packages/renderer`, depends on nothing.
+- `sites/1stcontact` is data — consumed by `tools/generate`, depends on nothing.
 
-Customer sites do not appear in the repo. Their definitions live in D1 and are consumed at build time by the same `packages/renderer`.
+Customer sites do not appear in the repo. Their definitions live in D1 and are consumed at build time by the same `tools/generate` static generator.
+
+**Two-Worker split rationale:**
+
+- `public-site` serves `1stcontact.io/*` — the marketing site assets *and* public-facing endpoints (form submission, magic-link request initiation, Stripe webhook intake for public flows).
+- `control-app` serves `app.1stcontact.io/*` — the authenticated builder/portal SPA assets *and* authenticated API endpoints (CRUD on site definitions, leads, customers, AI orchestration).
+- Independent rollback. The public site stays up if the control app is being rebuilt and vice versa.
 
 ---
 
@@ -306,14 +323,14 @@ Customer sites do not appear in the repo. Their definitions live in D1 and are c
 Site definition (file or D1)
 + assets (file or R2)
        ↓
-Renderer (Astro build harness)
+tools/generate (Astro build harness)
        ↓
 Generated static output (HTML + CSS + JS + assets)
        ↓
 Cloudflare deploy (Workers Static Assets)
 ```
 
-The renderer is the only component that knows whether the site definition came from a file or D1. From the module's perspective, both are identical.
+`tools/generate` is the only component that knows whether the site definition came from a file or D1. From the module's perspective, both are identical.
 
 ### 11.2 Local development
 
@@ -323,8 +340,8 @@ The renderer is the only component that knows whether the site definition came f
 
 ### 11.3 Deployment
 
-- A GitHub Actions workflow on `push: branches: [xgd-stable]` deploys both the API Worker and the 1st Contact marketing site to Cloudflare.
-- Customer site builds are triggered via the platform's own publish pipeline (Workers Static Assets per site, or shared Worker with per-site routing — to be decided in REQ).
+- A GitHub Actions workflow on `push: branches: [xgd-stable]` deploys both Workers — `public-site` (1stcontact.io) and `control-app` (app.1stcontact.io) — to Cloudflare. Each is deployable independently.
+- Customer site builds are triggered via the platform's own publish pipeline (Workers Static Assets per site, or shared Worker with per-site routing — to be decided in a later REQ).
 
 ---
 
