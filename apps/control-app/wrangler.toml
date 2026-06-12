@@ -1,4 +1,4 @@
-name = "first-contact-control-app"
+name = "1stcontact-control-app"
 main = "src/index.ts"
 compatibility_date = "2025-07-01"
 compatibility_flags = ["nodejs_compat"]
