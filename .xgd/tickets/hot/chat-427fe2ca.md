@@ -2,12 +2,12 @@
 uid: chat-427fe2ca
 id: CHAT-5
 type: chat
-title: Website Framework (1)
+title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:18:41.828459+00:00'
-updated_at: '2026-06-12T20:20:05.393583+00:00'
+updated_at: '2026-06-12T20:20:57.430314+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: open
 fields: {}
 ---
