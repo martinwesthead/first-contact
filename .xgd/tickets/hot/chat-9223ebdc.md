@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T20:54:58.083590+00:00'
+updated_at: '2026-06-12T21:10:45.889465+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -178,6 +178,78 @@ That's 18 modules to cover all five showcase verticals plus GenDev Labs. Each wi
 3. **Phase 2**: CRM lite, portal.
 
 Want me to draft a more concrete module spec (HTML shape + variant axes for each), or pick the GenDev Labs Phase 0 module list and theme token surface first?
+
+
+<!-- xgd-turn id="21855723-5619-467d-bd9c-c79b3202efb7" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T21:10:45.851Z" -->
+#### You
+Can you take a look at faelan.com another site I built recently. There was a lot of "please resize that image and move it slightly left, put that image in a circle" and so on could that kind of flexibility for content placement and arrangement exist in our system?
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T21:10:45.851Z" -->
+#### Claude
+Got a 403 — site blocks bots. I'll answer from your description; the specific cases you listed are enough to map the question.
+
+## Short answer
+
+Most of those requests can be absorbed by **per-instance design tokens** (a small set of dials on each module instance). A few can't — those need either a new module variant or, sparingly, a per-instance escape hatch.
+
+## What "resize / nudge / circle" maps to in a structured model
+
+Each module instance gets a small bounded set of dials beyond just content. Concretely:
+
+| User request | Structured equivalent |
+|---|---|
+| "Make that image bigger/smaller" | `size`: `xs / sm / md / lg / xl` (5 steps, not pixels) |
+| "Move it slightly left" | `align`: `left / center / right`; optionally `offset`: `none / sm / md` |
+| "Put it in a circle" | `shape`: `square / rounded-sm / rounded-lg / circle` |
+| "Add more space above" | `spacing-top`: `none / sm / md / lg / xl` (same for bottom) |
+| "Image beside the text, not above" | `variant`: `image-left / image-right / image-top / image-bottom` |
+| "Make the heading bigger" | `emphasis`: step on type scale (still bounded by the scale) |
+| "Center this text" | `text-align`: `left / center / right` |
+| "Add a border" | `border`: `none / subtle / strong` |
+| "Use this color background here" | `surface`: one of the theme's surface tokens |
+| "Make the photo and quote feel like one block" | `gap`: `tight / normal / loose` |
+
+This is the **Figma Auto Layout** philosophy applied to a CMS: it *feels* like nudging, but every dial is a structured choice from a small set. The AI's job becomes "translate intent into the right dial setting," which is much cheaper and safer than generating CSS.
+
+With ~8–10 per-instance dials, the combinatorial design space is large enough that two sites using the same modules will look visibly different.
+
+## What this model genuinely can't do
+
+Be honest about the ceiling:
+
+1. **Pixel-precise positioning** ("17px to the left", "overlap that image with the heading"). Not supported.
+2. **Art-directed layouts** — irregular cutouts, masked shapes, hand-composed asymmetric pages.
+3. **Per-site typography outside the type scale.** You pick a scale; you live with it.
+4. **One-off CSS.** No "just for this site, do X."
+
+If your faelan.com work included a lot of hand-composed asymmetric pages with overlapping elements, that's the part this system intentionally won't do. The architecture trades visual ceiling for AI tractability and maintenance cost.
+
+## The escape hatch question
+
+You could add a per-instance "raw CSS override" field as a last resort. I'd argue **don't, at least not for AI**:
+
+- It breaks the "AI modifies structured config only" guarantee from DOC-5.
+- It makes framework-wide updates unsafe (your CSS update might collide with a customer override).
+- It encourages the AI to reach for the hatch instead of suggesting a new module variant.
+
+If you want an escape hatch, scope it:
+- **Manual-only** — the operator (you) can add CSS overrides via the control app; AI cannot.
+- **Per-instance** — overrides target a specific module instance, never global.
+- **Logged as drift** — overrides are tracked; if a site accumulates more than N, that's a signal that the library needs a new variant.
+
+This keeps the door open without inviting the AI through it.
+
+## Recommendation
+
+1. **Build the per-instance token surface first.** That's where most of the "nudge it slightly" feeling comes from, and it's the cheapest win. The dial set above (size, align, spacing, shape, surface, border, gap, emphasis, text-align) is plenty for v1.
+2. **Treat repeated requests for the same kind of thing as a signal to add a module variant** — if three customers ask for "image with a curved bottom edge," that becomes a new image-treatment variant, not a CSS override.
+3. **Defer the escape hatch** until you've actually built a few sites and felt the constraint. You may find you don't need it.
+
+The honest tradeoff for the customer is: "you give up pixel control; in exchange, your site updates itself, never breaks, costs $50/month, and you talk to it in plain English." For your target market (solo founders who currently have no site or a Wix mess), that's a clear win. For an art-directed photographer who wants a hand-composed portfolio — this isn't their product.
+
+Want to look at what the per-instance token surface should be in full, or move on to the GenDev Labs Phase 0 plan?
 
 
 <!-- xgd-chat-end -->
