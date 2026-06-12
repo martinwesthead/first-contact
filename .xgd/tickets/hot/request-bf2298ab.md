@@ -5,9 +5,9 @@ type: request
 title: 'site-schema package: types + runtime validation for site definitions'
 created_by: xgd
 created_at: '2026-06-12T23:06:27.302957+00:00'
-updated_at: '2026-06-12T23:06:27.302957+00:00'
+updated_at: '2026-06-12T23:57:10.698173+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   auto_merge_back: true
@@ -104,3 +104,34 @@ Runner: vitest. Files under `tests/` matching the existing convention.
   - REQ-4 (framework chrome modules + tokens + CSS generator) — imports types from this package.
   - REQ-5 (framework content modules) — imports types from this package.
   - REQ-6 (`tools/generate` + site definition + wire `public-site`) — imports validator.
+
+
+
+## Implementation decisions (free-coding session 2026-06-12)
+
+Decisions agreed up-front to lock the schema shape so future migrations are deliberate, not accidental:
+
+### Theme token slots
+
+DOC-7 §4.1 enumerates token *categories* but not specific slots. Locked slot list:
+
+- `palette` — `primary`, `accent`, `fg`, `bg`, `surface`, `surfaceSubtle`, `surfaceInverse`, `border`, `muted` (hex strings)
+- `typography.family` — `heading`, `body` (CSS font-family stacks, plain strings)
+- `typography.scale` — `xs`, `sm`, `base`, `lg`, `xl`, `2xl`, `3xl`, `4xl` (CSS length strings)
+- `spacing` — `none`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl` (CSS length strings; matches DOC-7 §3.1 spacing dial enum)
+- `radius` — `none`, `sm`, `md`, `lg`, `full` (CSS length strings)
+- `shadow` — `none`, `sm`, `md`, `lg` (CSS shadow value strings)
+- `container.maxWidth` — single CSS length string
+- `breakpoints` — `sm`, `md`, `lg`, `xl` (CSS length strings)
+
+All slots are required (per ticket: missing slot rejected).
+
+### Other shape decisions
+
+- `ModuleInstance.id` — required string, unique within its page. Needed for nav anchors per DOC-7 §5 (`in-page-anchors` pattern targets module IDs).
+- `Page.slug` — required string, unique within site.
+- `NavEntry.target` — discriminated union by `kind`: `{ kind: 'page', pageId }`, `{ kind: 'anchor', pageId, moduleId }`, `{ kind: 'url', href }`.
+- `AssetRef` — `{ id, src, alt, focalPoint?: { x: number, y: number } }`, focal point coordinates `0..1`.
+- `MarkdownString` — branded `string` at compile time, plain string at runtime (no parsing in this package).
+- Hex color regex — `#rgb` / `#rrggbb` / `#rrggbbaa`.
+- Structural validations (module ID uniqueness within page; page slug uniqueness within site) are in the schema per DOC-7 §6.5 layer 1. Catalog membership (is `'hero'` a real module type?) is NOT — that's the framework's job at render time.
