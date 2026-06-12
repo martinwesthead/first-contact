@@ -1,4 +1,4 @@
-# sites/first-contact
+# sites/1stcontact
 
 The 1stcontact.io marketing site, defined as a structured site definition (the same shape any customer site uses).
 

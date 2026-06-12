@@ -1,4 +1,4 @@
-# Claude Instructions for first-contact
+# Claude Instructions for 1stcontact
 
 **Note:** This project uses XGD (Extreme Generative Development) methodology. XGD methodology docs are bundled in the xgd package (`xgd_source/system_docs/`) and loaded automatically into sessions.
 
