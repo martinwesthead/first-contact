@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T22:27:51.443239+00:00'
+updated_at: '2026-06-12T22:33:51.482441+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -775,6 +775,60 @@ This is actually a principle worth capturing in the architecture doc — somethi
 > **Graceful degradation through `text-block`.** Until a dedicated module exists for a given content shape, structured prose in `text-block` is the canonical fallback. This keeps sites unblocked and exposes catalog gaps as observable patterns rather than friction.
 
 Want me to add that as a small amendment to DOC-7? It's the kind of principle that, if left unwritten, gets re-debated every time the catalog feels too small.
+
+
+<!-- xgd-turn id="8fa4b096-175e-40a2-9848-511cc1f5e55a" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T22:33:51.443Z" -->
+#### You
+Sure - and are you ready to create the REQ now?
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T22:33:51.443Z" -->
+#### Claude
+DOC-7 updated with §7.4 on graceful degradation.
+
+Before drafting the REQ — three small choices left from earlier you didn't explicitly land on. I want them nailed down so the REQ is concrete, not a draft-with-blanks.
+
+Got it — I'll proceed with my recommendations and call them out clearly so you can flag any you want to change. Going with: early-access CTA only, vetted Google Fonts shortlist, gendevlabs.com canonical.
+
+I regressed REQ-2's rename — DOC-7 now incorrectly says "First-Contact" again. Fixing.
+
+Two more drifts to fix in DOC-7 — the §10 repo layout I wrote doesn't match what REQ-1 actually scaffolded. Aligning it now.
+
+DOC-7 now matches REQ-1's scaffold (corrected layout: `public-site`/`control-app` Workers, `builder-ui`/`ui-kit` packages, `tools/generate` as the static generator, `db/migrations` for D1). The drift was my fault — I drafted DOC-7 from the proposal rather than the as-built state.
+
+Now on the REQ.
+
+## Phase 0 framework is too big for one REQ
+
+Looking at it as a single ticket, this is 15+ story points (modules, tokens, generator, content, form pipeline, D1). REQ-1 was deliberately scoped at 3 points; for cohesion and reviewability the same shape applies here. I'd split it into a small sequence:
+
+| # | Title | Scope | Points |
+|---|---|---|---|
+| REQ-3 | `packages/site-schema` — types + JSON schema | TypeScript types for Site / Page / ModuleInstance / ThemeTokens / NavConfig; Zod (or AJV) validator; UATs. Foundational — everything else imports this. | 2 |
+| REQ-4 | `packages/framework` — theme tokens + CSS generator + chrome modules | Token contract; per-site CSS file generator; first 3 modules (`header`, `hero`, `footer`) per DOC-7 §3 contract. Renders a credible empty-shell site. | 5 |
+| REQ-5 | `packages/framework` — content modules | The other 3 modules (`text-block`, `services-grid`, `contact-form`). Form module submits to a stub endpoint returning `{success:true}` — real handler is REQ-7. | 4 |
+| REQ-6 | `tools/generate` + `sites/1stcontact/site.json` + wire to `public-site` | Static generator reading file-backed site def; real 1st Contact homepage content; replaces the placeholder response on `public-site`. The "ship it" step. | 4 |
+| REQ-7 | Lead-capture pipeline | D1 `leads` migration; binding on `public-site`; real form handler (validate Turnstile, INSERT into D1, notify via Resend). | 3 |
+
+Total ~18 points. After REQ-6 you have a working 1st Contact marketing site with a non-functional form; after REQ-7 the form captures leads.
+
+## My recommendation
+
+Create **REQ-3 (site-schema) now** as the first concrete step — it unblocks REQ-4 and REQ-5 in parallel, and it's the cleanest cohesive unit. The rest of the sequence stays in this conversation as a plan; we can create each REQ as we get to it (or all upfront if you want them visible in the ticket list).
+
+**The Phase 0 decisions I'd lock into the REQ chain** (so it's not buried in this conversation):
+
+- Modules: `header`, `hero`, `text-block`, `services-grid`, `contact-form`, `footer` (6 total)
+- Variants: per the table I proposed earlier
+- Theme tokens: ~45-token surface — color (7 roles), typography (~10), spacing (~10), radius (5), shadow (4), containers (4), breakpoints (4)
+- Fonts: vetted Google Fonts shortlist (8 display, 6 body) — assuming my recommendation stands
+- Nav: `in-page-anchors` only for v1
+- Pricing: no numbers; single early-access CTA
+- Form pipeline: D1 + Resend (REQ-7)
+- Marketing site copy: TBD with you when we get to REQ-6
+
+Want me to create REQ-3 (site-schema) now, or draft all five as a sequenced roadmap before any are created?
 
 
 <!-- xgd-chat-end -->
