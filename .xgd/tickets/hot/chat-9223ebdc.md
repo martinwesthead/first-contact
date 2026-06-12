@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T22:14:36.660923+00:00'
+updated_at: '2026-06-12T22:27:51.443239+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -705,6 +705,76 @@ I'd genuinely defer this. Per DOC-7 open question #1 — picking a showcase vert
 - **#1 module list** — am I missing anything FC actually needs to launch?
 - **#3 fonts** — vetted shortlist or open?
 - **#4 domain** — which one, and is DNS in Phase 0 or just a placeholder deploy?
+
+
+<!-- xgd-turn id="586f83ce-f885-47b0-8f28-efe16a574655" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T22:27:51.402Z" -->
+#### You
+That makes sense. Out of curiosity how flexible or rigid is text-block? If we wanted to create an about page before creating the about module could we use text-block?
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T22:27:51.402Z" -->
+#### Claude
+Great question — and the answer reveals something important about how the framework handles "we don't have a module for that yet."
+
+## Yes, text-block can carry an about page
+
+The trick is that `text-block`'s content is **markdown**, and markdown is richer than people often remember:
+
+```markdown
+## About Martin
+
+![Martin Westhead](portrait.jpg)
+
+I've spent twenty years building developer tools — most recently leading
+engineering teams at <previous-company>. first-contact is what I wished
+existed when I tried to put up a website for a friend's catering business
+last year.
+
+- Based in Edinburgh
+- Available for a chat at [martin@gendevlabs.com](mailto:martin@gendevlabs.com)
+- [GitHub](https://github.com/...) · [LinkedIn](https://...)
+```
+
+That renders perfectly well as an about page. Images, lists, links, sub-headings all work. So functionally, yes — text-block covers the about case fully.
+
+## What you give up
+
+The result will *look like an article*, not *like a designed about section*. Specifically:
+
+- Image is inline, flowing with the text (not "image-left, text-right" layout)
+- No styled "card" container, no photo treatment (circle vs square is a markdown image; you get whatever the image already is)
+- Container-narrow width (it'll feel like prose), not the more designed feel of a dedicated about module
+- No bio metadata as styled chips, no "social links bar"
+
+For first-contact's site, **this is probably fine** — your manifesto is the point, not a heavily-designed personal brand page.
+
+## The principle this exposes
+
+`text-block` is — deliberately — **the universal degradation path**. While the catalog is small, anything that can be expressed as structured prose gets handled by text-block. This is good:
+
+1. **Nothing is blocked** waiting for the perfect module to be built.
+2. **Patterns surface naturally**: if you write three about-style text-blocks for three customers, that's strong signal that an `about` module is the right next iteration — and you already know the content shape it needs to handle.
+3. **Visual differentiation is preserved**: a text-block-about reads as "the founder's personal note," while a future `about` module reads as "the polished about section." That distinction has product value — some sites genuinely want the former.
+
+## Suggested v1 variants for text-block
+
+Two variants cover most usage without complicating the module:
+
+| Variant | Container | Use |
+|---|---|---|
+| `prose` | narrow (~720px) | Articles, about-as-blog, terms of service, manifesto |
+| `landing` | default (~1080px) | Marketing copy that wants more breathing room |
+
+Plus the standard dial set (size, spacing, surface, text-align). The body field is markdown — which means images, lists, blockquotes, links, sub-headings, code blocks all work for free.
+
+## Worth adding to DOC-7?
+
+This is actually a principle worth capturing in the architecture doc — something like:
+
+> **Graceful degradation through `text-block`.** Until a dedicated module exists for a given content shape, structured prose in `text-block` is the canonical fallback. This keeps sites unblocked and exposes catalog gaps as observable patterns rather than friction.
+
+Want me to add that as a small amendment to DOC-7? It's the kind of principle that, if left unwritten, gets re-debated every time the catalog feels too small.
 
 
 <!-- xgd-chat-end -->
