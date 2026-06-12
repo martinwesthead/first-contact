@@ -5,9 +5,9 @@ type: request
 title: Rename code identifiers from first-contact to 1stcontact to align with domain
 created_by: xgd
 created_at: '2026-06-12T22:21:53.129271+00:00'
-updated_at: '2026-06-12T22:29:22.941558+00:00'
+updated_at: '2026-06-12T22:29:30.265476+00:00'
 completed_at: null
-last_field_updated: commits
+last_field_updated: body
 status: free_coded
 fields:
   auto_merge_back: true
@@ -44,3 +44,13 @@ This is a rename / config slug change with no runtime logic to UAT:
 - Root `package.json` `name` is private and not published
 
 Verification: `pnpm install --frozen-lockfile=false` resolves cleanly, `pnpm -r build` continues to pass (TBC after change).
+
+
+## Update: doc-ab7508c1 included
+
+Architecture doc DOC-7 (`doc-ab7508c1`) also updated to match:
+- Title "First-Contact Website Framework" → "1st Contact Website Framework"
+- Prose mentions of "first-contact" (the product) → "1st Contact"
+- Path/tree references (`sites/first-contact`, repo root `first-contact/`) → `1stcontact` slug
+
+Pushed via `xgd ticket update --body-file` (auto-commit `a7cb585`).
