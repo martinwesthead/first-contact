@@ -113,8 +113,12 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 .npm
 .eslintcache
+
+# Cloudflare Wrangler local state (D1, R2, KV emulators; build cache)
+.wrangler/
 
 # ============================================================================
 # Rust/Cargo Artifacts

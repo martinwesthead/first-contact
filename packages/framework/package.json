@@ -1,0 +1,11 @@
+{
+  "name": "@1stcontact/framework",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Section library, renderer, theme tokens — shared between static generator and in-browser builder preview (see CHAT-7, CHAT-9)",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'framework: no source yet'"
+  }
+}
