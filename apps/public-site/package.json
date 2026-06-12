@@ -1,0 +1,17 @@
+{
+  "name": "@1stcontact/public-site",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "build": "tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "dryrun": "wrangler deploy --dry-run --outdir=.wrangler/dryrun"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250601.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^3.80.0"
+  }
+}

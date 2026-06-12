@@ -1,0 +1,11 @@
+{
+  "name": "@1stcontact/generate",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Static generator CLI: sites/<name>/ → apps/public-site/public/<name>/",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'generate: no source yet'"
+  }
+}

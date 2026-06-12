@@ -1,0 +1,11 @@
+name = "first-contact-control-app"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+workers_dev = true
+
+[env.production]
+routes = [
+  { pattern = "app.1stcontact.io/*", zone_name = "1stcontact.io" }
+]

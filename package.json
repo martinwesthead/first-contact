@@ -1,0 +1,31 @@
+{
+  "name": "first-contact",
+  "version": "0.0.1",
+  "private": true,
+  "description": "1stcontact.io platform monorepo",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n public,control -c blue,magenta \"pnpm dev:public\" \"pnpm dev:control\"",
+    "dev:public": "pnpm --filter @1stcontact/public-site dev",
+    "dev:control": "pnpm --filter @1stcontact/control-app dev",
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy:public": "pnpm --filter @1stcontact/public-site deploy",
+    "deploy:control": "pnpm --filter @1stcontact/control-app deploy",
+    "dryrun:public": "pnpm --filter @1stcontact/public-site dryrun",
+    "dryrun:control": "pnpm --filter @1stcontact/control-app dryrun"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250601.0",
+    "concurrently": "^9.0.1",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^3.80.0",
+    "yaml": "^2.5.0"
+  }
+}
