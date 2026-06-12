@@ -5,7 +5,7 @@ type: doc
 title: Website Framework Architecture Principles
 created_by: xgd
 created_at: '2026-06-12T22:12:47.112839+00:00'
-updated_at: '2026-06-12T22:29:53.958151+00:00'
+updated_at: '2026-06-12T22:31:46.176782+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -13,11 +13,11 @@ fields:
   doc_kind: architecture
 ---
 
-# First-Contact Website Framework — Architecture Principles
+# 1st Contact Website Framework — Architecture Principles
 
 ## 1. Purpose & Scope
 
-This document captures the durable architectural principles for the first-contact website framework: the shared engine that renders both the first-contact marketing site and all customer sites built on the platform.
+This document captures the durable architectural principles for the 1st Contact website framework: the shared engine that renders both the 1st Contact marketing site and all customer sites built on the platform.
 
 It is paired with [[DOC-4]] (product vision) and [[DOC-5]] (platform architecture). DOC-5 covers the platform-wide Cloudflare/D1/R2/Workers shape; this doc covers the framework specifically — how a site is modeled, rendered, and evolved.
 
@@ -26,7 +26,7 @@ It is paired with [[DOC-4]] (product vision) and [[DOC-5]] (platform architectur
 - A module-based composition model.
 - A strictly structured-change discipline: AI edits site definitions as data, never as code or CSS.
 - A finite, evolving catalog of modules with bounded per-instance flexibility.
-- One framework, two consumption paths: file-backed (first-contact's own marketing site) and D1-backed (customer sites).
+- One framework, two consumption paths: file-backed (1st Contact's own marketing site) and D1-backed (customer sites).
 - Astro as the rendering technology; Astro + React for the control app.
 
 **This document deliberately does not commit to:**
@@ -59,7 +59,7 @@ A **single-page site** is one page with N module instances. A **multi-page site*
 
 | Path | Site definition source | Use |
 |---|---|---|
-| **File-backed** | JSON files under `sites/<name>/` in the repo | first-contact's own marketing site; showcase sites; offline development |
+| **File-backed** | JSON files under `sites/<name>/` in the repo | 1st Contact's own marketing site; showcase sites; offline development |
 | **D1-backed** | Records in the Cloudflare D1 product database | All customer sites created via the platform |
 
 The renderer accepts either source via a common interface. Module rendering is identical in both cases — there are no divergent code paths.
@@ -152,7 +152,7 @@ Navigation pattern is a top-level site setting. The framework provides a finite,
 | `hamburger` | Mobile-style menu used on desktop; minimal-aesthetic sites |
 | `footer-only` | No top nav; in-page CTAs only |
 
-The phased delivery order is `in-page-anchors` and `top-tabs` first (sufficient for first-contact's own site and most service businesses), with the remainder added as customer demand justifies. All patterns are implemented in the shared library; per-site customization is limited to choice of pattern, entry labels, and entry order.
+The phased delivery order is `in-page-anchors` and `top-tabs` first (sufficient for 1st Contact's own site and most service businesses), with the remainder added as customer demand justifies. All patterns are implemented in the shared library; per-site customization is limited to choice of pattern, entry labels, and entry order.
 
 ---
 
@@ -249,7 +249,7 @@ Operators and AI should reach for `text-block` for any prose-shaped content whil
 
 ## 9. Technology Stack
 
-### 9.1 Customer sites and the first-contact marketing site
+### 9.1 Customer sites and the 1st Contact marketing site
 
 - **Astro** for static rendering.
 - Modules are Astro components.
@@ -273,16 +273,16 @@ Per DOC-5: Cloudflare Workers for the API, D1 for structured product data, R2 fo
 ## 10. Repo Structure
 
 ```
-first-contact/
+1stcontact/
 ├── apps/
-│   ├── control/          React + Astro builder UI and portal
-│   └── api/              Cloudflare Worker (forms, auth, AI orchestration)
+│   ├── control-app/      React + Astro builder UI and portal
+│   └── public-site/      Cloudflare Worker serving the 1st Contact marketing site
 ├── packages/
 │   ├── framework/        Module catalog, theme system, layout primitives
 │   ├── site-schema/      JSON schema + TypeScript types for site definitions
 │   └── renderer/         Site-definition → static output (Astro build harness)
 └── sites/
-    └── first-contact/    The first-contact marketing site definition
+    └── 1stcontact/       The 1st Contact marketing site definition
         ├── site.json
         └── assets/
 ```
@@ -292,7 +292,7 @@ first-contact/
 - `apps/*` depend on `packages/*`.
 - `packages/renderer` depends on `packages/framework` and `packages/site-schema`.
 - `packages/framework` depends only on `packages/site-schema`.
-- `sites/first-contact` is data — consumed by `packages/renderer`, depends on nothing.
+- `sites/1stcontact` is data — consumed by `packages/renderer`, depends on nothing.
 
 Customer sites do not appear in the repo. Their definitions live in D1 and are consumed at build time by the same `packages/renderer`.
 
@@ -323,7 +323,7 @@ The renderer is the only component that knows whether the site definition came f
 
 ### 11.3 Deployment
 
-- A GitHub Actions workflow on `push: branches: [xgd-stable]` deploys both the API Worker and the first-contact marketing site to Cloudflare.
+- A GitHub Actions workflow on `push: branches: [xgd-stable]` deploys both the API Worker and the 1st Contact marketing site to Cloudflare.
 - Customer site builds are triggered via the platform's own publish pipeline (Workers Static Assets per site, or shared Worker with per-site routing — to be decided in REQ).
 
 ---
@@ -350,7 +350,7 @@ These are explicit non-goals for the first iteration. Some may be revisited; oth
 
 These are not blocking v1 but should be revisited in subsequent REQs as the product matures:
 
-1. **First showcase vertical** — DOC-5 open question; defer until first-contact site and one or two customer sites have validated the module catalog.
+1. **First showcase vertical** — DOC-5 open question; defer until 1st Contact site and one or two customer sites have validated the module catalog.
 2. **AI intent layer** — should the AI work directly on JSON, or via a higher-level intent interpreter that translates natural-language nudges into structured edits? v1 is direct-JSON.
 3. **Per-site escape hatch** — design the operator-only custom CSS facility only when accumulated framework iterations cannot absorb specific real customer needs.
 4. **Site snapshot storage** — D1 vs R2 for revision snapshots (DOC-5 open question).
@@ -363,4 +363,4 @@ These are not blocking v1 but should be revisited in subsequent REQs as the prod
 
 - [[DOC-4]] — Product definition and vision.
 - [[DOC-5]] — Platform architecture (Cloudflare/D1/R2/Workers, identity, payments, monitoring).
-- First REQ ticket (forthcoming) — concrete v1 framework scope: module list for Phase 0, theme token surface, contact form lead-capture pipeline, first-contact marketing site target.
+- First REQ ticket (forthcoming) — concrete v1 framework scope: module list for Phase 0, theme token surface, contact form lead-capture pipeline, 1st Contact marketing site target.
