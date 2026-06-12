@@ -5,9 +5,9 @@ type: comment
 title: Comment on request REQ-3
 created_by: xgd
 created_at: '2026-06-12T23:30:20.277170+00:00'
-updated_at: '2026-06-12T23:30:20.277170+00:00'
+updated_at: '2026-06-12T23:32:41.770612+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: null
 fields:
   subject_uid: request-bf2298ab
@@ -102,5 +102,11 @@ generated file / pin (auto-upgrade would be crazy) / inline / AI edits the json 
 Locked: theme-token CSS = generated file. Module versioning = pin, explicit upgrade only. Per-instance dials = inline in page composition `{type, variant, dials, content}`. AI interaction = direct structured edits to the site-definition JSON.
 
 These four decisions together fix the contract `site-schema` has to encode: the schema validates the structural shape of Site / Page / ModuleInstance / ThemeTokens, but NOT catalog membership (whether a given `type` is a real module, or whether a given variant/dial is valid for that module). Catalog correctness is the framework's job at render time using each module's `moduleMeta`. The schema is structure; the framework is catalog. That separation is what makes the schema cheap to evolve and the catalog free to grow without schema migrations.
+
+<!-- xgd-turn id="aaedea58-27ff-48ec-bbff-7c8ab6715f1a-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T23:32:24.154Z" -->
+#### You
+Do you have the context to go ahead and free code this ticket
 
 <!-- xgd-chat-end -->
