@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T23:22:09.177374+00:00'
+updated_at: '2026-06-12T23:30:54.667638+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -904,6 +904,35 @@ REQ-1 set the precedent for cross-referencing — it explicitly cites `CHAT-10, 
 I'd lean (a) — DOC-7 already does the distillation work, and forcing transcript split-across-tickets often loses the cross-cutting design coherence. But you know the reconcile pipeline better than I do.
 
 Which would you like?
+
+
+<!-- xgd-turn id="50473d05-30ca-4282-ae37-05e88e5e7b31" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T23:30:54.615Z" -->
+#### You
+a dashboard chat session <-- it is a dashboard chat session not an intent specific chat session. When you create a ticket it is associated with an intent specific chat session. So what we do is we copy transcripts from your chat into the intent specific chat session which is stored in a comment in the intent ticket. This is explained in the free coding document. It sounds like it's confused though
+
+The design is that you would do b that way I can pick up this conversation in those chat sessions
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T23:30:54.615Z" -->
+#### Claude
+Got it — the doc is talking about intent-specific chat sessions, and my session is the generic dashboard chat. The transcript-copy lets you resume each REQ's conversation in its own chat session. Doing (b) now: a `chat_transcript` comment on each REQ with the relevant excerpts.
+
+Writing them out, then creating in parallel.
+
+Now creating the comment tickets in parallel.
+
+Done — five `chat_transcript` comments created, one per REQ:
+
+| Comment | Subject ticket | What it covers |
+|---|---|---|
+| COMMENT-1 | REQ-3 (site-schema) | Open-questions framing → Astro/module/repo/contract decisions → schema-vs-catalog separation |
+| COMMENT-2 | REQ-4 (framework chrome + tokens) | Three-layer model → faelan.com per-instance flexibility → ~45-token surface → generated CSS file |
+| COMMENT-3 | REQ-5 (content modules) | Module taxonomy → 6-module Phase 0 list → text-block as graceful degradation (DOC-7 §7.4) → form contract |
+| COMMENT-4 | REQ-6 (generate + site) | File-backed vs D1-backed paths → repo alignment → pricing/fonts/domain choices |
+| COMMENT-5 | REQ-7 (lead capture) | Lead-pipeline depth choice → D1 schema rationale → Resend selection → handler ordering decisions |
+
+Each comment cross-references CHAT-7 as the full session transcript and is formatted to match the dashboard's `<!-- xgd-chat -->` markup so you can resume the conversation in an intent-specific chat session on any REQ. Paraphrased reconstruction noted at the top of each.
 
 
 <!-- xgd-chat-end -->
