@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T22:33:51.482441+00:00'
+updated_at: '2026-06-12T23:07:14.692012+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -829,6 +829,44 @@ Create **REQ-3 (site-schema) now** as the first concrete step — it unblocks RE
 - Marketing site copy: TBD with you when we get to REQ-6
 
 Want me to create REQ-3 (site-schema) now, or draft all five as a sequenced roadmap before any are created?
+
+
+<!-- xgd-turn id="3c60c76d-f722-47e5-be17-156415df17cf" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T23:07:13.623Z" -->
+#### You
+ok please create these REQs
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T23:07:13.623Z" -->
+#### Claude
+Drafting all five REQ bodies now, then creating in sequence.
+
+All five REQs created and aligned with REQ-1's scaffold + DOC-7's principles.
+
+| Ticket | Title | Points |
+|---|---|---|
+| REQ-3 | site-schema package: types + runtime validation | 2 |
+| REQ-4 | Framework: theme tokens, CSS generator, registry, chrome modules (header/hero/footer) | 5 |
+| REQ-5 | Framework: content modules (text-block, services-grid, contact-form) | 4 |
+| REQ-6 | tools/generate + 1st Contact site definition + wire public-site | 4 |
+| REQ-7 | Lead-capture pipeline: D1 + Turnstile + Resend | 3 |
+
+**Total: 18 points.** Dependency chain: REQ-3 → REQ-4 → REQ-5 → REQ-6 → REQ-7 (REQ-4 and REQ-5 can run in parallel once REQ-3 lands).
+
+**Decisions baked in across the sequence:**
+- 6-module catalog: header, hero, text-block, services-grid, contact-form, footer
+- Token surface: 7 colors, type scale + weights + line-heights, 10-step spacing, 5 radius, 4 shadow, 4 containers, 4 breakpoints
+- Fonts: vetted Google Fonts shortlist (8 display + 6 body) — constant lives in framework
+- Nav: in-page-anchors only for v1
+- No pricing; single early-access CTA
+- Form contract finalized in REQ-5; stub handler in REQ-6; real D1 + Resend + Turnstile in REQ-7
+- D1 leads schema designed once to match CRM Lite lifecycle so we don't migrate twice
+
+**Operator follow-ups flagged in REQ-7** (no code, but blocking deploy): D1 database create, migration apply, Turnstile site setup, Resend account + verified sending domain, `wrangler secret put` for both keys.
+
+**Content TODOs flagged in REQ-6**: hero heading, manifesto copy, services blurbs, founder note, SEO metadata, og:image, real assets — all "TBD with operator" markers in the site definition.
+
+Ready when you are to start with REQ-3.
 
 
 <!-- xgd-chat-end -->
