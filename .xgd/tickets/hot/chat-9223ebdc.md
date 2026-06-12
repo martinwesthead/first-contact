@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T21:29:29.054727+00:00'
+updated_at: '2026-06-12T21:41:41.633437+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -325,6 +325,136 @@ These are scope decisions for the first iteration.
 Resolve (1) and (3) first — they unlock everything else. Then (4) and (5). Then we can write the DOC. Then resolve (7)–(10) to write the REQ.
 
 Want to start with the static rendering choice (Astro vs alternatives), or jump on the public-surface question? Both are quick decisions if we tackle them head-on.
+
+
+<!-- xgd-turn id="abdc26f8-a887-4540-ac41-ac70b3ce2912" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T21:41:41.592Z" -->
+#### You
+1. Astro is what I have used before
+   
+   1. What makes most sense and Astro component?
+   2. Customers never see the framework except in the sense that it constrains their options for creating sites. The AI must be fluent in it.
+   3. You tell me
+   4. The repo contains the first-contact app and associated web pages. This is what a customer sees when they come to our site. I think all this content will be in git and mantained on github. As far as possible it should use the same constraints and framework for display as customer sites though. Customer sites will be stored in D1 and created with FC
+   5. Please read Chat-10
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T21:41:41.592Z" -->
+#### Claude
+Read it — CHAT-10 covers the build/deploy shape. Going point-by-point:
+
+## 1. Astro — confirmed
+
+## 1.1 Module = Astro component — yes, ideal fit
+
+Astro's model maps almost 1:1 to what we need:
+- **Props** = module config (typed content schema)
+- **Scoped styles** = module CSS keyed off variant/dial class names
+- **Astro Islands** = the only place client JS lives, surgically per module
+- **Static rendering by default** = matches JAMstack
+
+No competing model gets this close without us writing glue.
+
+## 1.2 Framework internal, AI fluent — confirmed
+
+This simplifies a lot. The framework is:
+- An internal package consumed by the build pipeline.
+- Not published to npm.
+- Versioned within the monorepo.
+- The AI's "vocabulary" is the module catalog + dial set + token surface, not the framework code itself.
+
+## 1.3 Module contract — proposal
+
+Every module is an Astro component that exports a declared interface. Concretely:
+
+```typescript
+// packages/framework/modules/photo-text/index.astro
+---
+export const moduleMeta = {
+  id: 'photo-text',
+  version: 1,
+  variants: ['image-left', 'image-right', 'stacked'] as const,
+  dials: {
+    size:         ['sm', 'md', 'lg'],
+    shape:        ['square', 'rounded', 'circle'],
+    align:        ['left', 'center', 'right'],
+    spacingTop:   ['none', 'sm', 'md', 'lg', 'xl'],
+    spacingBottom:['none', 'sm', 'md', 'lg', 'xl'],
+    surface:      ['default', 'subtle', 'inverse', 'accent'],
+  },
+  contentSchema: {
+    heading:   { type: 'string', required: false },
+    body:      { type: 'markdown', required: true },
+    image:     { type: 'asset-ref', required: true },
+  },
+} as const;
+
+const { config, dials } = Astro.props;
+---
+
+<section class:list={[
+  'mod', `mod-${moduleMeta.id}`,
+  `var-${config.variant}`,
+  `size-${dials.size}`, `shape-${dials.shape}`,
+  `spt-${dials.spacingTop}`, `spb-${dials.spacingBottom}`,
+  `surf-${dials.surface}`,
+]}>
+  <!-- semantic HTML, no inline styles -->
+</section>
+
+<style>
+  /* token-driven CSS, classes only, no per-instance overrides */
+</style>
+```
+
+**The contract is:**
+1. Every module exports `moduleMeta` with: `id`, `version`, `variants[]`, `dials{}`, `contentSchema`.
+2. All dials and variants are finite enumerations — no free-form values.
+3. Module-side CSS is fully scoped, classes only, no inline styles.
+4. All visual tunables flow through CSS custom properties set by the theme + the dial class names.
+5. Modules never read site state outside their own props.
+6. Modules render the same in `sites/first-contact/` (file-backed) and from D1 (customer sites).
+
+This contract is what the AI is "fluent in" — it's the schema it edits.
+
+## 1.4 Repo structure (refining CHAT-10)
+
+Given your answer — FC marketing site in git, customer sites in D1, same framework — the layout from CHAT-10 holds, with one clarification:
+
+```
+first-contact/
+├── apps/
+│   ├── control/          # Builder UI + portal (the AI-driven editor)
+│   └── api/              # Cloudflare Worker (forms, auth, AI orchestration)
+├── packages/
+│   ├── framework/        # Module catalog, theme system, layout primitives
+│   ├── site-schema/      # JSON schema + TS types for site definitions
+│   └── renderer/         # site-def → static output (Astro build harness)
+└── sites/
+    └── first-contact/    # FC marketing site definition (file-backed)
+        ├── site.json
+        └── assets/
+```
+
+The renderer takes a site-definition (from file OR D1) and produces a static Astro build. FC's site is just the file-backed case; customer sites are the D1-backed case. Same renderer, same module catalog, no divergent paths.
+
+## 1.5 Build pipeline — already covered in CHAT-10
+
+`wrangler dev` locally, GitHub Action on `xgd-stable` push, two Workers (api + public assets). That plan stands.
+
+## What's still open before we write the DOC
+
+A few decisions remain — none are gating now but they'll surface as we draft:
+
+1. **Theme-token CSS generation** — per-site generated CSS file vs. inline custom-property block in `<head>`. (Mild lean: generated file, cacheable.)
+2. **Module versioning policy** — when `photo-text` ships v2, do existing site defs pin to v1 or auto-upgrade? (Mild lean: pin, with explicit upgrade action.)
+3. **Per-instance dials storage** — inline in the page composition `{type, variant, dials, content}` vs. a separate styling object. (Lean: inline; simpler schema.)
+4. **AI interaction layer** — does AI edit site-definition JSON directly via structured tools, or via a higher-level intent layer that translates "make the hero darker" → token/dial edit? (Probably both, eventually; v1 can be structured-edit-only.)
+5. **Control app framework** — Astro + Solid? Astro + React? Vanilla? (Doesn't block the DOC, but worth picking before REQ.)
+
+## Suggested next move
+
+Draft the DOC ticket now. The five open items above are footnotes, not blockers — the principles are locked. Want me to draft DOC-? content (architecture principles for the framework) for your review?
 
 
 <!-- xgd-chat-end -->
