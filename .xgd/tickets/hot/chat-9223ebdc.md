@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T22:12:58.232515+00:00'
+updated_at: '2026-06-12T22:14:36.660923+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -597,6 +597,114 @@ It captures:
 - Open questions carried forward
 
 Ready to draft the REQ ticket for the first iteration next — that's where we lock the Phase 0 module list, theme token surface, contact-form lead pipeline depth, and the first-contact marketing site target.
+
+
+<!-- xgd-turn id="3ad7a12e-6397-4afe-9486-9fb191aeecb9" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T22:14:36.610Z" -->
+#### You
+Lets talk about those design decisions
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T22:14:36.610Z" -->
+#### Claude
+Five items to lock in for the REQ. Going through them:
+
+## 1. Phase 0 module list
+
+For first-contact's own site, I'd argue the minimum-viable set is **six modules** — anything less and we can't build a credible marketing site; anything more is gold-plating before we have real customers.
+
+| Module | Purpose on FC site | Variants in v1 |
+|---|---|---|
+| `header` | Logo + anchor nav | 1 (top nav, logo left, links right) |
+| `hero` | Headline + sub + CTA | 2 (bg-color, bg-image) |
+| `text-block` | Manifesto / value prop | 1 (centered, container-narrow) |
+| `services-grid` | "Build / Maintain / Operate" cards | 2 (3-col, 2-col) |
+| `contact-form` | Lead capture | 1 (inline, configurable fields) |
+| `footer` | Logo + social + copyright | 1 |
+
+I'd defer `photo-text`, `about`, `testimonials`, `pricing`, and `gallery` to Phase 1 — we don't need them for FC's launch site, and adding modules without real driving sites tends to bake in wrong assumptions.
+
+**Question for you**: any module you'd add or remove? In particular — does FC's site need pricing on day one, or is "join early access" / "get notified" the only CTA at launch?
+
+## 2. Lead-capture pipeline depth
+
+My recommendation stands: **(b) D1 lead record + email notification**, not just email forwarding. Reasoning:
+
+- Email-only forces a retro-fit when CRM Lite arrives — we'd have unrecoverable lead history in your inbox.
+- D1 from day one means leads accumulate in a queryable form even before the CRM UI exists.
+- It also forces us to define the `leads` schema now, which is design work we'd have to do anyway in Phase 1.
+
+Phase 0 pipeline:
+```
+Form submit
+  → POST /api/forms/{form_id} on the Worker
+  → Turnstile verification
+  → INSERT into leads (D1)
+  → Email notification to operator via provider
+  → Inline success message in the form module
+```
+
+`leads` v1 schema (rough):
+```
+id, site_id, form_id, created_at,
+name, email, phone?, message,
+page_path, status (default 'new'),
+turnstile_verdict, ip_country
+```
+
+No admin UI yet — for Phase 0 you read leads via email + occasional `wrangler d1 execute` queries. CRM Lite UI is Phase 1.
+
+**Open**: which email provider? **Resend** is the cleanest DX and Cloudflare-friendly. Mailchannels free tier ended; Postmark and SES work but more setup. Lean: Resend.
+
+## 3. Theme token surface for v1
+
+I'd land on ~45 tokens — enough range for visual distinction without sprawl:
+
+**Color (7 roles)**: `bg`, `surface`, `text`, `muted`, `primary`, `accent`, `border`. Each can be a hex or reference; AI sets values.
+
+**Typography**:
+- `font-display`, `font-body` (family slots, AI picks from a vetted Google Fonts shortlist)
+- Type scale: `text-xs` → `text-5xl` (8 steps)
+- Weights: `light`, `normal`, `medium`, `semibold`, `bold`
+- Line heights: `tight`, `normal`, `relaxed`
+
+**Spacing**: `space-0` through `space-24` on a geometric scale (~10 steps).
+
+**Radius**: `none`, `sm`, `md`, `lg`, `full`.
+
+**Shadows**: `none`, `sm`, `md`, `lg`.
+
+**Containers**: `narrow` (720), `default` (1080), `wide` (1280), `bleed` (100%).
+
+**Breakpoints**: `sm` 640, `md` 768, `lg` 1024, `xl` 1280.
+
+**Open**: do you want a vetted Google Fonts shortlist (say 8 display + 6 body that we know pair well), or open the font choice up wider? Shortlist is faster, safer, and AI-friendly; open is more flexible.
+
+## 4. Hosting target specifics
+
+- **Workers Static Assets** (not Pages). Cloudflare is consolidating here; Pages is older. CHAT-10 already leans this way.
+- **Two Workers**: `apps/api` (the API), `apps/site-first-contact` (the FC marketing site static assets). Independent rollback, the site stays up if the API is rebuilding.
+- **Build trigger**: GitHub Actions on `xgd-stable` push → `wrangler deploy` for both.
+- **Local**: `wrangler dev` with D1 + R2 emulators, control app dev server proxied through.
+
+**Open** — domain. Which goes live for Phase 0?
+- `gendevlabs.com` — company brand, broader. Probably right since this site is "GenDev Labs introducing first-contact."
+- `first-contact.<tld>` — product-specific landing page.
+- Both, with one redirecting?
+
+This also affects whether DNS / cert setup is part of Phase 0 or a manual operator task ahead of launch.
+
+## 5. First-vertical anchor
+
+I'd genuinely defer this. Per DOC-7 open question #1 — picking a showcase vertical before FC's own site is live is premature. We'll learn more from building FC than from speculating about caterers.
+
+---
+
+**Where I'd most want your push-back**:
+
+- **#1 module list** — am I missing anything FC actually needs to launch?
+- **#3 fonts** — vetted shortlist or open?
+- **#4 domain** — which one, and is DNS in Phase 0 or just a placeholder deploy?
 
 
 <!-- xgd-chat-end -->
