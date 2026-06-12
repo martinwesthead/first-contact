@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-3
 created_by: xgd
 created_at: '2026-06-12T23:30:20.277170+00:00'
-updated_at: '2026-06-12T23:32:41.770612+00:00'
+updated_at: '2026-06-12T23:33:19.554560+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -108,5 +108,36 @@ These four decisions together fix the contract `site-schema` has to encode: the 
 <!-- xgd-chat role="user" ts="2026-06-12T23:32:24.154Z" -->
 #### You
 Do you have the context to go ahead and free code this ticket
+
+<!-- xgd-turn id="aaedea58-27ff-48ec-bbff-7c8ab6715f1a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T23:33:18.514Z" -->
+#### Claude
+I want to check the repo state and identify any genuine ambiguities before saying yes.
+
+Yes, mostly — the scaffold is in place (`packages/site-schema/` exists from REQ-1, vitest configured, monorepo wired). Ticket scope, prior-context decisions, and DOC-7 cover most shape questions.
+
+One genuine ambiguity worth confirming before I commit code, since "wrong now = schema migration later":
+
+**Theme token slot list.** DOC-7 §4 names *categories* (palette, type family, type scale, spacing scale, radius, shadow, container, breakpoints) but no specific slot names. The ticket says "every token slot defined in DOC-7 §4 is present" — but they aren't defined there. I'd propose:
+
+- `palette`: `primary`, `accent`, `fg`, `bg`, `surface`, `surfaceSubtle`, `surfaceInverse`, `border`, `muted` (hex strings)
+- `typography.family`: `heading`, `body` (CSS font-family stacks)
+- `typography.scale`: `xs`, `sm`, `base`, `lg`, `xl`, `2xl`, `3xl`, `4xl` (CSS length strings)
+- `spacing`: `none`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl` (matches the dial spacing enum in DOC-7 §3.1)
+- `radius`: `none`, `sm`, `md`, `lg`, `full`
+- `shadow`: `none`, `sm`, `md`, `lg`
+- `container.maxWidth`: single value
+- `breakpoints`: `sm`, `md`, `lg`, `xl` (CSS length strings)
+
+A few smaller decisions I'd make without asking unless you push back:
+- Each `ModuleInstance` carries an `id` (required, unique within page) — needed for nav anchors per DOC-7 §5.
+- `NavEntry.target` discriminated by `kind: 'page' | 'anchor' | 'url'`.
+- `AssetRef`: `{ id, src, alt, focalPoint?: { x: 0-1, y: 0-1 } }`.
+- `MarkdownString` is a branded `string` at type level, plain string at runtime.
+- Hex color = `#rgb` / `#rrggbb` / `#rrggbbaa`.
+- Module ID uniqueness *within page* and page slug uniqueness *within site* are structural (in schema, per DOC-7 §6.5 layer 1).
+
+Shall I proceed with the slot list above, or do you want to adjust it?
 
 <!-- xgd-chat-end -->
