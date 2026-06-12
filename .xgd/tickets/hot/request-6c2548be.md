@@ -5,7 +5,7 @@ type: request
 title: Rename code identifiers from first-contact to 1stcontact to align with domain
 created_by: xgd
 created_at: '2026-06-12T22:21:53.129271+00:00'
-updated_at: '2026-06-12T22:22:55.867605+00:00'
+updated_at: '2026-06-12T22:29:22.941558+00:00'
 completed_at: null
 last_field_updated: commits
 status: free_coded
@@ -15,6 +15,7 @@ fields:
   priority: medium
   commits:
   - a746b3b54878ea921c2109a9dc546704064e18bc
+  - a7cb585
 ---
 
 ## Scope
