@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T21:17:15.424842+00:00'
+updated_at: '2026-06-12T21:29:29.054727+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -277,6 +277,54 @@ Worth noting two governance levers we'll want when we get there:
 - **Vertical-specific vs. general** — some requests are universal ("circle image"), some are vertical-only ("menu with allergen tags"). Tag them so we can keep the general set lean.
 
 Crawling now. Want to spec out the GenDev Labs Phase 0 site — module list, theme tokens, content brief — or start on the broader module/token surface spec?
+
+
+<!-- xgd-turn id="1153fcf5-f858-4249-94dc-ded491e5d92b" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T21:29:28.011Z" -->
+#### You
+So I think we need an architecture document (DOC ticket) that captures these principles specifically and then a REQ ticket for the first iteration of the framework. Do you agree?
+
+What are the big open questions we need to resolve before we can go there?
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T21:29:28.011Z" -->
+#### Claude
+Yes — that's the right structure. The DOC captures the durable principles (the things that shouldn't change as we iterate); the REQ scopes the first build (GenDev Labs single-page + lead-capture pipeline). Doing the DOC first means the REQ has a stable frame to point at.
+
+## Open questions, grouped by what they block
+
+### Must resolve to write the DOC well
+These shape the architecture itself; deferring them means rewriting the doc later.
+
+1. **Static rendering technology.** DOC-5 flagged this open. Options: custom renderer (max control, max build cost), **Astro** (component model, partial hydration, content-site native, easy AI targeting), Eleventy (template-flexible, less component-y), Hugo (fast but JS-unfriendly). My lean is Astro — it matches the module model almost exactly. Decision affects modules, build, dev loop, AI prompt shape.
+2. **Module authoring format.** Follows from (1). What does "a module" look like in source — Astro component? Web Component? HTML template + JS file? This is the daily-life surface for whoever maintains the catalog.
+3. **Framework's public surface.** Is the framework (a) a library customers install, (b) a service that renders sites from data the customer never sees as code, or (c) both — publishable but consumed by the platform. Biggest shape question. I'd default to (c): framework is a versioned package, the control plane consumes it on the customer's behalf.
+4. **Module contract.** The formal interface every module implements — config schema, dial set, asset references, rendered output, validation. Doesn't need full detail in DOC, but needs the *shape*. Without this, the catalog will sprawl into incompatibility.
+5. **Repository structure.** Monorepo (framework + control app + customer sites in one repo, pnpm/turbo workspaces) vs. separate packages. Affects versioning and how framework updates roll out to customer sites.
+6. **Build pipeline shape.** Does the build read from D1 directly or from an exported site-definition JSON? Does it run in a Worker, in a CI job, or via Cloudflare's build infrastructure? Affects how publishing feels.
+
+### Must resolve to write the REQ well
+These are scope decisions for the first iteration.
+
+7. **Phase 0 module list.** Confirm: hero, services/services-grid, about, contact-form, footer, plus header/nav chrome. Anything else for GenDev Labs?
+8. **Lead-capture pipeline depth.** Contact form options: (a) email-only (Worker forwards to your inbox), (b) D1 lead record + email notification (mini-CRM substrate from day one), (c) full CRM Lite. I'd argue (b) — gives a lead schema we'll extend later without retro-fitting.
+9. **Theme token surface for v1.** Minimal viable token set — palette (4–5 roles), type (display + body + scale), spacing scale, radius, container width. Enough for "feels distinct" without sprawl.
+10. **Hosting target specifics.** Workers Static Assets vs Cloudflare Pages (Cloudflare's been pushing customers toward Workers Assets). Domain (gendevlabs.com or other). Build trigger for Phase 0 — manual CLI is fine.
+11. **First-vertical anchor.** DOC-5's open question. Even though Phase 0 is your site, picking a target showcase vertical now (catering? coaching?) keeps the module catalog from being too "tech consultancy"-shaped.
+
+### Can defer (architecture mentions, REQ doesn't have to solve)
+- Per-instance vs site-wide token storage shape (decide while building).
+- AI-driven module catalog extension (later phase).
+- CRM Lite + portal architecture beyond the lead schema (later REQ).
+- Email/SMS provider selection (open question in DOC-5; only matters when we wire notifications).
+- Site revision/snapshot storage (D1 vs R2) — can be answered when we touch publishing.
+- Multi-page nav patterns (Phase 1).
+
+## Suggested order
+
+Resolve (1) and (3) first — they unlock everything else. Then (4) and (5). Then we can write the DOC. Then resolve (7)–(10) to write the REQ.
+
+Want to start with the static rendering choice (Astro vs alternatives), or jump on the public-surface question? Both are quick decisions if we tackle them head-on.
 
 
 <!-- xgd-chat-end -->
