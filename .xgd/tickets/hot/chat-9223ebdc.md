@@ -5,7 +5,7 @@ type: chat
 title: Framework
 created_by: xgd
 created_at: '2026-06-12T20:22:20.310796+00:00'
-updated_at: '2026-06-12T21:50:03.096589+00:00'
+updated_at: '2026-06-12T22:09:01.729269+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -533,6 +533,43 @@ If you have strong personal experience with Solid and want the bundle-size disci
 The single decision that would change my mind: **if the control app turns out to be very read-heavy with minimal interactivity** (mostly tables and forms), Solid's wins compound and React's ecosystem edge matters less. But the chat builder pushes the other way — it's interactive enough that React's ecosystem will pay off.
 
 Want to lock in Astro + React for the control app and move to drafting the DOC, or talk through Solid more?
+
+
+<!-- xgd-turn id="c29d55b8-cd93-4b53-88c4-7e5bb1d65d51" -->
+
+<!-- xgd-chat role="user" ts="2026-06-12T22:09:01.681Z" -->
+#### You
+Astro + React it is
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T22:09:01.681Z" -->
+#### Claude
+Locked. All five open items resolved, full stack settled:
+
+- **Sites**: Astro, file-backed (FC) or D1-backed (customers), same renderer
+- **Framework**: internal package, Astro components, finite dials, per-site generated CSS, pinned module versions
+- **Control app**: Astro + React islands, Tailwind + shadcn, mobile budget in CI
+- **API**: Cloudflare Worker
+- **Repo**: monorepo (`apps/control`, `apps/api`, `packages/framework`, `packages/site-schema`, `packages/renderer`, `sites/first-contact`)
+
+## Proposed DOC outline
+
+Before I write the body, here's the structure I'd cover — flag anything missing or out of scope:
+
+1. **Purpose & Scope** — framework principles, what this doc commits to, what it deliberately doesn't
+2. **Composition Model** — Site → Pages → Modules → {variant, dials, content}; same primitive for single-page and multi-page; file-backed vs D1-backed site definitions
+3. **Module Contract** — `moduleMeta` shape; finite variants and dials; content schema; CSS scoping rules; no inline styles; same in both site sources
+4. **Theme Token System** — site-wide token set; per-instance dial set; CSS custom properties; per-site generated CSS file; mobile-first responsive system
+5. **Navigation Patterns** — enumerated set (in-page anchors, top-tabs, tabs+dropdown, hamburger, footer-only); pattern as top-level site setting
+6. **Structured Changes Only** — AI edits site-definition JSON via structured tools; no AI-written CSS; no per-instance CSS overrides in v1; escape-hatch policy deferred and operator-only when added
+7. **Catalog Evolution** — customer requests → tickets → framework PRs; variant-vs-new-module discipline; vertical-specific tagging
+8. **Module Versioning** — pin by default; explicit upgrade action; no auto-upgrade
+9. **Technology Stack** — Astro for sites; Astro + React + Tailwind + shadcn for control app; Cloudflare Workers for API; D1 for state; R2 for assets
+10. **Repo Structure** — monorepo layout, package responsibilities, dependency direction
+11. **Build & Render Pipeline** — site-def (file or D1) → renderer → static output → Cloudflare deploy; local dev via `wrangler dev`
+12. **Out of Scope (v1)** — pixel positioning, art-directed layouts, per-site custom CSS, arbitrary AI-generated styling, multi-page nav patterns (phased), customer-installable framework
+13. **Open Questions Carried Forward** — first showcase vertical, AI intent-layer above structured edits, escape hatch design when needed
+
+Look right? Anything to add or cut before I draft?
 
 
 <!-- xgd-chat-end -->
