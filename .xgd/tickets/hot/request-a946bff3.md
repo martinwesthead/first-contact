@@ -5,9 +5,9 @@ type: request
 title: 'Framework: theme tokens, CSS generator, module registry, chrome modules (header/hero/footer)'
 created_by: xgd
 created_at: '2026-06-12T23:06:33.531407+00:00'
-updated_at: '2026-06-12T23:06:33.531407+00:00'
+updated_at: '2026-06-13T01:00:59.909261+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   auto_merge_back: true
@@ -26,21 +26,49 @@ Design discussion: see [[DOC-7]] (Website Framework Architecture Principles), pa
 
 The token system + first three modules form one cohesive unit: each module exercises the same contract, the CSS generator wires their token references, and together they prove the model end-to-end before content modules build on it. Pure construction; design is already locked in DOC-7.
 
+## Token surface
+
+The framework's theme tokens are the **superset** of REQ-3's `ThemeTokens` and the surface locked in chat. `packages/site-schema` is the single source of truth for the shape — `packages/framework` imports `ThemeTokens` from there, never redefines it. Updating site-schema's `ThemeTokens` to this superset is part of this REQ.
+
+| Group | Keys | Notes |
+|---|---|---|
+| `palette` (9) | `bg, surface, surfaceSubtle, surfaceInverse, text, muted, primary, accent, border` | `text` replaces REQ-3's `fg`. |
+| `typography.family` (2, nested) | `heading, body` | |
+| `typography.scale` (9) | `xs, sm, base, lg, xl, 2xl, 3xl, 4xl, 5xl` | Adds `5xl` to REQ-3's 8-step scale. |
+| `typography.weights` (5) | `regular, medium, semibold, bold, black` | New in REQ-4. |
+| `typography.lineHeights` (3) | `tight, normal, relaxed` | New in REQ-4. |
+| `spacing` (10, geometric) | `0, 1, 2, 3, 4, 6, 8, 12, 16, 24` | Replaces REQ-3's 7 named steps. Keys are quoted numeric strings. |
+| `radius` (5) | `none, sm, md, lg, full` | Unchanged. |
+| `shadow` (4) | `none, sm, md, lg` | Unchanged. |
+| `container` (4) | `narrow, default, wide, bleed` | Replaces REQ-3's single `maxWidth`; `default` is the canonical body container. |
+| `breakpoints` (4) | `sm, md, lg, xl` | Unchanged. |
+
+Total: **55 tokens.**
+
 ## Deliverables
+
+### Site-schema update (prerequisite)
+
+- `packages/site-schema/src/schema.ts` — update `PaletteTokens`, `TypographyTokens`, `SpacingTokens`, `ContainerTokens` to the superset above. All other types unchanged.
+- `tests/_fixtures_REQ-3_site.ts` — update `makeThemeTokens()` to the new shape.
+- REQ-3 UATs must continue to pass against the updated schema.
 
 ### Theme token system
 
-- `packages/framework/src/tokens/contract.ts` — token slot contract (matches site-schema `ThemeTokens`). Single source of truth for which slots exist and their primitive types.
+- `packages/framework/src/tokens/contract.ts` — re-exports `ThemeTokens` from site-schema. Single source of truth for which slots exist and their primitive types.
 - `packages/framework/src/tokens/defaults.ts` — sane default values for every slot (neutral palette, system fonts, standard scale). Used when a site omits a slot.
-- `packages/framework/src/tokens/css.ts` — `generateThemeCss(tokens: ThemeTokens): string` produces a CSS file declaring custom properties (`--color-bg: …`, `--space-md: …`, etc.) on `:root`, with `@media (prefers-color-scheme: dark)` block when a dark palette is provided.
-- Token slots per DOC-7 §4:
-  - **Color (7 roles)**: `bg`, `surface`, `text`, `muted`, `primary`, `accent`, `border`
-  - **Typography**: `fontDisplay`, `fontBody`, type scale (`xs`–`5xl`, 8 steps), weights (5), line-heights (3)
-  - **Spacing**: 10-step geometric scale (`0`–`24`)
-  - **Radius**: `none`, `sm`, `md`, `lg`, `full`
-  - **Shadow**: `none`, `sm`, `md`, `lg`
-  - **Containers**: `narrow`, `default`, `wide`, `bleed`
-  - **Breakpoints**: `sm`, `md`, `lg`, `xl`
+- `packages/framework/src/tokens/css.ts` — `generateThemeCss(tokens: ThemeTokens, options?: { dark?: PartialPalette }): string` produces a CSS file declaring custom properties (`--color-bg: …`, `--space-4: …`, etc.) on `:root`, with `@media (prefers-color-scheme: dark)` block when a dark palette is provided.
+- CSS variable naming (deterministic):
+  - palette → `--color-<role>` (e.g., `--color-bg`, `--color-surface-subtle`, `--color-text`)
+  - family → `--font-family-<name>` (e.g., `--font-family-heading`)
+  - scale → `--font-size-<step>` (e.g., `--font-size-2xl`)
+  - weights → `--font-weight-<name>` (e.g., `--font-weight-bold`)
+  - lineHeights → `--line-height-<name>`
+  - spacing → `--space-<step>` (e.g., `--space-4`, `--space-12`)
+  - radius → `--radius-<name>`
+  - shadow → `--shadow-<name>`
+  - container → `--container-<name>`
+  - breakpoints → `--breakpoint-<name>`
 
 ### Module registry
 
@@ -56,7 +84,7 @@ The token system + first three modules form one cohesive unit: each module exerc
 
 #### `header` (1 variant)
 
-- File: `packages/framework/src/modules/header/index.astro`
+- File: `packages/framework/src/modules/header/index.astro` + `meta.ts`
 - Variant: `top-nav` (logo left, links right; responsive — collapses to hamburger below `breakpoint.md`)
 - Dials: `spacingTop`, `spacingBottom`, `surface`
 - Content: `logo` (AssetRef | text), `entries` (list of NavEntry)
@@ -64,7 +92,7 @@ The token system + first three modules form one cohesive unit: each module exerc
 
 #### `hero` (2 variants)
 
-- File: `packages/framework/src/modules/hero/index.astro`
+- File: `packages/framework/src/modules/hero/index.astro` + `meta.ts`
 - Variants: `bg-color`, `bg-image`
 - Dials: `size` (sm/md/lg), `align` (left/center), `spacingTop`, `spacingBottom`, `surface`
 - Content: `eyebrow` (optional string), `heading` (string), `subhead` (markdown), `cta` (optional `{label, href}`), `image` (AssetRef, required for `bg-image` variant only)
@@ -72,7 +100,7 @@ The token system + first three modules form one cohesive unit: each module exerc
 
 #### `footer` (1 variant)
 
-- File: `packages/framework/src/modules/footer/index.astro`
+- File: `packages/framework/src/modules/footer/index.astro` + `meta.ts`
 - Variant: `minimal` (logo + tagline + copyright + optional small-link row)
 - Dials: `surface`, `spacingTop`, `spacingBottom`
 - Content: `logo` (optional AssetRef | text), `tagline` (optional string), `copyrightHolder` (string), `links` (optional list of NavEntry)
@@ -96,7 +124,7 @@ The token system + first three modules form one cohesive unit: each module exerc
 
 ## Test approach (UATs)
 
-Runner: vitest. Astro components tested via `astro/container` API.
+Runner: vitest. Astro components tested via `astro/container` API (renders a component to an HTML string for assertion).
 
 - `test_UAT_FC_REQ-4_generate_css_produces_root_custom_properties` — `generateThemeCss` output contains `:root { --color-bg: …; … }` covering every slot.
 - `test_UAT_FC_REQ-4_generate_css_substitutes_defaults_for_missing_slots` — partial input fills missing slots from defaults.
