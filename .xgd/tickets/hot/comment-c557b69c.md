@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-4
 created_by: xgd
 created_at: '2026-06-12T23:30:26.060463+00:00'
-updated_at: '2026-06-13T00:11:23.227176+00:00'
+updated_at: '2026-06-13T00:17:40.052867+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -130,5 +130,11 @@ It looks like the question prompt was dismissed. I'll wait for your direction be
 1. **Token shape reconciliation**: site-schema's `ThemeTokens` (from REQ-3) doesn't match the surface locked in our prior chat. Update site-schema as part of REQ-4, adapt REQ-4 to fit site-schema, or file a separate ticket first?
 
 2. **Astro test setup**: REQ-4 says modules are `.astro` files. Should I wire up Astro + vitest container API in this REQ, or write modules as plain TS render functions and defer Astro to REQ-6?
+
+<!-- xgd-turn id="51bbd1f4-f2e2-40dc-9411-76efff19782c-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T00:16:29.700Z" -->
+#### You
+Please use the super set of roles and options and please update the documentation so everything is consistent
 
 <!-- xgd-chat-end -->
