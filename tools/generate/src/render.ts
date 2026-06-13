@@ -37,10 +37,12 @@ export async function renderSite(loaded: { site: Site }): Promise<RenderedSite> 
   const fonts = resolveFonts(loaded.site);
   const fontsHref = googleFontsHref(fonts);
 
+  const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY ?? "";
+
   const pages: RenderedPage[] = [];
   for (const page of loaded.site.pages) {
     const body = await renderPageBody(page, loaded.site, container);
-    const head = renderHead(loaded.site, page, fontsHref);
+    const head = renderHead(loaded.site, page, fontsHref, turnstileSiteKey);
     const html = renderHtml(head, body);
     pages.push({
       slug: page.slug,
@@ -86,6 +88,7 @@ function renderHead(
   site: Site,
   page: Page,
   fontsHref: string | undefined,
+  turnstileSiteKey: string,
 ): string {
   const seo = page.seoMeta ?? {};
   const title = seo.title ?? page.title ?? site.config.businessName;
@@ -116,6 +119,22 @@ function renderHead(
   }
 
   lines.push(`<link rel="stylesheet" href="${THEME_CSS_PATH}" />`);
+
+  const hasContactForm = page.modules.some(
+    (m) => m.type === "contact-form",
+  );
+  if (hasContactForm && turnstileSiteKey) {
+    lines.push(
+      `<meta name="fc-turnstile-site-key" content="${escapeAttr(turnstileSiteKey)}" />`,
+    );
+    lines.push(
+      `<script>window.fcTurnstileReady=function(){var m=document.querySelector('meta[name="fc-turnstile-site-key"]');var k=m?m.content:'';if(!k||!window.turnstile)return;document.querySelectorAll('[data-turnstile-target]').forEach(function(el){window.turnstile.render(el,{sitekey:k});});};</script>`,
+    );
+    lines.push(
+      `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=fcTurnstileReady" async defer></script>`,
+    );
+  }
+
   return lines.join("\n");
 }
 
