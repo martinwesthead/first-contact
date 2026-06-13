@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-6
 created_by: xgd
 created_at: '2026-06-12T23:30:38.125738+00:00'
-updated_at: '2026-06-13T19:04:31.464629+00:00'
+updated_at: '2026-06-13T19:04:35.384966+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -253,5 +253,13 @@ Glad it works for you. Enjoy the red `bg`.
 <!-- xgd-chat role="user" ts="2026-06-13T19:04:27.391Z" -->
 #### You
 It horrible, but proved a point :-)
+
+<!-- xgd-turn id="09d0fc70-e7de-4844-9b3e-68621b4212d5-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T19:04:35.358Z" -->
+#### Claude
+Ha — yeah, `#ff0000` against the existing palette is a war crime. But the point lands: edit `site.json`, re-run `pnpm --filter @1stcontact/public-site generate`, refresh the browser, see your change. The whole site is data.
+
+When you're ready to revert, change `palette.bg` back to `"#ffffff"` and regenerate. Or leave it as a permanent reminder that the renderer is honest about whatever you give it.
 
 <!-- xgd-chat-end -->
