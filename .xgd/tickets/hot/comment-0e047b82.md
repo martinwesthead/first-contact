@@ -5,9 +5,9 @@ type: comment
 title: Comment on request REQ-5
 created_by: xgd
 created_at: '2026-06-12T23:30:31.904057+00:00'
-updated_at: '2026-06-12T23:30:31.904057+00:00'
+updated_at: '2026-06-13T00:10:30.050487+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: null
 fields:
   subject_uid: request-fb3ec808
@@ -93,5 +93,11 @@ Contact-form module is server-rendered HTML (works without JS); island JS upgrad
 Services-grid item count validated 2..6. Below `breakpoint.md` both grid variants collapse to single column.
 
 text-block uses `@astrojs/markdown-remark` (or remark) for rendering. Container width dictated by variant, not by a dial — keeps variants meaningful.
+
+<!-- xgd-turn id="bbce1820-adbb-48c3-9289-959f9cd97b47-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T00:10:05.564Z" -->
+#### You
+ready to free code this?
 
 <!-- xgd-chat-end -->
