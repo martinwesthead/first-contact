@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-13T19:43:13.240798+00:00'
+updated_at: '2026-06-13T19:53:54.375962+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -147,5 +147,72 @@ Please free code this intent
 <!-- xgd-chat role="user" ts="2026-06-13T19:43:06.353Z" -->
 #### You
 Please free code this intent
+
+<!-- xgd-turn id="1a07ac21-59dc-4c65-b241-daca179476f6-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T19:53:54.340Z" -->
+#### Claude
+I'll start by understanding the current state of work — there are already several modified and untracked files in the working tree that look like REQ-8 work in progress.
+
+A lot of work-in-progress already exists from a prior session. Let me read what's there before continuing.
+
+I have a clear picture now. The prior session converged on a vanilla-DOM implementation (no React/Zustand runtime deps) — simpler, no SSR/island ceremony, and still mountable as an island from an Astro page. Tests are written against this shape.
+
+What's missing:
+1. Three UATs: `chat_endpoint_invokes_anthropic`, `invalid_tool_call_rejected`, `state_persisted_to_localstorage`
+2. `apps/control-app` SPA route for `/builder` (static HTML asset + JS bundle entry)
+3. Bundling the starter site JSON for the SPA shell
+4. Wiring everything end-to-end and verifying tests pass
+
+Let me also verify what's already passing.
+
+The new builder-ui workspace package isn't linked yet. Let me install workspace dependencies.
+
+The root `node_modules/@1stcontact/` is missing builder-ui — the root package.json devDependencies needs it for vitest test resolution.
+
+All 4 existing UATs pass. Now I'll write the 3 missing UATs.
+
+The bundled catalog has no `shape` dial (it was illustrative in the ticket scope). I'll target an actual hero dial — `size` with an invalid value — same validator path.
+
+All three new UATs pass. Now task 4: SPA shell route.
+
+I'll wire in an esbuild build for the SPA bundle and a `/builder` route in the Worker.
+
+Now I'll add the SPA bootstrap entry, the esbuild script, the HTML page, and the `/builder` route handler.
+
+Now the esbuild script and the SPA HTML:
+
+Now I'll add the `/builder` route to the Worker and configure static assets in wrangler.toml.
+
+Now I'll add a UAT for the `/builder` route handler, and run the install/build for the bundle.
+
+The `catalog.ts` imports metas from `@1stcontact/framework/modules` which re-exports Astro components and Node-fs styles. I'll add a browser-clean `/meta` subpath export.
+
+The SPA bundles to 176kb. Now I'll run the test suite end-to-end and the existing tests to make sure nothing else regressed.
+
+All 125 tests pass — and the new builder-route test was included. Let me also check it ran (it would have been in the omitted middle of the output):
+
+All 8 REQ-8 test files (13 individual tests) pass. Now let me also run the per-package type-check to make sure nothing in the new modules has TS issues:
+
+Good — `_assets/` and `starter-sites/` are properly ignored; only `builder.html` will be committed. Now let me check the prior tests aren't broken (re-run the full suite):
+
+All 72 test files (125 tests) pass and the full workspace builds clean. Now I'll bump the version and commit.
+
+The xgd_version_bump script is a stub. I'll bump the root `package.json` manually per the free-coding convention.
+
+Now let me stage and commit. I'll add files explicitly (avoiding `-A`):
+
+Commit `0b1ba59` lands cleanly. Now update the ticket to `free_coded` with the SHA and `story_points`.
+
+Per the free-coding rules, I'll update the ticket body to reflect implementation decisions made during this session — the vanilla-DOM choice and the test fixture for invalid-dial rejection — without overwriting the original spec context.
+
+REQ-8 is committed as a free-coded slice and the ticket is at `free_coded` with `commits=[0b1ba59]` and `story_points=6`. Ticket body now carries the original spec plus implementation notes recording the four iteration decisions (vanilla DOM over React, the `size: 'huge'` substitution for the unused `shape` dial, the Static Assets SPA shell scope, and the new `@1stcontact/framework/meta` browser-safe subpath).
+
+**Summary**
+
+- Commit `0b1ba59` — `feat(builder): chat-driven SPA + AI tool orchestration + in-browser preview [FREE-CODED]`
+- 8 new test files, 13 UATs, all passing alongside the existing 112 — 125/125 green.
+- Workspace `pnpm -r build` runs clean (esbuild bundle + `tsc --noEmit` across all packages).
+- Ticket parked at `free_coded`. Promotion to `ready_to_reconcile` is your call.
 
 <!-- xgd-chat-end -->
