@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-4
 created_by: xgd
 created_at: '2026-06-12T23:30:26.060463+00:00'
-updated_at: '2026-06-13T00:17:55.497268+00:00'
+updated_at: '2026-06-13T00:28:38.137931+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -147,5 +147,11 @@ The question prompt didn't go through again. I'll wait for your call — these a
 
 1. **Astro test setup**: wire it up now, or write modules as plain TS render functions and defer Astro to REQ-6?
 2. **Font token naming**: flat (`fontDisplay`/`fontBody`, REQ-4) or nested (`family.heading`/`family.body`, site-schema) for the superset?
+
+<!-- xgd-turn id="d523de3a-8dd4-4ccd-9325-0fcbd1b0105f-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T00:28:13.896Z" -->
+#### You
+I don't understand the trade-off for the tests or the font naming
 
 <!-- xgd-chat-end -->
