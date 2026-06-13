@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-6
 created_by: xgd
 created_at: '2026-06-12T23:30:38.125738+00:00'
-updated_at: '2026-06-13T18:52:06.804444+00:00'
+updated_at: '2026-06-13T18:52:16.768697+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -176,5 +176,64 @@ One incidental schema widening was needed: `ContentValue` in `@1stcontact/site-s
 <!-- xgd-chat role="user" ts="2026-06-13T18:51:58.451Z" -->
 #### You
 At this point is there anything observable that I could test/see
+
+<!-- xgd-turn id="03ff3923-1e7b-486c-ad74-9e7da8d33c17-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T18:52:16.739Z" -->
+#### Claude
+Yes — quite a bit. The simplest observable thing is the dev server.
+
+**1. Run the dev server and look at the marketing page in a browser**
+
+```sh
+pnpm dev:public
+```
+
+Boots wrangler at http://localhost:8787 serving the generated `apps/public-site/public/` plus the stub `/api/forms/contact` endpoint. You should see the header / hero ("Stop worrying about your website.") / How it works / Build·Maintain·Operate grid / "A note from us" / contact form / footer, with Manrope display + Inter body fonts pulled from Google Fonts.
+
+**2. Generated artifacts on disk (already built)**
+
+```sh
+ls apps/public-site/public/                    # index.html
+ls apps/public-site/public/assets/             # theme.css, site/placeholder.png
+head -20 apps/public-site/public/index.html    # see the <head> with preload links
+wc -l apps/public-site/public/assets/theme.css # ~700 lines: tokens + module CSS
+```
+
+**3. Poke the form stub**
+
+With the dev server running:
+
+```sh
+# Valid submission → success:true, dropped:false
+curl -i -X POST http://localhost:8787/api/forms/contact \
+  -H 'content-type: application/json' \
+  -d '{"name":"Alex","email":"alex@example.com","message":"hi"}'
+
+# Honeypot tripped → success:true, dropped:true (200, silently swallowed)
+curl -i -X POST http://localhost:8787/api/forms/contact \
+  -H 'content-type: application/json' \
+  -d '{"name":"Bot","email":"bot@x","website":"http://spam"}'
+
+# Wrong content-type → 400
+curl -i -X POST http://localhost:8787/api/forms/contact \
+  -H 'content-type: application/x-www-form-urlencoded' \
+  -d 'name=alex'
+
+# Unknown path → 404
+curl -i http://localhost:8787/does-not-exist
+```
+
+**4. Regenerate from the site definition**
+
+Edit anything in `sites/1stcontact/site.json` (a heading, the primary colour, an extra services item), then:
+
+```sh
+pnpm --filter @1stcontact/public-site generate
+```
+
+The dev server picks up the new static files on the next request.
+
+Want me to start the dev server in the background and grab a screenshot, or just leave it for you to drive?
 
 <!-- xgd-chat-end -->
