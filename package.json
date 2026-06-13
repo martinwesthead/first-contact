@@ -21,6 +21,7 @@
     "dryrun:control": "pnpm --filter @1stcontact/control-app dryrun"
   },
   "devDependencies": {
+    "@1stcontact/site-schema": "workspace:*",
     "@cloudflare/workers-types": "^4.20250601.0",
     "concurrently": "^9.0.1",
     "typescript": "^5.6.0",
