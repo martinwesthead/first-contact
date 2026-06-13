@@ -36,6 +36,10 @@ async function submit(form: HTMLFormElement, doFetch: typeof fetch): Promise<voi
   if (submitBtn) submitBtn.disabled = true;
 
   const data = formToObject(form);
+  const turnstileToken = readTurnstileToken(root);
+  if (turnstileToken !== null) {
+    data.turnstile_token = turnstileToken;
+  }
 
   try {
     const response = await doFetch(form.action, {
@@ -79,6 +83,37 @@ function formToObject(form: HTMLFormElement): Record<string, string> {
     if (typeof value === "string") out[key] = value;
   });
   return out;
+}
+
+/**
+ * Read the Turnstile response token for this form's widget.
+ *
+ * Returns the token string if a Turnstile widget rendered within this
+ * form's root and produced a response; null if Turnstile isn't loaded,
+ * the widget isn't rendered, or the user hasn't completed the challenge.
+ */
+function readTurnstileToken(root: HTMLElement): string | null {
+  const target = root.querySelector<HTMLElement>("[data-turnstile-target]");
+  if (!target) return null;
+  const win = root.ownerDocument.defaultView as Window & {
+    turnstile?: {
+      getResponse: (widget: HTMLElement | string) => string | undefined;
+    };
+  } | null;
+  const ts = win?.turnstile;
+  if (!ts || typeof ts.getResponse !== "function") {
+    // No script loaded — try the hidden input Turnstile injects.
+    const hidden = target.querySelector<HTMLInputElement>(
+      "input[name='cf-turnstile-response']",
+    );
+    return hidden?.value ?? null;
+  }
+  try {
+    const token = ts.getResponse(target);
+    return typeof token === "string" && token.length > 0 ? token : null;
+  } catch {
+    return null;
+  }
 }
 
 function clearError(form: HTMLFormElement): void {

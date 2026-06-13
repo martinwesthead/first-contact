@@ -9,6 +9,27 @@ workers_dev = true
 directory = "./public"
 binding = "ASSETS"
 
+[vars]
+SITE_ID = "1stcontact"
+TURNSTILE_SITE_KEY = ""
+RESEND_NOTIFY_TO = ""
+RESEND_NOTIFY_FROM = ""
+
+# Secrets (set via `wrangler secret put` per environment):
+#   TURNSTILE_SECRET
+#   RESEND_API_KEY
+
+# D1 binding for the leads database.
+# Create the production DB out-of-band:
+#   wrangler d1 create 1stcontact-prod
+# Then fill in the database_id and apply migrations:
+#   wrangler d1 migrations apply 1stcontact-prod --remote
+[[d1_databases]]
+binding = "LEADS_DB"
+database_name = "1stcontact-prod"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "../../db/migrations"
+
 [env.production]
 routes = [
   { pattern = "1stcontact.io/*", zone_name = "1stcontact.io" }
@@ -17,3 +38,15 @@ routes = [
 [env.production.assets]
 directory = "./public"
 binding = "ASSETS"
+
+[env.production.vars]
+SITE_ID = "1stcontact"
+TURNSTILE_SITE_KEY = ""
+RESEND_NOTIFY_TO = ""
+RESEND_NOTIFY_FROM = ""
+
+[[env.production.d1_databases]]
+binding = "LEADS_DB"
+database_name = "1stcontact-prod"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "../../db/migrations"
