@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-5
 created_by: xgd
 created_at: '2026-06-12T23:30:31.904057+00:00'
-updated_at: '2026-06-13T16:41:10.174974+00:00'
+updated_at: '2026-06-13T17:04:01.707511+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -144,5 +144,53 @@ Ready to free code?
 <!-- xgd-chat role="user" ts="2026-06-13T16:41:02.194Z" -->
 #### You
 Ready to free code?
+
+<!-- xgd-turn id="9c8fa8a4-6ad1-4898-98c0-0b373c97802f-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T17:04:00.656Z" -->
+#### Claude
+Let me check the current state — git status shows REQ-5 work already in progress.
+
+There's significant uncommitted work already on disk for REQ-5 — module dirs, tests, registry modifications, and a new `validate.ts`. Before answering "ready", I need to understand what state this is in. Let me check REQ-4's status and what's already implemented.
+
+REQ-4 is bundled (reconciling). The REQ-5 module files and tests already exist on disk from prior session(s) but were never committed. Let me check the state of the existing work.
+
+REQ-5 implementation already exists on disk from a prior session — all 3 modules, validate.ts, registry updates, and 17 UATs. Let me verify tests pass.
+
+While tests run, let me examine the implementation.
+
+Tests still running. Let me wait for the monitor.
+
+Tests are slow due to Astro container compilation. Let me give them time and explore other tests in the meantime.
+
+Found the hang — contact-form's `<script>` block with a TS import is hanging Astro's container. Let me investigate the fix.
+
+The hoisted `<script>` with `.ts` import is hanging Vite/Astro container. Let me remove it — the client enhancement should be wired by the consuming site, not embedded in the module.
+
+Now let me add an auto-wiring helper and ensure exports are clean.
+
+Found it: `<template>` + `set:html` + `<style>` block hangs the Astro container. Fix: use a hidden `<div>` instead.
+
+Contact-form tests now pass. Let me run all REQ-5 tests.
+
+All 27 REQ-5 tests pass. Now let me run the full test suite for regression.
+
+All 73 tests pass across 42 test files. Now let me check there's nothing else needed — typecheck and a quick lint check.
+
+All tests pass and build is clean. Now to complete the free-coding flow: version bump, commit, ticket update.
+
+No version bump needed — this project doesn't ship as an installed package. Let me stage and commit.
+
+Now let me update the ticket. First read it to preserve existing body, then update fields.
+
+REQ-5 is done. Summary:
+
+- **Three modules shipped**: `text-block` (prose/landing), `services-grid` (three-col/two-col, item count 2..6), `contact-form` (inline, honeypot + Turnstile mount point).
+- **Six-module Phase 0 catalog complete** — registry now resolves all of header, hero, footer, text-block, services-grid, contact-form.
+- **17 UATs, 27 assertions** — all passing alongside the full suite (73 tests, 42 files).
+- **Two implementation deviations** from the spec, both noted in the ticket:
+  - Removed the hoisted `<script>` from contact-form (it hung Astro's container API). Added `wireContactForms` export so the consuming site wires enhancement from its entry script.
+  - `<template data-fc-success-message>` → `<div data-fc-success-message hidden>` for the same reason. Functionally equivalent.
+- **Free-coded as commit `1befb47`**, ticket at `free_coded` with `story_points: 4`. Park it here, or promote to `ready_to_reconcile` when you want reconcile to fire.
 
 <!-- xgd-chat-end -->
