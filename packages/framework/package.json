@@ -18,6 +18,14 @@
     "./modules": {
       "types": "./src/modules/index.ts",
       "import": "./src/modules/index.ts"
+    },
+    "./meta": {
+      "types": "./src/modules/meta.ts",
+      "import": "./src/modules/meta.ts"
+    },
+    "./render": {
+      "types": "./src/render/index.ts",
+      "import": "./src/render/index.ts"
     }
   },
   "files": [

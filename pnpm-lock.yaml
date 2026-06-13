@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@1stcontact/builder-ui':
+        specifier: workspace:*
+        version: link:packages/builder-ui
       '@1stcontact/framework':
         specifier: workspace:*
         version: link:packages/framework
@@ -46,10 +49,17 @@ importers:
         version: 2.9.0
 
   apps/control-app:
+    dependencies:
+      '@1stcontact/builder-ui':
+        specifier: workspace:*
+        version: link:../../packages/builder-ui
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20250601.0
         version: 4.20260612.1
+      esbuild:
+        specifier: ^0.21.5
+        version: 0.21.5
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
@@ -73,7 +83,18 @@ importers:
         specifier: ^3.80.0
         version: 3.114.17(@cloudflare/workers-types@4.20260612.1)
 
-  packages/builder-ui: {}
+  packages/builder-ui:
+    dependencies:
+      '@1stcontact/framework':
+        specifier: workspace:*
+        version: link:../framework
+      '@1stcontact/site-schema':
+        specifier: workspace:*
+        version: link:../site-schema
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
 
   packages/framework:
     dependencies:

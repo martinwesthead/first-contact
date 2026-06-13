@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>1st Contact Builder</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      #fc-builder-root {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+      }
+      .fc-builder {
+        display: flex;
+        flex: 1 1 auto;
+        height: 100%;
+      }
+      .fc-builder__chat {
+        display: flex;
+        flex-direction: column;
+        background: #1e293b;
+        color: #f8fafc;
+        border-right: 1px solid #334155;
+        position: relative;
+        overflow: hidden;
+      }
+      .fc-builder__collapse {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        color: #f8fafc;
+        border: 0;
+        cursor: pointer;
+        font-size: 18px;
+      }
+      .fc-builder__splitter {
+        width: 6px;
+        cursor: col-resize;
+        background: #334155;
+      }
+      .fc-builder__preview {
+        flex: 1 1 auto;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+      }
+      .fc-builder__restore {
+        background: #1e293b;
+        color: #f8fafc;
+        border: 0;
+        cursor: pointer;
+      }
+      .fc-chat {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 32px 12px 12px;
+        box-sizing: border-box;
+      }
+      .fc-chat__messages {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 0 0 8px;
+      }
+      .fc-chat__message {
+        padding: 6px 8px;
+        margin-bottom: 6px;
+        border-radius: 6px;
+        background: #0f172a;
+        white-space: pre-wrap;
+      }
+      .fc-chat__message--user {
+        background: #2563eb;
+      }
+      .fc-chat__tool-call {
+        margin-top: 6px;
+        padding: 4px 6px;
+        font-size: 12px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .fc-chat__tool-call.is-rejected {
+        background: rgba(239, 68, 68, 0.2);
+      }
+      .fc-chat__input {
+        display: flex;
+        gap: 6px;
+      }
+      .fc-chat__textarea {
+        flex: 1 1 auto;
+        background: #0f172a;
+        color: #f8fafc;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 6px 8px;
+        font: inherit;
+        resize: vertical;
+      }
+      .fc-chat__send {
+        background: #2563eb;
+        color: #fff;
+        border: 0;
+        border-radius: 4px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      .fc-preview__toolbar {
+        background: #f1f5f9;
+        color: #0f172a;
+        padding: 6px 8px;
+        display: flex;
+        gap: 6px;
+        border-bottom: 1px solid #cbd5e1;
+      }
+      .fc-preview__viewport {
+        background: transparent;
+        border: 1px solid #94a3b8;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .fc-preview__viewport.is-active {
+        background: #0f172a;
+        color: #f8fafc;
+        border-color: #0f172a;
+      }
+      .fc-preview__iframe {
+        flex: 1 1 auto;
+        width: 100%;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="fc-builder-root"></div>
+    <script type="module" src="/_assets/builder.js"></script>
+  </body>
+</html>
