@@ -2,10 +2,36 @@
   "name": "@1stcontact/framework",
   "version": "0.0.0",
   "private": true,
-  "description": "Section library, renderer, theme tokens — shared between static generator and in-browser builder preview (see CHAT-7, CHAT-9)",
+  "description": "Section library, renderer, theme tokens — shared between static generator and in-browser builder preview (see DOC-7, DOC-8)",
   "type": "module",
   "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./tokens": {
+      "types": "./src/tokens/index.ts",
+      "import": "./src/tokens/index.ts"
+    },
+    "./modules": {
+      "types": "./src/modules/index.ts",
+      "import": "./src/modules/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
   "scripts": {
-    "build": "echo 'framework: no source yet'"
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@1stcontact/site-schema": "workspace:*",
+    "astro": "^4.16.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
   }
 }

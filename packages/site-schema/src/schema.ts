@@ -47,15 +47,15 @@ export const Dials = z.record(z.string(), z.string());
 export type Dials = z.infer<typeof Dials>;
 
 export const PaletteTokens = z.object({
-  primary: HexColor,
-  accent: HexColor,
-  fg: HexColor,
   bg: HexColor,
   surface: HexColor,
   surfaceSubtle: HexColor,
   surfaceInverse: HexColor,
-  border: HexColor,
+  text: HexColor,
   muted: HexColor,
+  primary: HexColor,
+  accent: HexColor,
+  border: HexColor,
 });
 export type PaletteTokens = z.infer<typeof PaletteTokens>;
 
@@ -73,18 +73,34 @@ export const TypographyTokens = z.object({
     "2xl": z.string().min(1),
     "3xl": z.string().min(1),
     "4xl": z.string().min(1),
+    "5xl": z.string().min(1),
+  }),
+  weights: z.object({
+    regular: z.string().min(1),
+    medium: z.string().min(1),
+    semibold: z.string().min(1),
+    bold: z.string().min(1),
+    black: z.string().min(1),
+  }),
+  lineHeights: z.object({
+    tight: z.string().min(1),
+    normal: z.string().min(1),
+    relaxed: z.string().min(1),
   }),
 });
 export type TypographyTokens = z.infer<typeof TypographyTokens>;
 
 export const SpacingTokens = z.object({
-  none: z.string().min(1),
-  xs: z.string().min(1),
-  sm: z.string().min(1),
-  md: z.string().min(1),
-  lg: z.string().min(1),
-  xl: z.string().min(1),
-  "2xl": z.string().min(1),
+  "0": z.string().min(1),
+  "1": z.string().min(1),
+  "2": z.string().min(1),
+  "3": z.string().min(1),
+  "4": z.string().min(1),
+  "6": z.string().min(1),
+  "8": z.string().min(1),
+  "12": z.string().min(1),
+  "16": z.string().min(1),
+  "24": z.string().min(1),
 });
 export type SpacingTokens = z.infer<typeof SpacingTokens>;
 
@@ -106,7 +122,10 @@ export const ShadowTokens = z.object({
 export type ShadowTokens = z.infer<typeof ShadowTokens>;
 
 export const ContainerTokens = z.object({
-  maxWidth: z.string().min(1),
+  narrow: z.string().min(1),
+  default: z.string().min(1),
+  wide: z.string().min(1),
+  bleed: z.string().min(1),
 });
 export type ContainerTokens = z.infer<typeof ContainerTokens>;
 

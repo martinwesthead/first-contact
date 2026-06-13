@@ -21,8 +21,10 @@
     "dryrun:control": "pnpm --filter @1stcontact/control-app dryrun"
   },
   "devDependencies": {
+    "@1stcontact/framework": "workspace:*",
     "@1stcontact/site-schema": "workspace:*",
     "@cloudflare/workers-types": "^4.20250601.0",
+    "astro": "^4.16.0",
     "concurrently": "^9.0.1",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0",

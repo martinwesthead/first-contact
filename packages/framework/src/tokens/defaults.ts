@@ -1,0 +1,81 @@
+import type { ThemeTokens } from "@1stcontact/site-schema";
+
+export const defaultThemeTokens: ThemeTokens = {
+  palette: {
+    bg: "#ffffff",
+    surface: "#f8f9fa",
+    surfaceSubtle: "#fafafa",
+    surfaceInverse: "#0f172a",
+    text: "#0f172a",
+    muted: "#64748b",
+    primary: "#2563eb",
+    accent: "#f59e0b",
+    border: "#e2e8f0",
+  },
+  typography: {
+    family: {
+      heading: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+      body: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    },
+    scale: {
+      xs: "0.75rem",
+      sm: "0.875rem",
+      base: "1rem",
+      lg: "1.125rem",
+      xl: "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "4xl": "2.25rem",
+      "5xl": "3rem",
+    },
+    weights: {
+      regular: "400",
+      medium: "500",
+      semibold: "600",
+      bold: "700",
+      black: "900",
+    },
+    lineHeights: {
+      tight: "1.2",
+      normal: "1.5",
+      relaxed: "1.75",
+    },
+  },
+  spacing: {
+    "0": "0",
+    "1": "0.25rem",
+    "2": "0.5rem",
+    "3": "0.75rem",
+    "4": "1rem",
+    "6": "1.5rem",
+    "8": "2rem",
+    "12": "3rem",
+    "16": "4rem",
+    "24": "6rem",
+  },
+  radius: {
+    none: "0",
+    sm: "0.25rem",
+    md: "0.5rem",
+    lg: "1rem",
+    full: "9999px",
+  },
+  shadow: {
+    none: "none",
+    sm: "0 1px 2px rgba(15, 23, 42, 0.05)",
+    md: "0 4px 6px rgba(15, 23, 42, 0.08)",
+    lg: "0 12px 24px rgba(15, 23, 42, 0.12)",
+  },
+  container: {
+    narrow: "45rem",
+    default: "72rem",
+    wide: "80rem",
+    bleed: "100%",
+  },
+  breakpoints: {
+    sm: "640px",
+    md: "768px",
+    lg: "1024px",
+    xl: "1280px",
+  },
+};

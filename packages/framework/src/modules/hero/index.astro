@@ -1,0 +1,194 @@
+---
+import type { AssetRef } from "@1stcontact/site-schema";
+
+export interface HeroCta {
+  label: string;
+  href: string;
+}
+
+export interface Props {
+  variant: "bg-color" | "bg-image";
+  eyebrow?: string;
+  heading: string;
+  subhead?: string;
+  cta?: HeroCta;
+  image?: AssetRef;
+  dials?: {
+    size?: "sm" | "md" | "lg";
+    align?: "left" | "center";
+    spacingTop?: string;
+    spacingBottom?: string;
+    surface?: "default" | "subtle" | "inverse" | "accent";
+  };
+}
+
+const {
+  variant,
+  eyebrow,
+  heading,
+  subhead,
+  cta,
+  image,
+  dials = {},
+} = Astro.props;
+
+const size = dials.size ?? "md";
+const align = dials.align ?? "left";
+const surface = dials.surface ?? "default";
+const spacingTop = dials.spacingTop ?? "12";
+const spacingBottom = dials.spacingBottom ?? "12";
+
+const showImage = variant === "bg-image" && image !== undefined;
+---
+
+<section
+  class:list={[
+    "fc-hero",
+    `fc-hero--variant-${variant}`,
+    `fc-hero--size-${size}`,
+    `fc-hero--align-${align}`,
+    `fc-hero--surface-${surface}`,
+    `fc-hero--space-top-${spacingTop}`,
+    `fc-hero--space-bottom-${spacingBottom}`,
+  ]}
+  data-module="hero"
+  data-variant={variant}
+>
+  {
+    showImage && image && (
+      <img
+        class="fc-hero__bg-image"
+        src={image.src}
+        alt={image.alt}
+        data-fc-hero-bg
+      />
+    )
+  }
+  <div class="fc-hero__inner">
+    {eyebrow && <p class="fc-hero__eyebrow">{eyebrow}</p>}
+    <h1 class="fc-hero__heading">{heading}</h1>
+    {subhead && <div class="fc-hero__subhead" set:html={subhead} />}
+    {
+      cta && (
+        <a class="fc-hero__cta" href={cta.href}>
+          {cta.label}
+        </a>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .fc-hero {
+    position: relative;
+    color: var(--color-text);
+    background: var(--color-bg);
+  }
+  .fc-hero--surface-subtle { background: var(--color-surface-subtle); }
+  .fc-hero--surface-inverse {
+    background: var(--color-surface-inverse);
+    color: var(--color-bg);
+  }
+  .fc-hero--surface-accent {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .fc-hero--space-top-0 { padding-top: var(--space-0); }
+  .fc-hero--space-top-1 { padding-top: var(--space-1); }
+  .fc-hero--space-top-2 { padding-top: var(--space-2); }
+  .fc-hero--space-top-3 { padding-top: var(--space-3); }
+  .fc-hero--space-top-4 { padding-top: var(--space-4); }
+  .fc-hero--space-top-6 { padding-top: var(--space-6); }
+  .fc-hero--space-top-8 { padding-top: var(--space-8); }
+  .fc-hero--space-top-12 { padding-top: var(--space-12); }
+  .fc-hero--space-top-16 { padding-top: var(--space-16); }
+  .fc-hero--space-top-24 { padding-top: var(--space-24); }
+  .fc-hero--space-bottom-0 { padding-bottom: var(--space-0); }
+  .fc-hero--space-bottom-1 { padding-bottom: var(--space-1); }
+  .fc-hero--space-bottom-2 { padding-bottom: var(--space-2); }
+  .fc-hero--space-bottom-3 { padding-bottom: var(--space-3); }
+  .fc-hero--space-bottom-4 { padding-bottom: var(--space-4); }
+  .fc-hero--space-bottom-6 { padding-bottom: var(--space-6); }
+  .fc-hero--space-bottom-8 { padding-bottom: var(--space-8); }
+  .fc-hero--space-bottom-12 { padding-bottom: var(--space-12); }
+  .fc-hero--space-bottom-16 { padding-bottom: var(--space-16); }
+  .fc-hero--space-bottom-24 { padding-bottom: var(--space-24); }
+
+  .fc-hero__bg-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+  .fc-hero--variant-bg-image .fc-hero__inner {
+    position: relative;
+    z-index: 1;
+    color: var(--color-bg);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .fc-hero__inner {
+    position: relative;
+    max-width: var(--container-default);
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .fc-hero--align-center .fc-hero__inner {
+    text-align: center;
+    align-items: center;
+  }
+
+  .fc-hero__eyebrow {
+    margin: 0;
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+
+  .fc-hero__heading {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+  }
+  .fc-hero--size-sm .fc-hero__heading {
+    font-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-3xl));
+  }
+  .fc-hero--size-md .fc-hero__heading {
+    font-size: clamp(var(--font-size-3xl), 5vw, var(--font-size-4xl));
+  }
+  .fc-hero--size-lg .fc-hero__heading {
+    font-size: clamp(var(--font-size-4xl), 6vw, var(--font-size-5xl));
+  }
+
+  .fc-hero__subhead {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-relaxed);
+    max-width: var(--container-narrow);
+  }
+
+  .fc-hero__cta {
+    display: inline-block;
+    align-self: flex-start;
+    background: var(--color-primary);
+    color: var(--color-bg);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+  }
+  .fc-hero--align-center .fc-hero__cta { align-self: center; }
+  .fc-hero__cta:hover { background: var(--color-accent); }
+</style>
