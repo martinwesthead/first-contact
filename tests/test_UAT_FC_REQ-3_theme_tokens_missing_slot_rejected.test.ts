@@ -19,13 +19,13 @@ describe("UAT FC REQ-3: theme tokens missing slot rejected", () => {
   it("rejects when a required spacing slot is omitted", () => {
     const site = makeMinimalSite() as Record<string, unknown>;
     const theme = site.theme as { spacing: Record<string, unknown> };
-    delete theme.spacing.md;
+    delete theme.spacing["4"];
 
     const result = validateSite(site);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       const paths = result.errors.map((e) => e.path);
-      expect(paths).toContain("/theme/spacing/md");
+      expect(paths).toContain("/theme/spacing/4");
     }
   });
 });

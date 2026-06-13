@@ -3,15 +3,15 @@ import type { Site, ThemeTokens } from "@1stcontact/site-schema";
 export function makeThemeTokens(): ThemeTokens {
   return {
     palette: {
-      primary: "#1a73e8",
-      accent: "#ff6f61",
-      fg: "#111111",
       bg: "#ffffff",
       surface: "#f5f5f5",
       surfaceSubtle: "#fafafa",
       surfaceInverse: "#0a0a0a",
-      border: "#dddddd",
+      text: "#111111",
       muted: "#888888",
+      primary: "#1a73e8",
+      accent: "#ff6f61",
+      border: "#dddddd",
     },
     typography: {
       family: {
@@ -27,16 +27,32 @@ export function makeThemeTokens(): ThemeTokens {
         "2xl": "1.5rem",
         "3xl": "1.875rem",
         "4xl": "2.25rem",
+        "5xl": "3rem",
+      },
+      weights: {
+        regular: "400",
+        medium: "500",
+        semibold: "600",
+        bold: "700",
+        black: "900",
+      },
+      lineHeights: {
+        tight: "1.2",
+        normal: "1.5",
+        relaxed: "1.75",
       },
     },
     spacing: {
-      none: "0",
-      xs: "0.25rem",
-      sm: "0.5rem",
-      md: "1rem",
-      lg: "1.5rem",
-      xl: "2rem",
-      "2xl": "3rem",
+      "0": "0",
+      "1": "0.25rem",
+      "2": "0.5rem",
+      "3": "0.75rem",
+      "4": "1rem",
+      "6": "1.5rem",
+      "8": "2rem",
+      "12": "3rem",
+      "16": "4rem",
+      "24": "6rem",
     },
     radius: {
       none: "0",
@@ -52,7 +68,10 @@ export function makeThemeTokens(): ThemeTokens {
       lg: "0 10px 15px rgba(0,0,0,0.1)",
     },
     container: {
-      maxWidth: "72rem",
+      narrow: "45rem",
+      default: "72rem",
+      wide: "80rem",
+      bleed: "100%",
     },
     breakpoints: {
       sm: "640px",
