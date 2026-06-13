@@ -5,7 +5,15 @@ compatibility_flags = ["nodejs_compat"]
 
 workers_dev = true
 
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
 [env.production]
 routes = [
   { pattern = "1stcontact.io/*", zone_name = "1stcontact.io" }
 ]
+
+[env.production.assets]
+directory = "./public"
+binding = "ASSETS"

@@ -34,10 +34,25 @@ export const AssetRef = z.object({
 });
 export type AssetRef = z.infer<typeof AssetRef>;
 
-export type ContentValue = string | AssetRef | ContentValue[];
+export type ContentValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AssetRef
+  | ContentValue[]
+  | { [key: string]: ContentValue };
 
 export const ContentValue: z.ZodType<ContentValue> = z.lazy(() =>
-  z.union([z.string(), AssetRef, z.array(ContentValue)]),
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    AssetRef,
+    z.array(ContentValue),
+    z.record(z.string(), ContentValue),
+  ]),
 );
 
 export const ModuleContent = z.record(z.string(), ContentValue);

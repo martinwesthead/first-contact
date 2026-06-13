@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --port 8787",
-    "build": "tsc --noEmit",
-    "deploy": "wrangler deploy",
-    "dryrun": "wrangler deploy --dry-run --outdir=.wrangler/dryrun"
+    "generate": "fc-generate --site ../../sites/1stcontact --out ./public --clean",
+    "build": "pnpm generate && tsc --noEmit",
+    "deploy": "pnpm generate && wrangler deploy",
+    "dryrun": "pnpm generate && wrangler deploy --dry-run --outdir=.wrangler/dryrun"
+  },
+  "dependencies": {
+    "@1stcontact/generate": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250601.0",

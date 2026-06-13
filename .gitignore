@@ -120,6 +120,9 @@ pnpm-debug.log*
 # Cloudflare Wrangler local state (D1, R2, KV emulators; build cache)
 .wrangler/
 
+# Generated static-site output (rebuilt by `fc-generate` on every build/deploy)
+apps/public-site/public/
+
 # ============================================================================
 # Rust/Cargo Artifacts
 # ============================================================================
