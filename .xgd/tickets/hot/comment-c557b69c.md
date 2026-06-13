@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-4
 created_by: xgd
 created_at: '2026-06-12T23:30:26.060463+00:00'
-updated_at: '2026-06-13T00:11:02.824436+00:00'
+updated_at: '2026-06-13T00:11:23.227176+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -105,5 +105,30 @@ Mobile-first responsive system — all spacing, type, and container tokens have 
 <!-- xgd-chat role="user" ts="2026-06-13T00:09:57.649Z" -->
 #### You
 Ready to implement?
+
+<!-- xgd-turn id="c8d94a0c-8f37-44ed-bc39-1422af09cf45-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T00:11:23.190Z" -->
+#### Claude
+Before I implement, I noticed a substantive mismatch between REQ-4's token surface and what `packages/site-schema` (REQ-3) already shipped. They must agree because DOC-7 §6.5 requires the same validator across all layers, and the framework's CSS generator consumes the same token types.
+
+| Aspect | site-schema (REQ-3) | REQ-4 spec (locked in prior chat) |
+|---|---|---|
+| Color roles | 9 (`primary, accent, fg, bg, surface, surfaceSubtle, surfaceInverse, border, muted`) | 7 (`bg, surface, text, muted, primary, accent, border`) |
+| Font families | `family.heading`, `family.body` | `fontDisplay`, `fontBody` |
+| Type scale | 8 steps `xs..4xl` | 8 steps `xs..5xl` |
+| Weights | — | 5 |
+| Line-heights | — | 3 |
+| Spacing | 7 named (`none..2xl`) | 10-step geometric (`0..24`) |
+| Containers | single `maxWidth` | `narrow / default / wide / bleed` |
+| Radius / Shadow / Breakpoints | match | match |
+
+How should I proceed?
+
+It looks like the question prompt was dismissed. I'll wait for your direction before proceeding — the two open questions are:
+
+1. **Token shape reconciliation**: site-schema's `ThemeTokens` (from REQ-3) doesn't match the surface locked in our prior chat. Update site-schema as part of REQ-4, adapt REQ-4 to fit site-schema, or file a separate ticket first?
+
+2. **Astro test setup**: REQ-4 says modules are `.astro` files. Should I wire up Astro + vitest container API in this REQ, or write modules as plain TS render functions and defer Astro to REQ-6?
 
 <!-- xgd-chat-end -->
