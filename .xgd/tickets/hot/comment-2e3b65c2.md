@@ -5,9 +5,9 @@ type: comment
 title: Comment on request REQ-6
 created_by: xgd
 created_at: '2026-06-12T23:30:38.125738+00:00'
-updated_at: '2026-06-12T23:30:38.125738+00:00'
+updated_at: '2026-06-13T17:13:48.975016+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: null
 fields:
   subject_uid: request-aaf6b75c
@@ -92,5 +92,11 @@ Generator scope (this ticket):
 - Update `.github/workflows/deploy.yml` to run `tools/generate` before `wrangler deploy` for `public-site`.
 
 Operator follow-ups (no code): finalize hero/manifesto/services/founder-note copy, provide real assets, confirm SEO metadata + og:image.
+
+<!-- xgd-turn id="22c0e7b9-fa18-4783-a851-7140b36fd44f-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T17:09:07.427Z" -->
+#### You
+Please free code this?
 
 <!-- xgd-chat-end -->
