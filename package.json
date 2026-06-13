@@ -1,6 +1,6 @@
 {
   "name": "1stcontact",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "1stcontact.io platform monorepo",
   "packageManager": "pnpm@9.12.0",
@@ -21,6 +21,7 @@
     "dryrun:control": "pnpm --filter @1stcontact/control-app dryrun"
   },
   "devDependencies": {
+    "@1stcontact/builder-ui": "workspace:*",
     "@1stcontact/framework": "workspace:*",
     "@1stcontact/generate": "workspace:*",
     "@1stcontact/site-schema": "workspace:*",

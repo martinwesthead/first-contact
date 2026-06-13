@@ -123,6 +123,11 @@ pnpm-debug.log*
 # Generated static-site output (rebuilt by `fc-generate` on every build/deploy)
 apps/public-site/public/
 
+# Control-app builder SPA bundle + bundled starter-sites copies (rebuilt by
+# apps/control-app/scripts/build-builder-bundle.mjs on every build/deploy)
+apps/control-app/public/_assets/
+apps/control-app/public/starter-sites/
+
 # ============================================================================
 # Rust/Cargo Artifacts
 # ============================================================================
