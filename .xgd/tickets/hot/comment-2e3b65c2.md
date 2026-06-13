@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-6
 created_by: xgd
 created_at: '2026-06-12T23:30:38.125738+00:00'
-updated_at: '2026-06-13T18:52:16.768697+00:00'
+updated_at: '2026-06-13T18:56:54.194853+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -235,5 +235,11 @@ pnpm --filter @1stcontact/public-site generate
 The dev server picks up the new static files on the next request.
 
 Want me to start the dev server in the background and grab a screenshot, or just leave it for you to drive?
+
+<!-- xgd-turn id="0022bca8-1fc0-48e0-8f0b-bd4d62532296-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T18:56:50.436Z" -->
+#### You
+I've got it - looks good - thanks
 
 <!-- xgd-chat-end -->
