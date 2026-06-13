@@ -5,9 +5,9 @@ type: request
 title: 'site-schema package: types + runtime validation for site definitions'
 created_by: xgd
 created_at: '2026-06-12T23:06:27.302957+00:00'
-updated_at: '2026-06-13T00:09:41.041278+00:00'
+updated_at: '2026-06-13T01:19:03.832410+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: pid
 status: reconciling
 fields:
   auto_merge_back: true
