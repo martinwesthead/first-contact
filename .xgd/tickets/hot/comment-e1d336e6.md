@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-3
 created_by: xgd
 created_at: '2026-06-12T23:30:20.277170+00:00'
-updated_at: '2026-06-12T23:55:23.658315+00:00'
+updated_at: '2026-06-13T00:05:04.034565+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -145,5 +145,42 @@ Shall I proceed with the slot list above, or do you want to adjust it?
 <!-- xgd-chat role="user" ts="2026-06-12T23:55:02.297Z" -->
 #### You
 That sounds fine
+
+<!-- xgd-turn id="b7db3d8e-67ab-4466-a361-1a56282f566a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T00:05:02.992Z" -->
+#### Claude
+Let me read the DOC-7 sections relevant to schema design.
+
+I have enough context. Let me check the test convention and then update the ticket body with my decisions before coding.
+
+Now let me update the ticket body — preserve existing, append decisions section.
+
+Vitest can't resolve the workspace package. I'll add it as a workspace dep on the root.
+
+All 23 tests pass. Let me also run the build to confirm TypeScript compiles cleanly.
+
+Ambiguity from `export *` re-exporting both the Zod schema (value) and the inferred type with the same name. Use `export type *` for types.
+
+Cleaner approach: declare types alongside schemas in schema.ts (idiomatic Zod). Drop types.ts.
+
+Build clean, 23/23 tests pass. Let me verify full-repo build and check `xgd quality`.
+
+Quality not yet configured for this project. All gates I can run pass (build clean, 23/23 tests). Moving to commit + ticket update.
+
+REQ-3 done.
+
+**What shipped** (commit `b87903673`, `[FREE-CODED]`):
+- `packages/site-schema/src/{schema,validate,index}.ts` — Zod schemas with derived TS types via `z.infer`, `validateSite()` returning `Result<Site, ValidationError[]>` with JSON-pointer paths.
+- Theme token slots locked per the decisions you approved (palette, typography family/scale, spacing, radius, shadow, container, breakpoints).
+- Structural uniqueness: module IDs within page, page slugs within site. Catalog membership intentionally **not** validated — framework's job per DOC-7 §6.5.
+- `packages/site-schema/{package.json,tsconfig.json}` — ESM, zod dep, `dist/` output, added as workspace dep on root so vitest can resolve it.
+- 8 UAT tests under `tests/test_UAT_FC_REQ-3_*.test.ts` + a shared `_fixtures_REQ-3_site.ts`.
+
+**Verification**: `pnpm -r build` clean (tsc no errors). `pnpm test` → 23/23 passing (12 of those new for REQ-3, more than 8 because two tests have multiple `it` blocks).
+
+**Ticket**: status `free_coded`, `commits=[b87903673...]`, body preserved with implementation decisions appended.
+
+**Unblocks** REQ-4, REQ-5, REQ-6 as noted in the ticket.
 
 <!-- xgd-chat-end -->
