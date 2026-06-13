@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-7
 created_by: xgd
 created_at: '2026-06-12T23:30:43.808296+00:00'
-updated_at: '2026-06-13T19:16:34.571682+00:00'
+updated_at: '2026-06-13T19:16:43.528898+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -135,5 +135,29 @@ REQ-7 is complete and parked at `free_coded`.
 <!-- xgd-chat role="user" ts="2026-06-13T19:16:21.081Z" -->
 #### You
 What's new with this ticket that I can see?
+
+<!-- xgd-turn id="132341ca-9329-4f55-9c7d-6cfda36849c5-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T19:16:43.499Z" -->
+#### Claude
+Honest answer: not much is immediately visible until the operator setup is done. What you can see right now:
+
+**On disk / in git** (commit `fa41944`):
+- `db/migrations/0001_create_leads.sql` — the leads table
+- `apps/public-site/src/forms.ts` — the new handler
+- 14 new `test_UAT_FC_REQ-7_*` tests + 2 helpers
+- `apps/public-site/wrangler.toml` now declares the `LEADS_DB` binding
+
+**Verifiable locally:**
+- `pnpm vitest run` — all 112 tests pass
+- `pnpm dryrun:public` — output now lists `D1 Databases: LEADS_DB: 1stcontact-prod` and `Vars: SITE_ID, TURNSTILE_SITE_KEY, ...` in the bindings block
+- `pnpm dev:public` — the worker boots with a local D1; if you `wrangler d1 execute LEADS_DB --local --file=db/migrations/0001_create_leads.sql` first, you can `curl -X POST http://localhost:8787/api/forms/contact -H 'content-type: application/json' -d '{"email":"you@example.com"}'` and see a row land in the local D1 (`wrangler d1 execute LEADS_DB --local --command "SELECT * FROM leads"`).
+
+**In the ticket** (`xgd ticket get request-dc524eaa`):
+- Status flipped from `draft` → `free_coded`
+- `fields.commits` populated with the SHA
+- Body has a new `## What landed (post-implementation, 2026-06-13)` section with implementation choices and the 11-step operator pre-deploy checklist
+
+**Not yet visible** (needs operator setup): the form on `1stcontact.io` doesn't capture real leads yet — D1 database, Turnstile site key/secret, and Resend API key all have to be provisioned out-of-band first (steps 1–11 in the ticket body).
 
 <!-- xgd-chat-end -->
