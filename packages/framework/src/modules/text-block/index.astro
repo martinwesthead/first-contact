@@ -1,0 +1,157 @@
+---
+export interface Props {
+  variant: "prose" | "landing";
+  heading?: string;
+  body: string;
+  dials?: {
+    size?: "sm" | "md" | "lg";
+    textAlign?: "left" | "center";
+    spacingTop?: string;
+    spacingBottom?: string;
+    surface?: "default" | "subtle" | "inverse" | "accent";
+  };
+}
+
+const { variant, heading, body, dials = {} } = Astro.props;
+const size = dials.size ?? "md";
+const textAlign = dials.textAlign ?? "left";
+const surface = dials.surface ?? "default";
+const spacingTop = dials.spacingTop ?? "8";
+const spacingBottom = dials.spacingBottom ?? "8";
+---
+
+<section
+  class:list={[
+    "fc-text-block",
+    `fc-text-block--variant-${variant}`,
+    `fc-text-block--size-${size}`,
+    `fc-text-block--align-${textAlign}`,
+    `fc-text-block--surface-${surface}`,
+    `fc-text-block--space-top-${spacingTop}`,
+    `fc-text-block--space-bottom-${spacingBottom}`,
+  ]}
+  data-module="text-block"
+  data-variant={variant}
+>
+  <div class="fc-text-block__inner">
+    {heading && <h2 class="fc-text-block__heading">{heading}</h2>}
+    <div class="fc-text-block__body" set:html={body} />
+  </div>
+</section>
+
+<style>
+  .fc-text-block {
+    color: var(--color-text);
+    background: var(--color-bg);
+  }
+  .fc-text-block--surface-subtle { background: var(--color-surface-subtle); }
+  .fc-text-block--surface-inverse {
+    background: var(--color-surface-inverse);
+    color: var(--color-bg);
+  }
+  .fc-text-block--surface-accent {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .fc-text-block--space-top-0 { padding-top: var(--space-0); }
+  .fc-text-block--space-top-1 { padding-top: var(--space-1); }
+  .fc-text-block--space-top-2 { padding-top: var(--space-2); }
+  .fc-text-block--space-top-3 { padding-top: var(--space-3); }
+  .fc-text-block--space-top-4 { padding-top: var(--space-4); }
+  .fc-text-block--space-top-6 { padding-top: var(--space-6); }
+  .fc-text-block--space-top-8 { padding-top: var(--space-8); }
+  .fc-text-block--space-top-12 { padding-top: var(--space-12); }
+  .fc-text-block--space-top-16 { padding-top: var(--space-16); }
+  .fc-text-block--space-top-24 { padding-top: var(--space-24); }
+  .fc-text-block--space-bottom-0 { padding-bottom: var(--space-0); }
+  .fc-text-block--space-bottom-1 { padding-bottom: var(--space-1); }
+  .fc-text-block--space-bottom-2 { padding-bottom: var(--space-2); }
+  .fc-text-block--space-bottom-3 { padding-bottom: var(--space-3); }
+  .fc-text-block--space-bottom-4 { padding-bottom: var(--space-4); }
+  .fc-text-block--space-bottom-6 { padding-bottom: var(--space-6); }
+  .fc-text-block--space-bottom-8 { padding-bottom: var(--space-8); }
+  .fc-text-block--space-bottom-12 { padding-bottom: var(--space-12); }
+  .fc-text-block--space-bottom-16 { padding-bottom: var(--space-16); }
+  .fc-text-block--space-bottom-24 { padding-bottom: var(--space-24); }
+
+  .fc-text-block__inner {
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .fc-text-block--variant-prose .fc-text-block__inner {
+    max-width: var(--container-narrow);
+  }
+  .fc-text-block--variant-landing .fc-text-block__inner {
+    max-width: var(--container-default);
+  }
+  .fc-text-block--align-center .fc-text-block__inner { text-align: center; }
+
+  .fc-text-block__heading {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+  }
+  .fc-text-block--size-sm .fc-text-block__heading { font-size: var(--font-size-xl); }
+  .fc-text-block--size-md .fc-text-block__heading { font-size: var(--font-size-2xl); }
+  .fc-text-block--size-lg .fc-text-block__heading { font-size: var(--font-size-3xl); }
+
+  .fc-text-block__body {
+    font-family: var(--font-family-body);
+    line-height: var(--line-height-relaxed);
+    color: inherit;
+  }
+  .fc-text-block--size-sm .fc-text-block__body { font-size: var(--font-size-base); }
+  .fc-text-block--size-md .fc-text-block__body { font-size: var(--font-size-lg); }
+  .fc-text-block--size-lg .fc-text-block__body { font-size: var(--font-size-xl); }
+
+  .fc-text-block__body :global(p) { margin: 0 0 var(--space-3); }
+  .fc-text-block__body :global(ul),
+  .fc-text-block__body :global(ol) {
+    margin: 0 0 var(--space-3);
+    padding-inline-start: var(--space-6);
+  }
+  .fc-text-block__body :global(li) { margin-bottom: var(--space-1); }
+  .fc-text-block__body :global(a) { color: var(--color-primary); }
+  .fc-text-block__body :global(blockquote) {
+    margin: var(--space-3) 0;
+    padding-inline-start: var(--space-3);
+    border-inline-start: 3px solid var(--color-border);
+    color: var(--color-muted);
+  }
+  .fc-text-block__body :global(code) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+    background: var(--color-surface-subtle);
+    padding: 0 0.25rem;
+    border-radius: var(--radius-sm);
+  }
+  .fc-text-block__body :global(pre) {
+    background: var(--color-surface-subtle);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+  }
+  .fc-text-block__body :global(pre) :global(code) {
+    background: transparent;
+    padding: 0;
+  }
+  .fc-text-block__body :global(img) {
+    max-width: 100%;
+    height: auto;
+    loading: lazy;
+    border-radius: var(--radius-md);
+  }
+  .fc-text-block__body :global(h1),
+  .fc-text-block__body :global(h2),
+  .fc-text-block__body :global(h3) {
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    margin: var(--space-4) 0 var(--space-2);
+  }
+</style>
