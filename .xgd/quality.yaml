@@ -1,0 +1,21 @@
+meta:
+  schema_version: 1
+  ownership: auto
+  locked: false
+suites:
+- name: javascript-vitest
+  plugin: ai.gendevlabs.javascript_vitest_open
+  language: javascript
+  framework: vitest
+  config:
+    test_mode: node
+    source_dirs:
+    - .
+    test_dirs:
+    - tests
+    per_test_timeout: 30000
+    lint:
+      tool: eslint
+    build:
+      tool: tsc
+    extra_args: []
