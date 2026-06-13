@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-7
 created_by: xgd
 created_at: '2026-06-12T23:30:43.808296+00:00'
-updated_at: '2026-06-13T19:00:09.973427+00:00'
+updated_at: '2026-06-13T19:10:28.945319+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -79,5 +79,55 @@ Operator out-of-band tasks: `wrangler d1 create 1stcontact-prod`, apply migratio
 <!-- xgd-chat role="user" ts="2026-06-13T18:57:06.920Z" -->
 #### You
 Please free code this
+
+<!-- xgd-turn id="5a1fe94f-fa92-4eeb-a7dc-b770433ad1aa-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T19:10:28.917Z" -->
+#### Claude
+I have enough context. Let me start building. First, the migration:
+
+Now the form handler. I'll factor it into a separate testable function:
+
+Now the Turnstile widget loading. I'll update the contact-form module to load the Turnstile API script and the client to attach the token, and update the generator to emit the site-key meta tag.
+
+Now I need to wire Turnstile script loading via the generator. Let me update the renderer:
+
+Let me write the tests. First a helper that creates a Miniflare-backed D1 with the migration applied:
+
+I need to add `miniflare` as a top-level devDep so tests can `import { Miniflare }`. It's already a transitive dep — just promoting it.
+
+Miniflare D1 works. Now writing the UATs:
+
+Migration UATs pass. Now the handler UATs:
+
+Now the client-side Turnstile token UAT and generator UAT:
+
+The REQ-6 form-stub tests are superseded by REQ-7's real-handler tests. Removing them:
+
+Now let me run the full test suite to make sure nothing else broke:
+
+Let me check if the parallel failure is from my new Miniflare subprocess churn:
+
+All 112 tests passing reliably. The earlier failure was flake from parallel `unstable_dev` boot. Now let me check the build/lint:
+
+All builds pass, type-check clean. Let me also run a quick wrangler dryrun to confirm the worker compiles:
+
+Worker compiles, D1 binding registered. Now version bump, commit, ticket update.
+
+Now I need to update the ticket body to reflect what's actually built — the prior body still describes the plan. Per the handoff rule, I'll append a "What landed" section while preserving the original scope content:
+
+REQ-7 is complete and parked at `free_coded`.
+
+**What landed in `fa41944`:**
+- `db/migrations/0001_create_leads.sql` — leads schema (15 columns + 2 indexes), CRM Lite lifecycle states pre-baked
+- `apps/public-site/src/forms.ts` — testable `handleContactSubmission(request, env, deps)` factored out: parse → honeypot → email validate → Turnstile verify → D1 INSERT → Resend best-effort. Resend failure does not fail the request.
+- `apps/public-site/wrangler.toml` — `LEADS_DB` binding (top-level + production), vars, documented secrets
+- Turnstile widget loading: generator emits `<meta>` + script tag (gated on `TURNSTILE_SITE_KEY` env at build time); client reads `window.turnstile.getResponse()` and attaches `turnstile_token`
+- 14 REQ-7 UATs (all pass under parallel and serial); deleted 3 obsolete REQ-6 stub tests
+- `miniflare ^3.20250718.3` promoted to a top-level devDep so the handler can be tested against a real in-process D1
+
+**112/112 tests pass; build clean; `pnpm dryrun:public` succeeds.**
+
+**Operator pre-deploy steps** are documented in the ticket body (D1 create + migration apply, Turnstile site setup, Resend account + domain verification, secrets `wrangler secret put`). Ticket is parked at `free_coded` — promote to `ready_to_reconcile` when ready.
 
 <!-- xgd-chat-end -->
