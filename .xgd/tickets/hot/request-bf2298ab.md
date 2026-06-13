@@ -5,9 +5,9 @@ type: request
 title: 'site-schema package: types + runtime validation for site definitions'
 created_by: xgd
 created_at: '2026-06-12T23:06:27.302957+00:00'
-updated_at: '2026-06-13T00:09:23.283470+00:00'
+updated_at: '2026-06-13T00:09:40.909663+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: commits
 status: ready_to_reconcile
 fields:
   auto_merge_back: true
@@ -15,7 +15,7 @@ fields:
   priority: medium
   story_points: 2
   commits:
-  - b87903673a1817a9ced690a7daad233f9d7ac28a
+  - e34f13e23054bab8c4c4e9457601b24aec62de1b
 ---
 
 ## Scope
