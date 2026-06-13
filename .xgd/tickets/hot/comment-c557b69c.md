@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-4
 created_by: xgd
 created_at: '2026-06-12T23:30:26.060463+00:00'
-updated_at: '2026-06-13T00:28:38.137931+00:00'
+updated_at: '2026-06-13T00:28:57.588702+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -153,5 +153,47 @@ The question prompt didn't go through again. I'll wait for your call — these a
 <!-- xgd-chat role="user" ts="2026-06-13T00:28:13.896Z" -->
 #### You
 I don't understand the trade-off for the tests or the font naming
+
+<!-- xgd-turn id="d523de3a-8dd4-4ccd-9325-0fcbd1b0105f-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T00:28:56.486Z" -->
+#### Claude
+Let me explain each more concretely.
+
+### Q1: Astro test setup
+
+REQ-4's ticket body explicitly commits to both:
+- modules as `.astro` files
+- tests via the `astro/container` API
+
+So the question is whether to follow the ticket literally or relax that.
+
+**"Wire up Astro now" means**:
+- Add `astro` to `packages/framework`'s deps and the root workspace
+- Configure `vitest` to handle `.astro` files via Astro's container API (which SSR-renders a component to an HTML string for assertion)
+- Write `header/index.astro`, `hero/index.astro`, `footer/index.astro`
+- Slightly more moving parts in this REQ (Astro version pin, container API setup)
+
+**"Plain TS for v1" means**:
+- No new deps. Each module exports `render(props): string` that returns an HTML string
+- Tests just call the function and check the string
+- When REQ-6 (`tools/generate`) wires Astro in for the static build, these three modules get rewritten as `.astro` files — small but real rework
+
+Net trade-off: shipping shape now (`.astro`, matches DOC-7 §9.1) vs. less infrastructure in this REQ (TS functions, defer Astro to REQ-6).
+
+### Q2: Font naming
+
+This is purely a naming convention — both shapes encode the same two fonts.
+
+**Flat** (REQ-4): `tokens.fontDisplay`, `tokens.fontBody` → CSS vars `--font-display`, `--font-body`
+**Nested** (site-schema today): `tokens.family.heading`, `tokens.family.body` → CSS vars `--font-family-heading`, `--font-family-body`
+
+Trade-off:
+- **Flat** is terser and matches REQ-4's locked spec. Updating site-schema means changing the existing fixture/UATs from REQ-3 to use the new shape (small change, few lines)
+- **Nested** keeps REQ-3's existing schema/fixtures untouched. Only the REQ-4 ticket body needs reword
+
+There's no deep architectural difference — pick whichever shape you prefer to live with. I'd lean **flat** because it matches the prior chat lock-in and the spec we're implementing against.
+
+The structured prompt isn't going through on your client — please answer in chat. Once you pick one option from each, I'll get started.
 
 <!-- xgd-chat-end -->
