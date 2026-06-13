@@ -5,9 +5,9 @@ type: comment
 title: Comment on request REQ-7
 created_by: xgd
 created_at: '2026-06-12T23:30:43.808296+00:00'
-updated_at: '2026-06-12T23:30:43.808296+00:00'
+updated_at: '2026-06-13T19:00:09.973427+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: null
 fields:
   subject_uid: request-dc524eaa
@@ -73,5 +73,11 @@ Handler ordering: parse + content-type check → honeypot check (drops silently 
 Site-id hardcoded to `1stcontact` in this REQ; per-site routing comes with customer site support.
 
 Operator out-of-band tasks: `wrangler d1 create 1stcontact-prod`, apply migration, set up Turnstile site for `1stcontact.io`, Resend account + verified sending domain, `wrangler secret put` for `TURNSTILE_SECRET` and `RESEND_API_KEY`.
+
+<!-- xgd-turn id="5a1fe94f-fa92-4eeb-a7dc-b770433ad1aa-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T18:57:06.920Z" -->
+#### You
+Please free code this
 
 <!-- xgd-chat-end -->
