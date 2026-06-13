@@ -5,15 +5,17 @@ type: request
 title: tools/generate + 1st Contact marketing site definition + wire public-site
 created_by: xgd
 created_at: '2026-06-12T23:06:53.211523+00:00'
-updated_at: '2026-06-13T17:26:30.070800+00:00'
+updated_at: '2026-06-13T17:26:54.471576+00:00'
 completed_at: null
-last_field_updated: body
-status: in_progress
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
-  story_points: 4
+  story_points: 5
+  commits:
+  - bce23fdc1d1d393cfe65b73593a0e5c140341def
 ---
 
 ## Scope
