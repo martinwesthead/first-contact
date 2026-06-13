@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-4
 created_by: xgd
 created_at: '2026-06-12T23:30:26.060463+00:00'
-updated_at: '2026-06-13T00:17:40.052867+00:00'
+updated_at: '2026-06-13T00:17:55.497268+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -136,5 +136,16 @@ It looks like the question prompt was dismissed. I'll wait for your direction be
 <!-- xgd-chat role="user" ts="2026-06-13T00:16:29.700Z" -->
 #### You
 Please use the super set of roles and options and please update the documentation so everything is consistent
+
+<!-- xgd-turn id="51bbd1f4-f2e2-40dc-9411-76efff19782c-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T00:17:54.464Z" -->
+#### Claude
+Got it — superset it is. Before I start writing code I still need your call on Q2 (Astro test setup), and one detail to lock the spec:
+
+The question prompt didn't go through again. I'll wait for your call — these are the two open decisions before I start writing:
+
+1. **Astro test setup**: wire it up now, or write modules as plain TS render functions and defer Astro to REQ-6?
+2. **Font token naming**: flat (`fontDisplay`/`fontBody`, REQ-4) or nested (`family.heading`/`family.body`, site-schema) for the superset?
 
 <!-- xgd-chat-end -->
