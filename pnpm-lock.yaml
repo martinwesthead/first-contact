@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@1stcontact/site-schema':
+        specifier: workspace:*
+        version: link:packages/site-schema
       '@cloudflare/workers-types':
         specifier: ^4.20250601.0
         version: 4.20260612.1
@@ -55,7 +58,15 @@ importers:
 
   packages/framework: {}
 
-  packages/site-schema: {}
+  packages/site-schema:
+    dependencies:
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
 
   packages/ui-kit: {}
 
@@ -1131,6 +1142,9 @@ packages:
   zod@3.22.3:
     resolution: {integrity: sha512-EjIevzuJRiRPbVH4mGc8nApb/lVLKVpmUhAaR5R5doKGfAnGJ6Gr3CViAVjP+4FWSxCsybeWQdcgCtbX+7oZug==}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@cloudflare/kv-asset-handler@0.3.4':
@@ -2023,3 +2037,5 @@ snapshots:
       stacktracey: 2.2.0
 
   zod@3.22.3: {}
+
+  zod@3.25.76: {}
