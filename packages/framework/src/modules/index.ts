@@ -9,6 +9,7 @@ export {
   type ContentValidationIssue,
   type ContentValidationResult,
 } from "./validate.js";
+export { loadModuleStyles } from "./styles.js";
 export { meta as headerMeta } from "./header/meta.js";
 export { meta as heroMeta } from "./hero/meta.js";
 export { meta as footerMeta } from "./footer/meta.js";

@@ -1,0 +1,260 @@
+{
+  "config": {
+    "businessName": "1st Contact",
+    "tagline": "Stop worrying about your website.",
+    "contact": {
+      "email": "hello@1stcontact.io"
+    }
+  },
+  "theme": {
+    "palette": {
+      "bg": "#ffffff",
+      "surface": "#f8fafc",
+      "surfaceSubtle": "#f1f5f9",
+      "surfaceInverse": "#0f172a",
+      "text": "#0f172a",
+      "muted": "#64748b",
+      "primary": "#2563eb",
+      "accent": "#f59e0b",
+      "border": "#e2e8f0"
+    },
+    "typography": {
+      "family": {
+        "heading": "'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif",
+        "body": "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif"
+      },
+      "scale": {
+        "xs": "0.75rem",
+        "sm": "0.875rem",
+        "base": "1rem",
+        "lg": "1.125rem",
+        "xl": "1.25rem",
+        "2xl": "1.5rem",
+        "3xl": "1.875rem",
+        "4xl": "2.5rem",
+        "5xl": "3.5rem"
+      },
+      "weights": {
+        "regular": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700",
+        "black": "900"
+      },
+      "lineHeights": {
+        "tight": "1.15",
+        "normal": "1.5",
+        "relaxed": "1.75"
+      }
+    },
+    "spacing": {
+      "0": "0",
+      "1": "0.25rem",
+      "2": "0.5rem",
+      "3": "0.75rem",
+      "4": "1rem",
+      "6": "1.5rem",
+      "8": "2rem",
+      "12": "3rem",
+      "16": "4rem",
+      "24": "6rem"
+    },
+    "radius": {
+      "none": "0",
+      "sm": "0.25rem",
+      "md": "0.5rem",
+      "lg": "1rem",
+      "full": "9999px"
+    },
+    "shadow": {
+      "none": "none",
+      "sm": "0 1px 2px rgba(15, 23, 42, 0.05)",
+      "md": "0 4px 6px rgba(15, 23, 42, 0.08)",
+      "lg": "0 12px 24px rgba(15, 23, 42, 0.12)"
+    },
+    "container": {
+      "narrow": "45rem",
+      "default": "72rem",
+      "wide": "80rem",
+      "bleed": "100%"
+    },
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    }
+  },
+  "nav": {
+    "pattern": "in-page-anchors",
+    "entries": [
+      {
+        "label": "How it works",
+        "target": { "kind": "anchor", "pageId": "home", "moduleId": "how-it-works" }
+      },
+      {
+        "label": "About",
+        "target": { "kind": "anchor", "pageId": "home", "moduleId": "about" }
+      },
+      {
+        "label": "Contact",
+        "target": { "kind": "anchor", "pageId": "home", "moduleId": "contact" }
+      }
+    ]
+  },
+  "pages": [
+    {
+      "id": "home",
+      "slug": "/",
+      "title": "1st Contact — Stop worrying about your website",
+      "seoMeta": {
+        "title": "1st Contact — Stop worrying about your website",
+        "description": "An AI website caretaker for small businesses. We build, maintain, and operate your digital presence so you don't have to."
+      },
+      "modules": [
+        {
+          "id": "site-header",
+          "type": "header",
+          "version": 1,
+          "variant": "top-nav",
+          "content": {
+            "logo": "1st Contact",
+            "entries": [
+              {
+                "label": "How it works",
+                "target": { "kind": "anchor", "pageId": "home", "moduleId": "how-it-works" }
+              },
+              {
+                "label": "About",
+                "target": { "kind": "anchor", "pageId": "home", "moduleId": "about" }
+              },
+              {
+                "label": "Contact",
+                "target": { "kind": "anchor", "pageId": "home", "moduleId": "contact" }
+              }
+            ]
+          }
+        },
+        {
+          "id": "hero",
+          "type": "hero",
+          "version": 1,
+          "variant": "bg-color",
+          "dials": {
+            "size": "lg",
+            "align": "center",
+            "surface": "subtle",
+            "spacingTop": "16",
+            "spacingBottom": "16"
+          },
+          "content": {
+            "eyebrow": "AI website caretaker",
+            "heading": "Stop worrying about your website.",
+            "subhead": "<p>We build it, maintain it, and operate it. You run your business. One subscription. No tickets, no agencies, no missed leads.</p>",
+            "cta": {
+              "label": "Join early access",
+              "href": "#contact"
+            }
+          }
+        },
+        {
+          "id": "how-it-works",
+          "type": "text-block",
+          "version": 1,
+          "variant": "landing",
+          "dials": {
+            "size": "md",
+            "textAlign": "center",
+            "spacingTop": "16",
+            "spacingBottom": "8"
+          },
+          "content": {
+            "heading": "How it works",
+            "body": "<p>Most small businesses don't need an agency. They need a website that quietly does its job — looks right, answers questions, captures leads, never breaks. We give you that, end to end, for the price of a streaming subscription.</p><p>Tell us about your business in plain English. We'll build the site, keep it running, and watch it for you. When something needs to change, just ask.</p>"
+          }
+        },
+        {
+          "id": "services",
+          "type": "services-grid",
+          "version": 1,
+          "variant": "three-col",
+          "dials": {
+            "gap": "normal",
+            "surface": "default",
+            "spacingTop": "8",
+            "spacingBottom": "16"
+          },
+          "content": {
+            "heading": "Build. Maintain. Operate.",
+            "items": [
+              {
+                "title": "Build",
+                "body": "<p>A modern, responsive site shaped to your business. Fast, accessible, mobile-first. No template feel — your voice, your brand.</p>"
+              },
+              {
+                "title": "Maintain",
+                "body": "<p>We watch availability, broken links, SSL, forms, SEO. When something drifts, we fix it before you notice. Your site stays sharp.</p>"
+              },
+              {
+                "title": "Operate",
+                "body": "<p>Leads land in one inbox. Quotes and invoices go out through Stripe. You stay focused on the work; we run the digital plumbing.</p>"
+              }
+            ]
+          }
+        },
+        {
+          "id": "about",
+          "type": "text-block",
+          "version": 1,
+          "variant": "prose",
+          "dials": {
+            "size": "md",
+            "textAlign": "left",
+            "surface": "subtle",
+            "spacingTop": "16",
+            "spacingBottom": "16"
+          },
+          "content": {
+            "heading": "A note from us",
+            "body": "<p>Small businesses have been priced out of decent digital presences for too long. Agencies start at $400 a month. DIY builders look like DIY builders. There's a gap, and AI can fill it — if the architecture is right.</p><p>1st Contact is what we'd want for a friend running a catering company, a coaching practice, or a small trade: a website that just works, watched over by people (and machines) who care that it does.</p>"
+          }
+        },
+        {
+          "id": "contact",
+          "type": "contact-form",
+          "version": 1,
+          "variant": "inline",
+          "dials": {
+            "align": "center",
+            "spacingTop": "16",
+            "spacingBottom": "16"
+          },
+          "content": {
+            "heading": "Join early access",
+            "subhead": "<p>Tell us a little about your business. We'll be in touch as we open access.</p>",
+            "action": "/api/forms/contact",
+            "submitLabel": "Request early access",
+            "successMessage": "<p>Thanks — we'll be in touch as soon as we open the next batch.</p>",
+            "fields": [
+              { "name": "name", "label": "Your name", "type": "text", "required": true },
+              { "name": "email", "label": "Email", "type": "email", "required": true },
+              { "name": "business", "label": "Business name", "type": "text", "required": false },
+              { "name": "message", "label": "What kind of business?", "type": "textarea", "required": false }
+            ]
+          }
+        },
+        {
+          "id": "site-footer",
+          "type": "footer",
+          "version": 1,
+          "variant": "minimal",
+          "content": {
+            "logo": "1st Contact",
+            "copyrightHolder": "GenDev Labs",
+            "copyrightYear": "2026"
+          }
+        }
+      ]
+    }
+  ]
+}
