@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-4
 created_by: xgd
 created_at: '2026-06-12T23:30:26.060463+00:00'
-updated_at: '2026-06-13T00:28:57.588702+00:00'
+updated_at: '2026-06-13T00:58:26.615854+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -195,5 +195,12 @@ Trade-off:
 There's no deep architectural difference — pick whichever shape you prefer to live with. I'd lean **flat** because it matches the prior chat lock-in and the spec we're implementing against.
 
 The structured prompt isn't going through on your client — please answer in chat. Once you pick one option from each, I'll get started.
+
+<!-- xgd-turn id="878c6a19-f2ec-49ec-9d24-5274bbd85958-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T00:57:56.100Z" -->
+#### You
+1. Lets just do it right from the start
+   I think nested looks better - thanks for making everythign consistent
 
 <!-- xgd-chat-end -->
