@@ -1,9 +1,15 @@
+import ContactForm from "./contact-form/index.astro";
+import { meta as contactFormMeta } from "./contact-form/meta.js";
 import Footer from "./footer/index.astro";
 import { meta as footerMeta } from "./footer/meta.js";
 import Header from "./header/index.astro";
 import { meta as headerMeta } from "./header/meta.js";
 import Hero from "./hero/index.astro";
 import { meta as heroMeta } from "./hero/meta.js";
+import ServicesGrid from "./services-grid/index.astro";
+import { meta as servicesGridMeta } from "./services-grid/meta.js";
+import TextBlock from "./text-block/index.astro";
+import { meta as textBlockMeta } from "./text-block/meta.js";
 import type { ModuleEntry } from "./types.js";
 
 export class CatalogMissError extends Error {
@@ -25,6 +31,15 @@ const REGISTRY: Record<string, Record<number, ModuleEntry>> = {
   [headerMeta.id]: { [headerMeta.version]: { meta: headerMeta, Component: Header } },
   [heroMeta.id]: { [heroMeta.version]: { meta: heroMeta, Component: Hero } },
   [footerMeta.id]: { [footerMeta.version]: { meta: footerMeta, Component: Footer } },
+  [textBlockMeta.id]: {
+    [textBlockMeta.version]: { meta: textBlockMeta, Component: TextBlock },
+  },
+  [servicesGridMeta.id]: {
+    [servicesGridMeta.version]: { meta: servicesGridMeta, Component: ServicesGrid },
+  },
+  [contactFormMeta.id]: {
+    [contactFormMeta.version]: { meta: contactFormMeta, Component: ContactForm },
+  },
 };
 
 export function getModule(id: string, version: number): ModuleEntry {

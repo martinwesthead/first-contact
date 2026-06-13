@@ -1,0 +1,245 @@
+---
+export interface ContactFormField {
+  name: string;
+  label: string;
+  type: "text" | "email" | "tel" | "textarea";
+  required: boolean;
+}
+
+export interface Props {
+  variant: "inline";
+  heading?: string;
+  subhead?: string;
+  action: string;
+  fields: ContactFormField[];
+  submitLabel?: string;
+  successMessage?: string;
+  dials?: {
+    align?: "left" | "center";
+    spacingTop?: string;
+    spacingBottom?: string;
+    surface?: "default" | "subtle" | "inverse" | "accent";
+  };
+}
+
+const {
+  variant,
+  heading,
+  subhead,
+  action,
+  fields,
+  submitLabel = "Send",
+  successMessage,
+  dials = {},
+} = Astro.props;
+
+const align = dials.align ?? "left";
+const surface = dials.surface ?? "default";
+const spacingTop = dials.spacingTop ?? "12";
+const spacingBottom = dials.spacingBottom ?? "12";
+---
+
+<section
+  class:list={[
+    "fc-contact-form",
+    `fc-contact-form--align-${align}`,
+    `fc-contact-form--surface-${surface}`,
+    `fc-contact-form--space-top-${spacingTop}`,
+    `fc-contact-form--space-bottom-${spacingBottom}`,
+  ]}
+  data-module="contact-form"
+  data-variant={variant}
+  data-fc-contact-form-root
+>
+  <div class="fc-contact-form__inner">
+    {heading && <h2 class="fc-contact-form__heading">{heading}</h2>}
+    {subhead && <div class="fc-contact-form__subhead" set:html={subhead} />}
+
+    <form
+      class="fc-contact-form__form"
+      method="post"
+      action={action}
+      data-fc-contact-form
+    >
+      {
+        fields.map((field) => {
+          const inputId = `fc-contact-${field.name}`;
+          return (
+            <div class="fc-contact-form__row">
+              <label class="fc-contact-form__label" for={inputId}>
+                {field.label}
+                {field.required && <span aria-hidden="true"> *</span>}
+              </label>
+              {field.type === "textarea" ? (
+                <textarea
+                  id={inputId}
+                  name={field.name}
+                  required={field.required}
+                  rows="5"
+                  class="fc-contact-form__input fc-contact-form__input--textarea"
+                />
+              ) : (
+                <input
+                  id={inputId}
+                  name={field.name}
+                  type={field.type}
+                  required={field.required}
+                  class="fc-contact-form__input"
+                />
+              )}
+            </div>
+          );
+        })
+      }
+
+      <div class="fc-contact-form__honeypot" aria-hidden="true">
+        <label for="fc-contact-website">Website (leave blank)</label>
+        <input
+          id="fc-contact-website"
+          type="text"
+          name="website"
+          tabindex="-1"
+          autocomplete="off"
+          data-fc-honeypot
+        />
+      </div>
+
+      <div
+        class="fc-contact-form__turnstile"
+        data-turnstile-target
+        aria-hidden="true"
+      ></div>
+
+      <button class="fc-contact-form__submit" type="submit">{submitLabel}</button>
+    </form>
+
+    {
+      successMessage && (
+        <div data-fc-success-message hidden set:html={successMessage} />
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .fc-contact-form {
+    color: var(--color-text);
+    background: var(--color-bg);
+  }
+  .fc-contact-form--surface-subtle { background: var(--color-surface-subtle); }
+  .fc-contact-form--surface-inverse {
+    background: var(--color-surface-inverse);
+    color: var(--color-bg);
+  }
+  .fc-contact-form--surface-accent {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .fc-contact-form--space-top-0 { padding-top: var(--space-0); }
+  .fc-contact-form--space-top-1 { padding-top: var(--space-1); }
+  .fc-contact-form--space-top-2 { padding-top: var(--space-2); }
+  .fc-contact-form--space-top-3 { padding-top: var(--space-3); }
+  .fc-contact-form--space-top-4 { padding-top: var(--space-4); }
+  .fc-contact-form--space-top-6 { padding-top: var(--space-6); }
+  .fc-contact-form--space-top-8 { padding-top: var(--space-8); }
+  .fc-contact-form--space-top-12 { padding-top: var(--space-12); }
+  .fc-contact-form--space-top-16 { padding-top: var(--space-16); }
+  .fc-contact-form--space-top-24 { padding-top: var(--space-24); }
+  .fc-contact-form--space-bottom-0 { padding-bottom: var(--space-0); }
+  .fc-contact-form--space-bottom-1 { padding-bottom: var(--space-1); }
+  .fc-contact-form--space-bottom-2 { padding-bottom: var(--space-2); }
+  .fc-contact-form--space-bottom-3 { padding-bottom: var(--space-3); }
+  .fc-contact-form--space-bottom-4 { padding-bottom: var(--space-4); }
+  .fc-contact-form--space-bottom-6 { padding-bottom: var(--space-6); }
+  .fc-contact-form--space-bottom-8 { padding-bottom: var(--space-8); }
+  .fc-contact-form--space-bottom-12 { padding-bottom: var(--space-12); }
+  .fc-contact-form--space-bottom-16 { padding-bottom: var(--space-16); }
+  .fc-contact-form--space-bottom-24 { padding-bottom: var(--space-24); }
+
+  .fc-contact-form__inner {
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .fc-contact-form--align-center .fc-contact-form__inner { text-align: center; }
+
+  .fc-contact-form__heading {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-2xl);
+    line-height: var(--line-height-tight);
+  }
+  .fc-contact-form__subhead {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-muted);
+  }
+
+  .fc-contact-form__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    text-align: start;
+  }
+  .fc-contact-form__row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .fc-contact-form__label {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+  .fc-contact-form__input {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-base);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+  .fc-contact-form__input--textarea { resize: vertical; min-height: 7rem; }
+
+  .fc-contact-form__honeypot {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .fc-contact-form__submit {
+    align-self: flex-start;
+    background: var(--color-primary);
+    color: var(--color-bg);
+    border: none;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+    cursor: pointer;
+  }
+  .fc-contact-form__submit:hover { background: var(--color-accent); }
+  .fc-contact-form__submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .fc-contact-form__success {
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-subtle);
+    border-radius: var(--radius-md);
+  }
+  .fc-contact-form__error {
+    margin: 0;
+    color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+  }
+</style>

@@ -7,8 +7,9 @@ export type ContentFieldType =
   | "url"
   | "asset-ref-or-string"
   | "nav-entry"
+  | "boolean"
   | { kind: "enum"; values: readonly string[] }
-  | { kind: "list-of"; of: ContentFieldType }
+  | { kind: "list-of"; of: ContentFieldType; min?: number; max?: number }
   | { kind: "object"; fields: ContentSchema };
 
 export interface ContentFieldSpec {

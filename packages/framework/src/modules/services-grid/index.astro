@@ -1,0 +1,202 @@
+---
+import type { AssetRef } from "@1stcontact/site-schema";
+import { isAssetRef } from "../shared.js";
+
+export interface ServicesGridItem {
+  icon?: AssetRef | string;
+  title: string;
+  body: string;
+  cta?: { label: string; href: string };
+}
+
+export interface Props {
+  variant: "three-col" | "two-col";
+  heading?: string;
+  subhead?: string;
+  items: ServicesGridItem[];
+  dials?: {
+    gap?: "tight" | "normal" | "loose";
+    spacingTop?: string;
+    spacingBottom?: string;
+    surface?: "default" | "subtle" | "inverse" | "accent";
+  };
+}
+
+const { variant, heading, subhead, items, dials = {} } = Astro.props;
+const gap = dials.gap ?? "normal";
+const surface = dials.surface ?? "default";
+const spacingTop = dials.spacingTop ?? "12";
+const spacingBottom = dials.spacingBottom ?? "12";
+---
+
+<section
+  class:list={[
+    "fc-services-grid",
+    `fc-services-grid--variant-${variant}`,
+    `fc-services-grid--gap-${gap}`,
+    `fc-services-grid--surface-${surface}`,
+    `fc-services-grid--space-top-${spacingTop}`,
+    `fc-services-grid--space-bottom-${spacingBottom}`,
+  ]}
+  data-module="services-grid"
+  data-variant={variant}
+>
+  <div class="fc-services-grid__inner">
+    {heading && <h2 class="fc-services-grid__heading">{heading}</h2>}
+    {subhead && <div class="fc-services-grid__subhead" set:html={subhead} />}
+    <ul class="fc-services-grid__list" role="list">
+      {
+        items.map((item) => (
+          <li class="fc-services-grid__item">
+            <article class="fc-services-grid__card">
+              {item.icon && (
+                <div class="fc-services-grid__icon">
+                  {isAssetRef(item.icon) ? (
+                    <img src={item.icon.src} alt={item.icon.alt} />
+                  ) : (
+                    <span aria-hidden="true">{item.icon}</span>
+                  )}
+                </div>
+              )}
+              <h3 class="fc-services-grid__title">{item.title}</h3>
+              <div class="fc-services-grid__body" set:html={item.body} />
+              {item.cta && (
+                <a class="fc-services-grid__cta" href={item.cta.href}>
+                  {item.cta.label}
+                </a>
+              )}
+            </article>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .fc-services-grid {
+    color: var(--color-text);
+    background: var(--color-bg);
+  }
+  .fc-services-grid--surface-subtle { background: var(--color-surface-subtle); }
+  .fc-services-grid--surface-inverse {
+    background: var(--color-surface-inverse);
+    color: var(--color-bg);
+  }
+  .fc-services-grid--surface-accent {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .fc-services-grid--space-top-0 { padding-top: var(--space-0); }
+  .fc-services-grid--space-top-1 { padding-top: var(--space-1); }
+  .fc-services-grid--space-top-2 { padding-top: var(--space-2); }
+  .fc-services-grid--space-top-3 { padding-top: var(--space-3); }
+  .fc-services-grid--space-top-4 { padding-top: var(--space-4); }
+  .fc-services-grid--space-top-6 { padding-top: var(--space-6); }
+  .fc-services-grid--space-top-8 { padding-top: var(--space-8); }
+  .fc-services-grid--space-top-12 { padding-top: var(--space-12); }
+  .fc-services-grid--space-top-16 { padding-top: var(--space-16); }
+  .fc-services-grid--space-top-24 { padding-top: var(--space-24); }
+  .fc-services-grid--space-bottom-0 { padding-bottom: var(--space-0); }
+  .fc-services-grid--space-bottom-1 { padding-bottom: var(--space-1); }
+  .fc-services-grid--space-bottom-2 { padding-bottom: var(--space-2); }
+  .fc-services-grid--space-bottom-3 { padding-bottom: var(--space-3); }
+  .fc-services-grid--space-bottom-4 { padding-bottom: var(--space-4); }
+  .fc-services-grid--space-bottom-6 { padding-bottom: var(--space-6); }
+  .fc-services-grid--space-bottom-8 { padding-bottom: var(--space-8); }
+  .fc-services-grid--space-bottom-12 { padding-bottom: var(--space-12); }
+  .fc-services-grid--space-bottom-16 { padding-bottom: var(--space-16); }
+  .fc-services-grid--space-bottom-24 { padding-bottom: var(--space-24); }
+
+  .fc-services-grid__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .fc-services-grid__heading {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-3xl);
+    line-height: var(--line-height-tight);
+    text-align: center;
+  }
+  .fc-services-grid__subhead {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-muted);
+    text-align: center;
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+  }
+
+  .fc-services-grid__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .fc-services-grid--gap-tight .fc-services-grid__list { gap: var(--space-3); }
+  .fc-services-grid--gap-normal .fc-services-grid__list { gap: var(--space-6); }
+  .fc-services-grid--gap-loose .fc-services-grid__list { gap: var(--space-8); }
+
+  @media (min-width: 768px) {
+    .fc-services-grid--variant-two-col .fc-services-grid__list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .fc-services-grid--variant-three-col .fc-services-grid__list {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .fc-services-grid__item { margin: 0; }
+  .fc-services-grid__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    height: 100%;
+    padding: var(--space-6);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  .fc-services-grid__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-2xl);
+    line-height: 1;
+    color: var(--color-primary);
+  }
+  .fc-services-grid__icon img { max-width: 100%; max-height: 100%; }
+  .fc-services-grid__title {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-tight);
+  }
+  .fc-services-grid__body {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: inherit;
+    flex: 1;
+  }
+  .fc-services-grid__cta {
+    align-self: flex-start;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: var(--font-weight-semibold);
+  }
+  .fc-services-grid__cta:hover { color: var(--color-accent); }
+</style>
