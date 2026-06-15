@@ -5,7 +5,7 @@ type: chat
 title: Free Coding validation
 created_by: xgd
 created_at: '2026-06-15T18:28:46.319713+00:00'
-updated_at: '2026-06-15T18:33:28.960783+00:00'
+updated_at: '2026-06-15T18:59:02.787713+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -78,6 +78,39 @@ xgd ticket update REQ-8 --fields '{"commits": ["0b1ba59f9b630b6616526cdc42cd0904
 ```
 
 Want me to apply these?
+
+
+<!-- xgd-turn id="9f804b1f-2d15-4fa2-8a42-887421264e26" -->
+
+<!-- xgd-chat role="user" ts="2026-06-15T18:59:02.730Z" -->
+#### You
+`[FREE-CODED]` marker present on every code commit (8/8). <-- key question: did all of those code commits get added two tickets?
+
+<!-- xgd-chat role="assistant" ts="2026-06-15T18:59:02.730Z" -->
+#### Claude
+Good — let me cross-reference the 8 `[FREE-CODED]` commits on xgd-working against ticket `fields.commits`.
+
+| `[FREE-CODED]` commit on xgd-working | Subject | Ticket claim | Resolvable? |
+|---|---|---|---|
+| `ac174d82…` | scaffold | REQ-1 → `13723afc…` | ❌ orphan (same patch-id) |
+| `f53c9722…` | rename | REQ-2 → `a746b3b5…` | ❌ orphan (same patch-id) |
+| `e34f13e2…` | site-schema | REQ-3 → `e34f13e2…` | ✅ exact match |
+| `d4f8e4d5…` | framework chrome | REQ-4 → `d4f8e4d5…` | ✅ exact match |
+| `1befb476…` | content modules | REQ-5 → `1befb476…` | ✅ exact match |
+| `bce23fdc…` | generator + marketing site | REQ-6 → `bce23fdc…` | ✅ exact match |
+| `fa419444…` | lead-capture | REQ-7 → `fa419444…` | ✅ exact match |
+| `0b1ba59f…` | builder | REQ-8 → `0b1ba59` (short) | ⚠️ resolves but short |
+
+### Answer
+
+**Conceptually yes — every one of the 8 `[FREE-CODED]` commits on `xgd-working` has a ticket that claims it.** No orphan commits with no ticket home.
+
+**Mechanically, 3 of 8 are broken bookkeeping:**
+
+- **REQ-1, REQ-2** — the SHAs they store are *orphans*. Patch-ids match the real commits, so the *intent* is preserved, but `git cat-file -e 13723af` / `a746b3b` both fail. The dispatcher's reconcile cherry-pick will not find these commits. The original commits were re-authored by a rebase/resync, and `fields.commits` was never remapped.
+- **REQ-8** — stores the 7-char short SHA `0b1ba59`. Git can resolve it today (only one match), but it's brittle: any future collision or a strict SHA validator (e.g. `len == 40`) will reject it.
+
+So the rigorous answer to your question: **all 8 code commits were added to tickets, but 3 of those records are stale/non-canonical and would fail a strict dispatcher check.** The three fixes I proposed earlier (remap REQ-1 and REQ-2 to the live SHAs, promote REQ-8 to full SHA) are what's needed to make the bookkeeping match the protocol.
 
 
 <!-- xgd-chat-end -->
