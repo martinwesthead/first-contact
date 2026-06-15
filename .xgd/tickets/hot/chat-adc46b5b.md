@@ -5,7 +5,7 @@ type: chat
 title: Free Coding validation
 created_by: xgd
 created_at: '2026-06-15T18:28:46.319713+00:00'
-updated_at: '2026-06-15T19:02:46.963347+00:00'
+updated_at: '2026-06-15T19:19:56.157334+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -133,6 +133,19 @@ All four updates verified:
 - **BUNDLE-1** — `commits` cleared, status → `abandoned`
 
 REQ-3 and REQ-4 (the two that BUNDLE-1 bundled) still hold their own correct commits and remain at `status: bundled` — you'll likely want to flip them back to `ready_to_reconcile` after your revert so they get picked up fresh. Let me know if you want me to do that too.
+
+
+<!-- xgd-turn id="014eec28-e0a6-457b-86ad-8fd9ebeb9fef" -->
+
+<!-- xgd-chat role="user" ts="2026-06-15T19:19:55.108Z" -->
+#### You
+oh also can you move all the BUNDLE-1 children to "ready_to_reconcile"
+
+<!-- xgd-chat role="assistant" ts="2026-06-15T19:19:55.108Z" -->
+#### Claude
+Confirmed BUNDLE-1 bundles REQ-3 and REQ-4 (from the body sections). Updating both back to `ready_to_reconcile`.
+
+Both verified. REQ-3 and REQ-4 are back at `ready_to_reconcile` with their original commits intact. After your revert, all 8 free-coded REQs will be ready to reconcile fresh, with no BUNDLE-1 in the way.
 
 
 <!-- xgd-chat-end -->
