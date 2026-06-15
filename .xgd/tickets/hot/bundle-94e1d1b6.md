@@ -5,10 +5,10 @@ type: bundle
 title: REQ-1 + REQ-2 + REQ-3 + REQ-4 + REQ-5 + 3 more
 created_by: xgd
 created_at: '2026-06-15T22:41:00.241973+00:00'
-updated_at: '2026-06-15T22:41:00.241973+00:00'
+updated_at: '2026-06-15T22:41:01.789882+00:00'
 completed_at: null
-last_field_updated: created_at
-status: ready_to_reconcile
+last_field_updated: status
+status: reconciling
 fields:
   commits:
   - ac174d821cee8ef8dd6af126e9c2ca2db53b2ddc
