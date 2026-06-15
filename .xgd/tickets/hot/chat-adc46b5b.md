@@ -5,7 +5,7 @@ type: chat
 title: Free Coding validation
 created_by: xgd
 created_at: '2026-06-15T18:28:46.319713+00:00'
-updated_at: '2026-06-15T18:59:02.787713+00:00'
+updated_at: '2026-06-15T19:02:46.963347+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -111,6 +111,28 @@ Good — let me cross-reference the 8 `[FREE-CODED]` commits on xgd-working agai
 - **REQ-8** — stores the 7-char short SHA `0b1ba59`. Git can resolve it today (only one match), but it's brittle: any future collision or a strict SHA validator (e.g. `len == 40`) will reject it.
 
 So the rigorous answer to your question: **all 8 code commits were added to tickets, but 3 of those records are stale/non-canonical and would fail a strict dispatcher check.** The three fixes I proposed earlier (remap REQ-1 and REQ-2 to the live SHAs, promote REQ-8 to full SHA) are what's needed to make the bookkeeping match the protocol.
+
+
+<!-- xgd-turn id="f55e036e-332e-4b8c-a523-87910535a165" -->
+
+<!-- xgd-chat role="user" ts="2026-06-15T19:02:45.886Z" -->
+#### You
+ok can you manually fix the commits for REQ-1 and REQ-2 and REQ-8. Then remove all the commits on BUNDLE-1 and move it to abandoned. I will revert the reconcile and we can start over.
+
+<!-- xgd-chat role="assistant" ts="2026-06-15T19:02:45.886Z" -->
+#### Claude
+Applying the four fixes now.
+
+Now verifying all four updates.
+
+All four updates verified:
+
+- **REQ-1** — `commits` now `[ac174d82…]` (live SHA on xgd-working)
+- **REQ-2** — `commits` now `[f53c9722…]` (live SHA, ticket-auto-commit dropped)
+- **REQ-8** — `commits` now full 40-char `0b1ba59f…`
+- **BUNDLE-1** — `commits` cleared, status → `abandoned`
+
+REQ-3 and REQ-4 (the two that BUNDLE-1 bundled) still hold their own correct commits and remain at `status: bundled` — you'll likely want to flip them back to `ready_to_reconcile` after your revert so they get picked up fresh. Let me know if you want me to do that too.
 
 
 <!-- xgd-chat-end -->
