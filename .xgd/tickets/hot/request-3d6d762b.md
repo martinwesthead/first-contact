@@ -5,17 +5,18 @@ type: request
 title: 'Monorepo: scaffold workspace + two-Worker Cloudflare deploy pipeline'
 created_by: xgd
 created_at: '2026-06-12T22:15:43.077670+00:00'
-updated_at: '2026-06-12T22:22:40.175756+00:00'
+updated_at: '2026-06-15T22:41:00.323134+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: bundled
 fields:
   story_points: 3
   auto_merge_back: true
   needs_review: false
   priority: medium
   commits:
-  - 13723afc5a3dac29366db91bb667d51bb8312e40
+  - ac174d821cee8ef8dd6af126e9c2ca2db53b2ddc
+  bundled_in: bundle-94e1d1b6
 ---
 
 ## Scope

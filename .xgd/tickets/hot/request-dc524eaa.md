@@ -6,15 +6,18 @@ title: 'Lead-capture pipeline: D1 leads schema + Turnstile + Resend on public-si
   form handler'
 created_by: xgd
 created_at: '2026-06-12T23:06:59.334571+00:00'
-updated_at: '2026-06-12T23:06:59.334571+00:00'
+updated_at: '2026-06-15T22:41:00.659571+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
   story_points: 3
+  commits:
+  - fa4194443ca762e1c2782de4e281ffcb3e29a910
+  bundled_in: bundle-94e1d1b6
 ---
 
 ## Scope
@@ -136,3 +139,5 @@ Runner: vitest with `wrangler.unstable_dev`. D1 binding uses the local sqlite em
   - D1 database created and id recorded.
   - Migration applied.
   - Turnstile + Resend accounts set up; secrets pushed.
+
+-

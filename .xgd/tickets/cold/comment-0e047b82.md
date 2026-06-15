@@ -1,0 +1,196 @@
+---
+uid: comment-0e047b82
+id: COMMENT-3
+type: comment
+title: Comment on request REQ-5
+created_by: xgd
+created_at: '2026-06-12T23:30:31.904057+00:00'
+updated_at: '2026-06-13T17:04:01.707511+00:00'
+completed_at: null
+last_field_updated: body
+status: null
+fields:
+  subject_uid: request-fb3ec808
+  kind: chat_transcript
+---
+
+*Captured from dashboard chat CHAT-7 (chat-9223ebdc) — paraphrased excerpts of the design discussion specifically relevant to this ticket. Full session transcript lives on CHAT-7.*
+
+<!-- xgd-chat role="user" ts="2026-06-12T20:40:00.000Z" -->
+#### You
+
+The first site will be my site GenDev Labs — initially similar to gigabytealchemy.ai, single page with a contact form. For the broader product I think we'll want showcase sites — catering, photography, healing, accountant, lawyer.
+
+I think all of these sites will consist of "modules" — a module could be a photo, a photo and text, a blog, a web form. Modules could be a separate page or combined on a single page. Navigation could be top tabs, top tabs with dropdowns, hamburger, custom links, contents section. I'm trying to list what makes sites differ, and where we can accommodate flexibility and where we can't.
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T20:45:00.000Z" -->
+#### Claude
+
+Adopting "module" as the term. Pages are ordered lists of modules. Single-page = one page with N modules. Multi-page = N pages, same primitive both ways.
+
+**For service-business MVP** (covering catering, photography, healing, accountant, lawyer plus GenDev Labs):
+
+Content modules: hero, photo, photo+text, text-block, services-grid, pricing/menu, testimonials, gallery, FAQ, about/team, logo strip, stats band, CTA band.
+
+Functional modules: contact-form, newsletter signup, hours block, location/map, booking link.
+
+Later: blog index + blog post, before/after slider, video embed.
+
+~18 modules, each with 2–4 variants — covers all five verticals.
+
+**Phase 0 (FC site)** — 6–8 modules: hero, services-grid, about, testimonials (later), contact form, footer.
+
+<!-- xgd-chat role="user" ts="2026-06-12T21:50:00.000Z" -->
+#### You
+
+That makes sense. Out of curiosity how flexible or rigid is text-block? If we wanted to create an about page before creating the about module could we use text-block?
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T21:52:00.000Z" -->
+#### Claude
+
+Yes — text-block's body is markdown, and markdown is richer than people often remember. Images, lists, links, sub-headings, blockquotes, code blocks all work. Functionally text-block covers the about case fully.
+
+What you give up: the result looks like an article, not a designed about section. Image is inline (no image-left/right layout), no styled card container, no photo treatment, container-narrow width (feels like prose). For FC's site that's probably fine — the manifesto is the point.
+
+**The principle:** text-block is the **universal degradation path**. While the catalog is small, anything expressed as structured prose gets handled by text-block. This is deliberate:
+
+1. Nothing is blocked waiting for the perfect module.
+2. Catalog gaps surface as observable patterns — repeated text-block use for the same shape signals the next module to design.
+3. Two valid visual outcomes are preserved — text-block-about reads as "founder's note," future `about` module reads as "designed about section." Both legitimate.
+
+**Suggested v1 variants for text-block:**
+
+| Variant | Container | Use |
+|---|---|---|
+| `prose` | narrow (~720) | Articles, about-as-blog, terms, manifesto |
+| `landing` | default (~1080) | Marketing copy that wants more breathing room |
+
+Body field is markdown — images, lists, blockquotes, links, sub-headings all work for free.
+
+Worth adding to DOC-7 as §7.4 "Graceful degradation through text-block" — keeps the principle from being re-debated every time the catalog feels too small.
+
+<!-- xgd-chat role="user" ts="2026-06-12T21:55:00.000Z" -->
+#### You
+
+Sure — and are you ready to create the REQ now?
+
+<!-- xgd-chat role="assistant" ts="2026-06-12T22:30:00.000Z" -->
+#### Claude
+
+**Phase 0 module list (6 modules, each with 1–2 variants):**
+
+| Module | Variants in v1 |
+|---|---|
+| header | 1 (top-nav: logo left, links right, hamburger below md) |
+| hero | 2 (bg-color, bg-image) |
+| text-block | 2 (prose, landing) |
+| services-grid | 2 (3-col, 2-col) |
+| contact-form | 1 (inline, configurable fields) |
+| footer | 1 (minimal) |
+
+Contact-form module is server-rendered HTML (works without JS); island JS upgrades to intercepted submit with inline success message. Honeypot field. Turnstile mount point rendered for REQ-7 to wire up. Action URL is configurable; the stub endpoint comes in REQ-6, the real handler in REQ-7.
+
+Services-grid item count validated 2..6. Below `breakpoint.md` both grid variants collapse to single column.
+
+text-block uses `@astrojs/markdown-remark` (or remark) for rendering. Container width dictated by variant, not by a dial — keeps variants meaningful.
+
+<!-- xgd-turn id="bbce1820-adbb-48c3-9289-959f9cd97b47-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T00:10:05.564Z" -->
+#### You
+ready to free code this?
+
+<!-- xgd-turn id="bbce1820-adbb-48c3-9289-959f9cd97b47-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T00:10:56.528Z" -->
+#### Claude
+REQ-5 depends on REQ-3 (site-schema) and REQ-4 (framework chrome + tokens + registry + header/hero/footer) — and `packages/framework/src/` doesn't exist yet, so REQ-4 hasn't shipped.
+
+Before coding — REQ-5's dependencies aren't in place yet:
+
+- **REQ-3 (site-schema)** — `packages/site-schema/src/` has `index.ts`, `schema.ts`, `validate.ts`. Looks present but I haven't verified it's complete.
+- **REQ-4 (framework chrome + tokens + registry + header/hero/footer)** — **not done**. `packages/framework/` contains only `package.json` and `README.md`. No `src/`, no `moduleMeta` contract, no registry, no theme tokens, no chrome modules.
+
+REQ-5's body explicitly states:
+- "Each module follows the same `moduleMeta` contract established in REQ-4"
+- "Updates to the registry — `packages/framework/src/modules/registry.ts` extended to include all six modules"
+
+If I free-code REQ-5 now I'd be either:
+1. Inventing the REQ-4 framework chrome inline (collapsing two intents into one ticket — confuses the reconciler), or
+2. Building modules that hang in the air with no contract/registry/tokens to plug into.
+
+Recommended path: do REQ-4 first, then REQ-5. Want me to switch to free-coding REQ-4? Or did you intend for REQ-4 to be done already and something's missing from the working tree?
+
+<!-- xgd-turn id="edef24d9-7d26-4f04-92e6-871c5333d65d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T01:26:20.760Z" -->
+#### You
+ready now?
+
+<!-- xgd-turn id="304ef464-7c63-4a71-b5ab-65ae61783003-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T01:39:25.643Z" -->
+#### You
+Ready?
+
+<!-- xgd-turn id="fdb5ec77-6540-4b91-ae6a-4cbc70ec0700-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T16:00:12.469Z" -->
+#### You
+Ready to free code?
+
+<!-- xgd-turn id="9c8fa8a4-6ad1-4898-98c0-0b373c97802f-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-13T16:41:02.194Z" -->
+#### You
+Ready to free code?
+
+<!-- xgd-turn id="9c8fa8a4-6ad1-4898-98c0-0b373c97802f-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-13T17:04:00.656Z" -->
+#### Claude
+Let me check the current state — git status shows REQ-5 work already in progress.
+
+There's significant uncommitted work already on disk for REQ-5 — module dirs, tests, registry modifications, and a new `validate.ts`. Before answering "ready", I need to understand what state this is in. Let me check REQ-4's status and what's already implemented.
+
+REQ-4 is bundled (reconciling). The REQ-5 module files and tests already exist on disk from prior session(s) but were never committed. Let me check the state of the existing work.
+
+REQ-5 implementation already exists on disk from a prior session — all 3 modules, validate.ts, registry updates, and 17 UATs. Let me verify tests pass.
+
+While tests run, let me examine the implementation.
+
+Tests still running. Let me wait for the monitor.
+
+Tests are slow due to Astro container compilation. Let me give them time and explore other tests in the meantime.
+
+Found the hang — contact-form's `<script>` block with a TS import is hanging Astro's container. Let me investigate the fix.
+
+The hoisted `<script>` with `.ts` import is hanging Vite/Astro container. Let me remove it — the client enhancement should be wired by the consuming site, not embedded in the module.
+
+Now let me add an auto-wiring helper and ensure exports are clean.
+
+Found it: `<template>` + `set:html` + `<style>` block hangs the Astro container. Fix: use a hidden `<div>` instead.
+
+Contact-form tests now pass. Let me run all REQ-5 tests.
+
+All 27 REQ-5 tests pass. Now let me run the full test suite for regression.
+
+All 73 tests pass across 42 test files. Now let me check there's nothing else needed — typecheck and a quick lint check.
+
+All tests pass and build is clean. Now to complete the free-coding flow: version bump, commit, ticket update.
+
+No version bump needed — this project doesn't ship as an installed package. Let me stage and commit.
+
+Now let me update the ticket. First read it to preserve existing body, then update fields.
+
+REQ-5 is done. Summary:
+
+- **Three modules shipped**: `text-block` (prose/landing), `services-grid` (three-col/two-col, item count 2..6), `contact-form` (inline, honeypot + Turnstile mount point).
+- **Six-module Phase 0 catalog complete** — registry now resolves all of header, hero, footer, text-block, services-grid, contact-form.
+- **17 UATs, 27 assertions** — all passing alongside the full suite (73 tests, 42 files).
+- **Two implementation deviations** from the spec, both noted in the ticket:
+  - Removed the hoisted `<script>` from contact-form (it hung Astro's container API). Added `wireContactForms` export so the consuming site wires enhancement from its entry script.
+  - `<template data-fc-success-message>` → `<div data-fc-success-message hidden>` for the same reason. Functionally equivalent.
+- **Free-coded as commit `1befb47`**, ticket at `free_coded` with `story_points: 4`. Park it here, or promote to `ready_to_reconcile` when you want reconcile to fire.
+
+<!-- xgd-chat-end -->
