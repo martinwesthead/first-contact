@@ -5,10 +5,10 @@ type: request
 title: Rename code identifiers from first-contact to 1stcontact to align with domain
 created_by: xgd
 created_at: '2026-06-12T22:21:53.129271+00:00'
-updated_at: '2026-06-12T22:29:30.265476+00:00'
+updated_at: '2026-06-15T17:42:34.233359+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   auto_merge_back: true
   needs_review: false
