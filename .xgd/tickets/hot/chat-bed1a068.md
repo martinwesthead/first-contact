@@ -5,7 +5,7 @@ type: chat
 title: AI Web Access
 created_by: xgd
 created_at: '2026-06-16T21:56:33.168906+00:00'
-updated_at: '2026-06-16T22:34:08.010781+00:00'
+updated_at: '2026-06-16T22:50:16.001546+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -179,6 +179,53 @@ Transcription is "reference digest + an LLM pass that maps to our vocabulary." S
 Should the reference digest persist across sessions per-user, or be ephemeral to the session? Persistent unlocks "here's a board of references I've collected" as a future feature. Ephemeral is simpler. I'd lean persistent + cheap (KV with TTL of a week or so), but worth knowing your bias.
 
 We're at the point where it's probably worth capturing this in a short design doc / scope ticket once you're done shaping it — want me to draft one when you feel the conversation has converged, or keep talking?
+
+
+<!-- xgd-turn id="14e3ec43-a0e2-4004-a11f-48d615e2174e" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T22:50:15.948Z" -->
+#### You
+I think there are several questions wrapped up in that. One is about storage management garbage collection and so on. Another is the user experience, what does the user actually see do we give the user tools for circling back to look at contents that they loaded earlier? Let's start with ephemeral and add persistence if we need it
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T22:50:15.948Z" -->
+#### Claude
+Good call. "Ephemeral" still has a useful concrete shape worth pinning down:
+
+## What "ephemeral" probably means here
+
+The cleanest version: **the digest lives as long as the chat session that produced it.**
+
+- The digest is attached to the AI tool call that fetched it, stored as part of the chat history record (which is already persisted for chat scrollback to work)
+- Screenshot goes to R2, digest record references it by key
+- When the chat is deleted, a sweep removes the referenced R2 keys — that's the only GC needed
+- No "boards," no "references library," no cross-chat memory
+
+So the digest survives refresh, browser close, returning tomorrow in the same chat. It only disappears if the user starts a new chat or deletes the old one.
+
+## What the user can do with it
+
+- Scroll back in the chat to revisit any reference loaded earlier
+- The AI re-references prior digests freely within the chat (it's just part of conversation history)
+- "Show me sites X and Y side by side" works fine for the onboarding flow, where everything happens in one chat
+
+## What ephemeral gives up
+
+The only real loss: **cross-chat reference.** "Remember that plumber site from yesterday?" → new chat, gone. User has to re-fetch. Probably fine — it costs them seconds, not minutes, and we can always add a "save reference" affordance later if the pattern shows up.
+
+The other thing we give up is a "my references" panel — but if we don't build the affordance, we don't need the storage, so this is YAGNI in the right direction.
+
+## Implication for the chat record schema
+
+The digest needs to be a recognized payload type in the chat history (alongside text messages, tool calls, etc.), so:
+- The frontend knows to render it as the right-panel digest card
+- The AI sees it on context replay as a structured object, not a re-stringified blob
+- Deletion sweeps know which R2 keys to clean
+
+That's a small but real chat-message-schema decision worth flagging.
+
+---
+
+I think we've converged on enough to capture. Want me to draft a design doc covering: use cases, the two-layer extractor (digest + transcription), the shared digest artifact, ephemeral-by-chat lifecycle, and the iframe-with-screenshot-fallback display path? I'd put it under `docs/` somewhere — design doc, not a scope ticket yet, since this is multi-feature and we'll likely break it into multiple tickets when we implement.
 
 
 <!-- xgd-chat-end -->
