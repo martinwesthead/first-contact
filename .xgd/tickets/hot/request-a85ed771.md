@@ -5,9 +5,9 @@ type: request
 title: Reference Digest schema + static-fetch path + Layer A signal extractors
 created_by: xgd
 created_at: '2026-06-16T23:24:59.849248+00:00'
-updated_at: '2026-06-16T23:24:59.849248+00:00'
+updated_at: '2026-06-16T23:34:02.345407+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -163,3 +163,23 @@ Per [[REQ-20]]'s cache layer, a digest is itself cached for 24 hours keyed on `s
 8. The escalation hook (`shouldEscalateToRendered`) is invoked at the right point in the pipeline and always returns `false` in this REQ; the path is exercised by a unit test that documents the integration point for REQ C.
 9. Every failure mode from the safety layer ([[REQ-20]] §Acceptance criteria 1–12) propagates as a typed error on the `analyze_page` `ok:false` branch; no safety failure leaks as an uncaught exception.
 10. UAT: operator pastes a URL in chat → AI calls `analyze_page` → digest report renders in right panel with palette swatches, type sample, content tree, asset inventory, and AI summary visible. Total wall-clock under 8 seconds for a typical small business site on the static path.
+
+
+---
+
+## Alignment with persistent chat infrastructure (REQ-23 / REQ-24)
+
+The chat persistence and AI memory infrastructure landed in [[REQ-23]] (D1 schema) and [[REQ-24]] (API + memory tools) after this REQ was drafted. The concrete dispatch path for `analyze_page`:
+
+- `analyze_page` is invoked through [[REQ-24]]'s `POST /api/chat` flow as an AI tool.
+- The Reference Digest result is persisted as a row in [[REQ-23]]'s `chat_messages` table, with the digest record carried in `tool_calls_json`. Screenshot R2 keys (added by [[REQ-22]]) are referenced from `tool_calls_json` and live in R2 under the existing asset-bucket layout.
+- The digest is therefore reachable later in the same chat via tail-prime + scrollback, and across sessions via [[REQ-24]]'s `search_transcripts` + `read_session_range` tools — no separate "digests" index needed.
+- Chat session deletion ([[REQ-23]] cascade) sweeps the referenced screenshot R2 keys.
+
+These integrations require no schema changes here; this REQ's acceptance criteria stand. The note documents the runtime path.
+
+## Additional dependencies (alignment)
+
+- [[REQ-23]] — D1 schema for `chat_sessions` + `chat_messages` + FTS5 (digest records persist here).
+- [[REQ-24]] — Chat session API + AI memory tools (the dispatcher this REQ's `analyze_page` runs through).
+- [[DOC-10]] §4.4 — attachment policy ("future Reference Digests" explicitly named).
