@@ -5,7 +5,7 @@ type: chat
 title: AI Web Access
 created_by: xgd
 created_at: '2026-06-16T21:56:33.168906+00:00'
-updated_at: '2026-06-16T22:50:16.001546+00:00'
+updated_at: '2026-06-16T22:55:22.179508+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -226,6 +226,78 @@ That's a small but real chat-message-schema decision worth flagging.
 ---
 
 I think we've converged on enough to capture. Want me to draft a design doc covering: use cases, the two-layer extractor (digest + transcription), the shared digest artifact, ephemeral-by-chat lifecycle, and the iframe-with-screenshot-fallback display path? I'd put it under `docs/` somewhere — design doc, not a scope ticket yet, since this is multi-feature and we'll likely break it into multiple tickets when we implement.
+
+
+<!-- xgd-turn id="6bfb71af-51d3-472d-8150-aa030c9cd8b2" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T22:55:22.117Z" -->
+#### You
+Actually what I am thinking is that each site should have a single markdown document capturing requirements. Reference material screenshots and reports that were generated during the process of discussing the site could be permanently stored there along with a chat summary of decisions made about color palettes layout navigation voice etc. We could store this markdown documents in the assets...
+
+We could call it the Design Brief
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T22:55:22.117Z" -->
+#### Claude
+That's a much better unifying concept. It resolves several tensions at once:
+
+## What the Design Brief solves
+
+- **The persistence question**: we said "ephemeral per chat" but the actually-useful boundary is per-site. The Brief gives us that without inventing a separate "references library."
+- **Cross-session continuity**: new chat starts → AI reads the Brief → up to speed in one read. No invisible memory, no mystery context.
+- **Multi-operator**: anyone working on the site gets the same starting point.
+- **Trust again**: the AI's "memory" is a document the user can read and edit. Same property we noted with the digests, scaled up.
+
+## Two-tier memory falls out naturally
+
+The earlier ephemeral-per-chat model isn't replaced — it gets a clean role:
+
+| Tier | What | Lifetime |
+|---|---|---|
+| **Working memory** | Reference digests, screenshots, AI comparisons during a session | The chat |
+| **Crystallized memory** | The Design Brief — only things that became decisions or persistent reference material | The site |
+
+Not everything that flows through a chat becomes a decision. The Brief is the gradient — what the user said "yes, that's us." Probably the AI proposes "want me to add this to the Brief?" at key moments, rather than auto-writing everything.
+
+## Likely shape
+
+Markdown with a loose template the AI fills in as the conversation goes:
+
+```markdown
+# Design Brief: {Site Name}
+
+## Project context
+{narrative — who is the customer, what's the goal}
+
+## References
+- ![thumb](r2://...) Site A — {AI commentary, what we liked, what we rejected}
+- ...
+
+## Decisions
+### Palette       (TBD | warm earth tones — see swatches)
+### Typography   (TBD | Inter + Source Serif Pro)
+### Layout       (...)
+### Navigation   (...)
+### Voice & tone (...)
+### Content priorities (...)
+
+## Open questions
+- ...
+```
+
+Sections start as TBD and crystallize. Embedded images via markdown image syntax pointing at R2. References section can embed digest summaries inline and link to the fuller digest record (which is still the ephemeral-per-chat artifact for the right panel).
+
+## Two tensions worth flagging
+
+1. **Context cost.** The Brief gets loaded into every AI session for that site. If it grows to 20KB of accumulated decisions and references, that's real tokens on every turn. Worth thinking about: do we summarize as it grows? Strip image data from the context-loaded version? Hierarchical (essentials always loaded, full history on demand)?
+
+2. **Auto-update boundary.** Who writes? My instinct: AI proposes edits with a visible diff ("want me to add this to the Brief?") and the user confirms with one click, at least early on. Auto-writing without confirmation pollutes; never writing makes it stale.
+
+## Questions back
+
+1. **Is the Brief the site's "soul," or just one document among many?** If it's the soul, it lives alongside the site as a peer artifact (not "an asset"). The site has a Brief, a draft, modules, theme tokens, assets — five things. If it's just-an-asset, less ceremony but harder to surface in UI.
+2. **Does the user see and edit the raw markdown, or do they only see rendered sections in the right panel?** Power users will want the raw view; most users probably want rendered + inline edits. Probably both, with a toggle.
+
+Once you've shaped these, I think we're ready to draft a design doc. Want to keep going or call it?
 
 
 <!-- xgd-chat-end -->
