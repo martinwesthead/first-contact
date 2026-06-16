@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-13T19:53:54.375962+00:00'
+updated_at: '2026-06-16T00:46:02.894085+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -214,5 +214,11 @@ REQ-8 is committed as a free-coded slice and the ticket is at `free_coded` with 
 - 8 new test files, 13 UATs, all passing alongside the existing 112 — 125/125 green.
 - Workspace `pnpm -r build` runs clean (esbuild bundle + `tsc --noEmit` across all packages).
 - Ticket parked at `free_coded`. Promotion to `ready_to_reconcile` is your call.
+
+<!-- xgd-turn id="ce929ec8-0fa2-4a18-b49a-728fde8c63bb-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T00:45:49.020Z" -->
+#### You
+Is this a visible feature - how can I see it?
 
 <!-- xgd-chat-end -->
