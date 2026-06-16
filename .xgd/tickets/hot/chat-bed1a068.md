@@ -5,7 +5,7 @@ type: chat
 title: AI Web Access
 created_by: xgd
 created_at: '2026-06-16T21:56:33.168906+00:00'
-updated_at: '2026-06-16T23:11:23.224648+00:00'
+updated_at: '2026-06-16T23:17:52.510789+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -363,6 +363,23 @@ I think the conceptual model is converged:
 - **Iframe-with-screenshot-fallback** is optional and secondary; primary surface is the digest report
 
 Ready to draft this as a design doc whenever you say go. I'd put it at `docs/design/web-fetch-and-design-brief.md` or similar — single doc capturing the conceptual model, not a scope ticket yet (this will split into several tickets when we implement). Or do you want to keep shaping?
+
+
+<!-- xgd-turn id="989417d0-7e0c-4966-86e4-5e4dc2621d21" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T23:17:52.454Z" -->
+#### You
+Please draft the design doc as a DOC ticket :-)
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T23:17:52.454Z" -->
+#### Claude
+I have the shape now. Drafting the DOC ticket.
+
+Drafted as **DOC-9** — *Web Reference Fetching and the Design Brief*.
+
+The doc captures everything we shaped: the three use cases (convert / inspiration / asset links), the Reference Digest as a shared user-and-AI artifact, the per-site Design Brief as canonical memory, the two-tier model (chat-scoped vs site-scoped), the two extraction levels (Layer A signals always, Layer B transcription for convert), the digest report as primary display surface with iframe-plus-screenshot-fallback secondary, the killer-demo progressive reveal, KMS-aware document shape from day one, Cloudflare-native implementation (Worker fetch + Browser Rendering + R2 + KV), and a safety contract for SSRF / redirects / size / robots / rate limits.
+
+It cross-references DOC-4/5/7/8 in the established pattern, and closes with 9 open questions and a list of forthcoming REQ tickets to break the implementation work into. Auto-committed by the ticketing API.
 
 
 <!-- xgd-chat-end -->
