@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-16T01:14:22.326028+00:00'
+updated_at: '2026-06-16T01:15:02.409935+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -321,5 +321,30 @@ I did *not* rewrite history (would have needed `git reset --soft` to consolidate
 Sorry — chat endpoint returned 500.
 
 I got this error
+
+<!-- xgd-turn id="a3cbeb85-85c5-482a-913d-2f1e125d88f7-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T01:15:01.376Z" -->
+#### Claude
+Let me look at what triggers a 500 in the chat endpoint.
+
+Let me see how the chat panel surfaces the error to the user.
+
+The 500 is almost certainly **missing `CLAUDE_API_KEY`** — that's the only path to 500 in the worker (`apps/control-app/src/chat.ts:172`). Every other failure is 400/405/502.
+
+The error body says `{"error":"CLAUDE_API_KEY is not configured"}` but the chat panel swallows it and just shows the bare status (`chat-driver.ts:60`), which is why it's not obvious.
+
+**Fix for local dev** — `wrangler dev` reads secrets from a `.dev.vars` file (`wrangler secret put` only sets the *deployed* worker, not local):
+
+```bash
+# in apps/control-app/
+cat > .dev.vars <<'EOF'
+CLAUDE_API_KEY=sk-ant-...your-key...
+EOF
+```
+
+`.dev.vars` is wrangler-default-gitignored. Restart `pnpm dev` and the next chat send should succeed.
+
+If you'd also like the chat panel to surface the *real* server error (`"CLAUDE_API_KEY is not configured"`) instead of just the status code, say the word — that's a one-spot change in `chat-driver.ts` (still REQ-8 scope) and I'll free-code it.
 
 <!-- xgd-chat-end -->
