@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-16T00:50:59.625997+00:00'
+updated_at: '2026-06-16T01:01:47.000743+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -257,5 +257,61 @@ Or for a no-key smoke test, you can verify the panel mechanics (collapse, splitt
 <!-- xgd-chat role="user" ts="2026-06-16T00:50:11.882Z" -->
 #### You
 ok there's a few issues (1) when I collapse the left side there's no column to bring it back. Please look at the Intent Tab in ../xgendev-main to see what I want here (2) I have been using the modals to see Desktop /Tablet/Mobile and the screen height has scrunk to about 50px...hard to see
+
+<!-- xgd-turn id="163364f5-d384-4b6e-a540-62fc3ef18aae-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T01:01:45.940Z" -->
+#### Claude
+Let me find the Intent Tab and the restore-rail pattern in xgendev-main.
+
+Now let me look at our builder code.
+
+Now let me look at the preview panel for the height bug.
+
+Found both bugs. Let me check the existing UATs first so I don't break them.
+
+I have the diagnosis. Let me make the edits.
+
+**Fix 1 — restore rail (builder-layout.ts):** the rail is appended *after* the preview, so when collapsed it ends up on the right edge of the screen. I'll insert it before the preview in DOM order and add inline flex styles so it renders as a visible left rail.
+
+Now also flip restoreBar's display so that when shown (empty inline) the CSS class drives `display: flex`. Since CSS doesn't have a rule, I'll add inline `display: flex` only when collapsed — but the existing UAT expects `""`. Better: leave the inline `display = ""` and rely on CSS in builder.html. Let me update the CSS in builder.html now.
+
+**Fix 2 — preview height:** `.fc-preview` is a block element with auto height, so the iframe's `height: 100%` collapses. Set inline flex sizing on the preview root from JS so it's tested independent of the page CSS.
+
+Now update `builder.html` so the restore rail has a visible flex layout and the preview wrapper has the same belt-and-braces CSS:
+
+Now UATs and run the existing ones to confirm nothing broke.
+
+jsdom serializes `minHeight: "0"` as `"0px"`. Fix the assertion.
+
+All 15 UATs green (10 prior + 2 new + adjacents). Let me also rebuild the bundle so the change is reflected in `public/_assets/builder.js`, then commit.
+
+Good — bundle is gitignored. Staging only my four files (excluding the unrelated `.xgd/quality.yaml` deletion):
+
+A background quality-apply process grabbed my staged changes and folded them into an auto-commit (`927bf470`) with its own message — no `[FREE-CODED]` tag. I need to amend the message so merge-back review recognizes the free-coded work; no diff content changes.
+
+History got mangled by the background quality-apply: `927bf47` has my real diff (no `[FREE-CODED]` tag), `1a0e901` was an auto-ticket-report that absorbed my amended message. Rather than rewriting history without permission, let me record `927bf47` on REQ-8 and flag this for you.
+
+First, update the ticket body (preserving the existing scope content) and append `927bf47` to `fields.commits`:
+
+Now append a polish-iteration note to the body, preserving existing content:
+
+Done. Summary of what changed and what to watch:
+
+**Bugs fixed**
+
+1. **Restore rail** — moved `restoreBar` to sit *before* `previewPanel` in DOM order and gave it full-height flex-centered styling. Now matches the XGD Intent Tab `#intents-list-panel.minimized` pattern: collapsing leaves a visible 32px rail on the left edge with a `›` chevron that restores to the remembered width.
+2. **Preview height** — `.fc-preview` was a default block with auto height, so the iframe's `height:100%` collapsed against it (~50px visible). Set inline `display:flex; flex-direction:column; flex:1 1 auto; min-height:0; height:100%` on the preview root and `flex:1 1 auto; min-height:0` on the iframe. Backed by matching CSS in `builder.html`.
+
+**Tests** — 2 new UATs added; all 10 REQ-8 UATs (15 tests) pass.
+
+**To see it**: `cd apps/control-app && pnpm build:bundle && pnpm dev`, then open `http://localhost:8788/builder?site=1stcontact`. Collapse the chat with the `‹` chevron — you should now see a 32px left rail you can click to restore. The preview should fill the right pane vertically when you flip between Mobile / Tablet / Desktop.
+
+**One thing for you to know** — a background `xgd quality` auto-apply ran between my `git add` and `git commit`, so:
+- Commit `927bf47` has my actual diff but the auto-process replaced my message with `xgd(quality): apply ai.gendevlabs...` — **no `[FREE-CODED]` tag**.
+- My `git commit --amend` raced with another auto-task; the amended message landed on a *new* commit (`1a0e901`) that only contains an auto-quality report.
+- Net result: my real code is on `927bf47` without the `[FREE-CODED]` tag. Merge-back review's tag-detection will miss it unless we rewrite history.
+
+I did *not* rewrite history (would have needed `git reset --soft` to consolidate). REQ-8's `fields.commits` now includes `927bf47`, and the body documents the lineage. **Want me to soft-reset and re-commit cleanly with the `[FREE-CODED]` tag in place?** That would consolidate `927bf47` + `1a0e901` into a single proper commit. Otherwise we accept the tag is missing on the code commit.
 
 <!-- xgd-chat-end -->
