@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-16T00:46:11.692495+00:00'
+updated_at: '2026-06-16T00:50:59.625997+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -251,5 +251,11 @@ Or for a no-key smoke test, you can verify the panel mechanics (collapse, splitt
 - No auth wall — `/builder` is open in v1 (later REQ).
 - No D1 save — edits live in `localStorage` only (key `1stcontact_builder_panels_v1` for panel state, `1stcontact_builder_site_v1` for the site definition).
 - Reload preserves your edits; clearing localStorage resets to the starter site.
+
+<!-- xgd-turn id="163364f5-d384-4b6e-a540-62fc3ef18aae-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T00:50:11.882Z" -->
+#### You
+ok there's a few issues (1) when I collapse the left side there's no column to bring it back. Please look at the Intent Tab in ../xgendev-main to see what I want here (2) I have been using the modals to see Desktop /Tablet/Mobile and the screen height has scrunk to about 50px...hard to see
 
 <!-- xgd-chat-end -->
