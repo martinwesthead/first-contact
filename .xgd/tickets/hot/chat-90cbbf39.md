@@ -5,7 +5,7 @@ type: chat
 title: Asset manager
 created_by: xgd
 created_at: '2026-06-16T22:01:48.004010+00:00'
-updated_at: '2026-06-16T22:55:26.377848+00:00'
+updated_at: '2026-06-16T23:04:38.650269+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -82,6 +82,54 @@ Current builder is `/builder` (chat + preview split). The asset tool can be:
 - **(b) View toggle inside `/builder`** — top-level toggle (Builder / Assets) inside the existing shell. Shares state and styles. Slightly more coupling and a small refactor in `builder-ui`.
 
 Which on each — `1a/1b/1c` and `2a/2b`?
+
+
+<!-- xgd-turn id="fbbfc353-25be-4fe3-ac92-18210f27edd0" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T23:04:38.614Z" -->
+#### You
+Wins: assets stay in git alongside the site definition. <-- I thought we decided the site definition was not going to be in git? We were going to store it in R2 I think? R2 sounds like the right answer here. 
+
+Take a look at the conversation in the chat called "Builder" we have just decided on a top level tab navigation structure much like XGD. This asset manager would be one of those tabs. Also note the chat window that we are embedding in every tab.
+
+This is primarily a UI discussion, but I think there is also a versioning question that we should visit. I think we agreed that we're basically going to store snapshots of the site. Anytime you hit publish we store that version in history and can revert to it. That probably means we need a history tab for version management.
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T23:04:38.614Z" -->
+#### Claude
+Let me read CHAT-9 to catch up on the tab-nav decisions.
+
+Caught up on CHAT-9. The decisions there: tabs `Builder | Settings | Assets | (Revisions | Leads later)`, avatar trigger top-right for the global menu, chat panel per-tab with localStorage persistence (open by default on Builder + Assets). Three reactions and a versioning answer:
+
+**1. R2 confirmed.** Add `ASSETS_BUCKET` binding to control-app. AssetRefs resolve via a Worker-served `/assets/<key>` route. I won't keep blobs in git.
+
+**2. The app shell is a prerequisite that doesn't yet exist.** CHAT-9 enumerated `REQ-UI-APP-SHELL` as the work-to-draft but never created the ticket. The Assets tab can't dock without the shell. Two ways forward:
+
+   - **(a)** Draft `REQ-UI-APP-SHELL` first (tab bar + avatar menu + per-tab chat panel + routing), land it, then this asset REQ slots in cleanly. Cost: one extra ticket cycle before any asset work.
+   - **(b)** Draft this asset REQ assuming the shell exists and mark `REQ-UI-APP-SHELL` as a blocking prerequisite. Costs nothing extra if we plan to land the shell next anyway; if we want to ship a working asset surface *before* the shell, we'd need a temporary `/assets` standalone route that we'd then refactor.
+
+   I lean **(a)** — the shell unlocks Settings, Assets, and Revisions all at once, and prevents throwaway standalone-route work. But happy to do **(b)** if you want asset work to start in parallel.
+
+**3. The chat-per-tab embedding is shell-level, not asset-tab-level.** Per CHAT-9 (3), the Assets tab will register a `get_visible_context()` provider exposing the asset list + currently-selected asset + edit state. That's an interface obligation on the asset REQ. The chat panel UI itself belongs to the shell.
+
+**4. Versioning — yes, agreed, but separate REQ.** Sketch:
+
+   - **Trigger**: explicit "Publish" action (no auto-snapshot on edit — too noisy). The current builder mutates a working draft of the site definition; Publish freezes it.
+   - **Storage**: R2 keys `revisions/<site>/<iso-timestamp>-<sha>.json` for the snapshot, with a sibling `revisions/<site>/index.json` enumerating versions (timestamp, author, optional message, sha). D1 alternative if we want queryability; R2 is simpler.
+   - **Assets in revisions**: open question — do snapshots include asset references only (current model) or copies of asset blobs at that version? Copying R2 blobs per revision is expensive; reference-only means a deleted asset breaks an old revision. Probably reference-only with a soft-delete policy on assets that any revision references. Worth its own design pass.
+   - **History tab**: list of revisions, diff view, "Revert to this version" action. Revert is itself a publish of the historical snapshot.
+   - **Story points**: probably 5-8 — non-trivial because of the asset-reference question.
+
+   Recommend: new ticket `REQ-PUBLISH-REVISIONS` covering publish action + snapshot storage + History tab. Out of scope for the asset REQ.
+
+**Scope for THIS ticket** (the asset REQ I'll draft once you confirm):
+
+- IN: R2 binding, `/api/assets/{list,get,put,delete}` routes, Assets tab content (file list left, draggable splitter, detail panel right), TipTap markdown/text editing (lazy ESM-loaded, copying `_loadTipTapDeps` pattern from xgendev-main), image preview with metadata, register `get_visible_context()` provider.
+- OUT: app shell + tab bar + chat panel (separate REQ), image manipulation (separate REQ), publish + revisions (separate REQ), customer-site asset wiring, AssetRef hookup into modules.
+
+Two calls before I write the ticket:
+
+- **(a)** vs **(b)** on the shell ordering?
+- Edit `.md` files via TipTap WYSIWYG with marked→PM→markdown round-trip, or plain textarea with a side preview? Round-trip is the xgendev-main path but markdown serialization from PM has known fidelity issues. Textarea+preview is simpler and exact; WYSIWYG is nicer but riskier in a starter slice.
 
 
 <!-- xgd-chat-end -->
