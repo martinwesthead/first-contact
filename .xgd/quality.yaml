@@ -9,8 +9,7 @@ suites:
   framework: vitest
   config:
     test_mode: node
-    source_dirs:
-    - .
+    source_dirs: []
     test_dirs:
     - tests
     per_test_timeout: 30000

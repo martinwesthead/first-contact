@@ -58,7 +58,18 @@
         background: #1e293b;
         color: #f8fafc;
         border: 0;
+        border-right: 1px solid #334155;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        flex-shrink: 0;
+        font-size: 18px;
+        line-height: 1;
+      }
+      .fc-builder__restore:hover {
+        background: #334155;
       }
       .fc-chat {
         display: flex;
@@ -114,6 +125,13 @@
         padding: 6px 12px;
         cursor: pointer;
       }
+      .fc-preview {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        height: 100%;
+      }
       .fc-preview__toolbar {
         background: #f1f5f9;
         color: #0f172a;
@@ -121,6 +139,7 @@
         display: flex;
         gap: 6px;
         border-bottom: 1px solid #cbd5e1;
+        flex: 0 0 auto;
       }
       .fc-preview__viewport {
         background: transparent;
@@ -138,6 +157,7 @@
       .fc-preview__iframe {
         flex: 1 1 auto;
         width: 100%;
+        min-height: 0;
         background: #fff;
       }
     </style>
