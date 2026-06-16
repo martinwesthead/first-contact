@@ -6,9 +6,9 @@ title: 'Site Transcription (Layer B): convert flow that maps a Reference Digest 
   module instances and theme tokens'
 created_by: xgd
 created_at: '2026-06-16T23:29:01.955584+00:00'
-updated_at: '2026-06-16T23:29:01.955584+00:00'
+updated_at: '2026-06-16T23:34:03.479560+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -139,3 +139,21 @@ Implementation flow:
 10. The "I own this site" checkbox on the `ConvertConfirmation` modal, when checked at Confirm, also registers a `robotsOverrides` entry for the origin in the chat metadata.
 11. Re-invoking `transcribe_site` on the same digest in the same chat (without a destructive-confirmation reset) returns `requires_confirmation` again; one-shot confirmation does not blanket-authorize repeats.
 12. UAT — full killer-demo: operator pastes URL → digest produced ([[REQ-21]] / [[REQ-22]]) → confirms convert modal → screenshot appears at 0–2s → palette + type apply at 2–8s → module list populates at 10–60s → operator asks "make the hero darker" and the AI responds in the same chat without flow interruption.
+
+
+---
+
+## Alignment with persistent chat infrastructure (REQ-23 / REQ-24)
+
+[[REQ-23]] / [[REQ-24]] / [[DOC-10]] landed after this REQ was drafted. Two integration points are worth pinning down:
+
+- **Destructive-confirmation flag persistence**: the `convertConfirmed[chatId]` flag lives on the `chat_sessions` row in [[REQ-23]]'s schema (a JSON `metadata` column on `chat_sessions`, also used by [[REQ-20]]'s per-chat `robotsOverrides`). This means a confirmation persists across reloads of the same session.
+- **Progressive-reveal SSE events** ([[REQ-9]]'s `transcribe_progress`): chat-side, each stage's completion is also appended as a `system` role message to `chat_messages` (per [[REQ-23]] role enum) so the staged narrative is visible in scrollback and reachable via [[REQ-24]]'s `search_transcripts` later. The SSE event is the live update; the `chat_messages` row is the durable record.
+- **Brief integration**: after successful transcription, the AI is prompted to call `propose_brief_update` (from [[REQ-27]]) for `Project context`, `Palette`, `Typography`, and `References` sections so the converted site's Brief reflects what was imported. This is a soft prompt nudge in the LLM transcription prompt, not a hard tool chain.
+
+## Additional dependencies (alignment)
+
+- [[REQ-23]] — `chat_sessions` metadata column (confirmation flag, robots overrides).
+- [[REQ-24]] — Chat dispatcher (the path `transcribe_site` runs through).
+- [[REQ-27]] — Brief update tool (post-transcription Brief population).
+- [[DOC-10]] §4.1, §4.2 — session metadata and message append model.
