@@ -5,7 +5,7 @@ type: chat
 title: AI Web Access
 created_by: xgd
 created_at: '2026-06-16T21:56:33.168906+00:00'
-updated_at: '2026-06-16T22:55:22.179508+00:00'
+updated_at: '2026-06-16T23:11:23.224648+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -298,6 +298,71 @@ Sections start as TBD and crystallize. Embedded images via markdown image syntax
 2. **Does the user see and edit the raw markdown, or do they only see rendered sections in the right panel?** Power users will want the raw view; most users probably want rendered + inline edits. Probably both, with a toggle.
 
 Once you've shaped these, I think we're ready to draft a design doc. Want to keep going or call it?
+
+
+<!-- xgd-turn id="859ffb7f-e084-4e07-88da-4436ec171d93" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T23:11:23.163Z" -->
+#### You
+**Context cost.** The Brief gets loaded into every AI session for that site. <-- actually probably not I am working on a knowledge management system that could generate mechanical summaries of documents and might be associated with a read tool that could read a section. So the summary would contain whatever the first 200-400 characters of the document plus a "table of contents" - the AI can then access the bits of the document(s) that it needs when it needs them. This doesn't exist yet but it will be available for our system before it goes live I expect in the meantime we can just stuff the whole document into the context.
+
+Please note I do want to maintain our chat sessions. And I want the transcripts to be available to the AIs. The simplest approach here is that the session just grows in an unbounded way and we typically only load and reference parts of it. For example the AI would be primed with the last 5000 characters of the session but would be able to access the entire transcript with search tools if it desired. It can also access transcripts of the other sessions. In the UI for example we would only load the last 5 to 10,000 characters unless the user push the scroll bar all the way up in which case we would "infinite scroll" toward the top as needed.
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T23:11:23.163Z" -->
+#### Claude
+That changes the shape cleanly. With KMS + persistent searchable chat as primitives, the design simplifies:
+
+## What this resolves
+
+- **"Context cost" goes away as a design concern.** Brief and digests can be as detailed as we want; the AI gets summary + ToC by default and reads sections on demand.
+- **"Ephemeral" basically goes away too.** Everything is durable. The distinction collapses to:
+  - **Chat-scoped**: digests, screenshots, AI commentary — live in chat history, accessible cross-chat via KMS/search
+  - **Site-scoped**: the Brief — primary working memory, crystallized decisions
+- **The Brief becomes more clearly "distilled," not "transcript."** No need to dump conversation summaries into it — the AI can search the actual chat for nuance. The Brief holds the canonicalized decisions, the chat holds the discussion.
+
+## One design implication worth honoring from day one
+
+Structure the Brief and digests as proper markdown with explicit `##` section boundaries and a summary block at the top — even before KMS exists. That way:
+- "Stuff the whole document into context" works fine now
+- When KMS arrives, summary-extraction and section-reads slot in with zero retrofit
+- The same structure makes the documents readable for humans
+
+Concretely both documents follow a shape like:
+
+```markdown
+# {title}
+
+> Summary: 1-2 paragraph distillation, AI-maintained.
+
+## Table of contents
+- Section A — one line description
+- Section B — one line description
+
+## Section A
+...
+```
+
+Cheap to commit to now, free retrofit later.
+
+## A couple of small things worth naming
+
+- **Chat search scope**: I'd assume per-site by default — chats for site A don't get surfaced when working on site B. Cross-site search only on explicit request. Otherwise the AI gets noisy cross-talk.
+- **Heavy assets stay out of KMS**: screenshots and other large blobs live in R2; KMS indexes the markdown that *references* them. Brief and digests are pointers, not containers.
+- **The Brief's role isn't "the transcript" — it's "the canonical site memory."** Worth being precise about that distinction in the design doc, because they'll feel similar but have very different update patterns. Transcripts grow append-only; the Brief is rewritten as decisions evolve.
+
+## Where we are
+
+I think the conceptual model is converged:
+
+- **Fetch + extract** produces a digest (structured markdown + screenshot in R2)
+- **Digests live in chat history**, accessible cross-chat via KMS search
+- **The Brief is the site's canonical design memory** — markdown, KMS-treated, sectioned
+- **Same digest shape serves user view and AI view** — sidesteps the iframe problem
+- **Two extraction levels**: digest-only (inspiration) and digest + transcription-to-modules (convert killer demo)
+- **Search results → digests** for the "find me 5 local plumber sites" onboarding flow
+- **Iframe-with-screenshot-fallback** is optional and secondary; primary surface is the digest report
+
+Ready to draft this as a design doc whenever you say go. I'd put it at `docs/design/web-fetch-and-design-brief.md` or similar — single doc capturing the conceptual model, not a scope ticket yet (this will split into several tickets when we implement). Or do you want to keep shaping?
 
 
 <!-- xgd-chat-end -->
