@@ -6,9 +6,9 @@ title: 'Assets tab: R2-backed asset browser with TipTap WYSIWYG markdown editor 
   image preview'
 created_by: xgd
 created_at: '2026-06-16T23:14:45.765175+00:00'
-updated_at: '2026-06-16T23:14:45.765175+00:00'
+updated_at: '2026-06-16T23:20:39.411048+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   story_points: 5
@@ -107,3 +107,54 @@ Tests named `test_UAT_FC_<TICKET-ID>_*.ts`, under `tests/`. Stack: vitest + Mini
 - `htmlToMarkdown` in xgendev-main is hand-rolled to match the subset of HTML that StarterKit + Tables produces. It handles bold, italic, headings, lists, code, tables, links. Copy it whole — do not replace with `turndown` or similar.
 - Strip the diff/proposal extensions when copying the editor setup. Asset editing has no diff workflow.
 - The toolbar CSS in xgendev-main targets `#doc-editor-toolbar` / `#intent-editor-toolbar`. Rename to `.fc-asset-editor-toolbar` to match the `fc-` prefix used throughout `apps/control-app/public/builder.html`.
+
+
+## Design discussion — excerpts from session 2026-06-16
+
+The transcript below covers the design decisions baked into the scope above. Useful when picking the work up in a fresh session — it documents *why* each choice was made, not just *what* the choice was.
+
+### Original ask
+
+> **User:** I think there is a need for an asset management tool. It would have a file space listed on the left-hand side, a movable panel separator and on the right panel there would be a detailed view/editor. I think we would mostly be accommodating text and markdown files which could be edited. We should also accommodate the inclusion of images. I think we need to be able to do some very very basic image manipulation, cropping, perhaps converting into different formats rotation – that's probably enough to get us started. For the editor please look at the editors in ../xgendev-main where we use tiptap
+
+### Scope split
+
+> **Assistant:** This is too big for one free-coded ticket. I'd suggest splitting into two tickets:
+> 1. **Asset browser + text/markdown editor** — left file list, draggable splitter, right-side TipTap editor for `.md`/`.txt` files, image files render as previews (no editing). This is the panel + editor scaffolding.
+> 2. **Image manipulation** — crop / rotate / format convert (PNG↔JPEG↔WebP). Built on top of (1) once the asset detail panel exists.
+>
+> One open question that affects scope shape: is this surface file-backed only (operating on `sites/<name>/assets/` on disk in dev) or do you want it wired to whatever storage customer sites will use (R2 via the Worker)?
+
+This REQ is slice 1. Slice 2 is `REQ-ASSETS-IMAGE-OPS`.
+
+### Storage decision — R2
+
+> **User (replying to a misframing that file-backed kept assets in git):** I thought we decided the site definition was not going to be in git? We were going to store it in R2 I think? R2 sounds like the right answer here.
+
+Settled: R2 binding `ASSETS_BUCKET` on the control-app. Wrangler emulates locally in dev. Same code in production. The site definition itself also lives in R2 (relevant for `REQ-PUBLISH-REVISIONS`).
+
+### Surface — Assets tab in the new app shell
+
+> **User:** Take a look at the conversation in the chat called "Builder" we have just decided on a top level tab navigation structure much like XGD. This asset manager would be one of those tabs. Also note the chat window that we are embedding in every tab.
+
+From CHAT-9, the app shell decisions: top-bar tabs `Builder | Settings | Assets | (Revisions | Leads later)`, top-right avatar menu, chat panel per tab with `localStorage` persist, defaults open on Builder + Assets.
+
+The shell itself is a blocking prerequisite — see **REQ-UI-APP-SHELL**. This REQ contributes the Assets tab content only; the chat panel UI and tab bar live in the shell REQ.
+
+### Editor — WYSIWYG TipTap, copy from XGD
+
+> **Assistant (offering a fallback to plain textarea):** Edit `.md` files via TipTap WYSIWYG with marked→PM→markdown round-trip, or plain textarea with a side preview? Round-trip is the xgendev-main path but markdown serialization from PM has known fidelity issues. Textarea+preview is simpler and exact; WYSIWYG is nicer but riskier in a starter slice.
+>
+> **User:** Unfortunately it has to be WYSIWYG or nothing for our user base. Could you just copy the code from XGD? It does everything we need.
+
+Settled: WYSIWYG. Copy verbatim from `xgd_source/dashboard/static/index.html` in `../xgendev-main`. Specific copy targets (with approximate line numbers as of 2026-06-16) are listed in the **Decisions already made** section above.
+
+### Versioning — separate REQ
+
+> **User:** This is primarily a UI discussion, but I think there is also a versioning question that we should visit. I think we agreed that we're basically going to store snapshots of the site. Anytime you hit publish we store that version in history and can revert to it. That probably means we need a history tab for version management.
+
+Settled out of this REQ — see **REQ-PUBLISH-REVISIONS**. The cross-reference matters for the assets DELETE handler: that REQ adds a soft-block when an asset is referenced by any revision.
+
+### Image manipulation — follow-up REQ
+
+Image crop / rotate / format-convert is out of scope here. See **REQ-ASSETS-IMAGE-OPS**.
