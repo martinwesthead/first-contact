@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-16T01:01:47.000743+00:00'
+updated_at: '2026-06-16T01:14:22.326028+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -313,5 +313,13 @@ Done. Summary of what changed and what to watch:
 - Net result: my real code is on `927bf47` without the `[FREE-CODED]` tag. Merge-back review's tag-detection will miss it unless we rewrite history.
 
 I did *not* rewrite history (would have needed `git reset --soft` to consolidate). REQ-8's `fields.commits` now includes `927bf47`, and the body documents the lineage. **Want me to soft-reset and re-commit cleanly with the `[FREE-CODED]` tag in place?** That would consolidate `927bf47` + `1a0e901` into a single proper commit. Otherwise we accept the tag is missing on the code commit.
+
+<!-- xgd-turn id="a3cbeb85-85c5-482a-913d-2f1e125d88f7-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T01:14:17.645Z" -->
+#### You
+Sorry — chat endpoint returned 500.
+
+I got this error
 
 <!-- xgd-chat-end -->
