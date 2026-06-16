@@ -6,9 +6,9 @@ title: 'Browser Rendering integration: JS-rendered fetch path with screenshots a
   computed-CSS signals'
 created_by: xgd
 created_at: '2026-06-16T23:26:13.165904+00:00'
-updated_at: '2026-06-16T23:26:13.165904+00:00'
+updated_at: '2026-06-16T23:34:02.918720+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -127,3 +127,16 @@ Prompt body is updated to explicitly ask for visual observations when an image i
 9. With Browser Rendering budget exhausted ([[REQ-20]] §Acceptance 9 condition), `analyze_page` returns a digest with `fetchPath: 'static'` and a `whatsMissing` entry citing the exhausted budget. The call succeeds; it does not return `ok: false`.
 10. The builder `<DigestReport>` renders the screenshot strip at the top of the right panel; the screenshots are visible without scrolling on a 1440-wide builder layout.
 11. UAT: operator pastes the URL of a JS-rendered SPA → AI calls `analyze_page` → escalation fires → digest report renders with all three screenshots and computed typography in the right panel. Total wall-clock under 30 seconds.
+
+
+---
+
+## Alignment with persistent chat infrastructure (REQ-23 / REQ-24)
+
+[[REQ-23]] / [[REQ-24]] landed after this REQ was drafted. R2 screenshot keys are referenced from the digest's `tool_calls_json` row in [[REQ-23]]'s `chat_messages` table; chat-session deletion cascade-sweeps the screenshots. No schema change here; the integration is the existing `tool_result` payload reaching the `chat_messages` row through [[REQ-24]]'s `POST /api/chat` dispatcher.
+
+## Additional dependencies (alignment)
+
+- [[REQ-23]] — `chat_messages` schema (screenshot R2 keys persist in `tool_calls_json`).
+- [[REQ-24]] — Chat dispatcher (the path `analyze_page` runs through).
+- [[DOC-10]] §4.4 — attachment policy.
