@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-16T00:46:02.894085+00:00'
+updated_at: '2026-06-16T00:46:11.692495+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -220,5 +220,36 @@ REQ-8 is committed as a free-coded slice and the ticket is at `free_coded` with 
 <!-- xgd-chat role="user" ts="2026-06-16T00:45:49.020Z" -->
 #### You
 Is this a visible feature - how can I see it?
+
+<!-- xgd-turn id="ce929ec8-0fa2-4a18-b49a-728fde8c63bb-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T00:46:11.664Z" -->
+#### Claude
+Yes — it's a visible feature. The builder is a real, runnable two-panel web UI you can open in a browser locally.
+
+**How to see it:**
+
+```bash
+cd apps/control-app
+pnpm build:bundle    # esbuild → public/_assets/builder.js + starter-sites/1stcontact.json
+pnpm dev             # wrangler dev on :8788
+```
+
+Then open: `http://localhost:8788/builder?site=1stcontact`
+
+You should get the two-panel layout — collapsible chat panel on the left (chevron to collapse to a 32px bar), preview iframe on the right with mobile/tablet/desktop viewport buttons, draggable splitter between them, and the 1st Contact starter site rendered live in the iframe.
+
+**One caveat for the chat side:** the `/api/chat` endpoint needs the `CLAUDE_API_KEY` secret to actually call Anthropic. Without it the panel UI renders but a chat send returns 500. To wire it for local testing:
+
+```bash
+echo '<your-anthropic-key>' | wrangler secret put CLAUDE_API_KEY
+```
+
+Or for a no-key smoke test, you can verify the panel mechanics (collapse, splitter, viewport switch, preview render) work without ever calling the chat endpoint — those are the bits the UATs cover.
+
+**What you won't see yet:**
+- No auth wall — `/builder` is open in v1 (later REQ).
+- No D1 save — edits live in `localStorage` only (key `1stcontact_builder_panels_v1` for panel state, `1stcontact_builder_site_v1` for the site definition).
+- Reload preserves your edits; clearing localStorage resets to the starter site.
 
 <!-- xgd-chat-end -->
