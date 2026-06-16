@@ -6,9 +6,9 @@ title: 'Inspiration onboarding: search_references + compare_references tools + A
   comparative discussion'
 created_by: xgd
 created_at: '2026-06-16T23:30:16.350600+00:00'
-updated_at: '2026-06-16T23:30:16.350600+00:00'
+updated_at: '2026-06-16T23:34:04.031039+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -149,3 +149,21 @@ This is a soft prompt-level nudge, not a hard-coded UI step. The operator can sk
 8. After the operator names a preference, the AI calls `propose_brief_update` to add the chosen positioning to the Brief's `Voice & tone` section and the reference to the `References` section. The Brief tab reflects the change after the operator applies the proposal.
 9. Parallel digest production for 5 URLs completes within 40 seconds on the static-fetch path (no rendering escalations).
 10. UAT — full inspiration onboarding: new site → operator says "I'm a local plumber in Austin" → AI calls `search_references`, then `compare_references` with the top 5 → comparison report renders in chat → AI proposes a positioning question → operator picks one → Brief gets updated with the chosen positioning + references. Total wall-clock from first operator message to Brief update under 3 minutes.
+
+
+---
+
+## Alignment with persistent chat infrastructure (REQ-23 / REQ-24)
+
+[[REQ-23]] / [[REQ-24]] / [[DOC-10]] landed after this REQ was drafted. Integration points:
+
+- The `ReferenceComparison` `tool_result` is persisted as a `chat_messages` row's `tool_calls_json` per [[REQ-23]] schema. Each constituent digest is also a separate `chat_messages` row, allowing the AI to reach individual digests via [[REQ-24]]'s `read_session_range` later in the conversation.
+- The onboarding-flow priming nudge ("if the operator hasn't described their business yet, ask…") is implemented by checking the Brief's `Project context` section via [[REQ-27]]'s `read_brief({section: "Project context"})` tool at chat-session open — if the section content is `> TBD`, the system prompt gains the priming directive.
+- After the operator names a preference, the AI's `propose_brief_update` ([[REQ-27]]) call writes to the Brief; the comparison's positioning labels become the rationale text in the proposal.
+
+## Additional dependencies (alignment)
+
+- [[REQ-23]] — `chat_messages` schema (comparison + digests persist here).
+- [[REQ-24]] — `read_session_range` (re-reading earlier digests during the comparison discussion).
+- [[REQ-27]] — `read_brief` + `propose_brief_update` (priming + crystallization targets).
+- [[DOC-10]] §3 — three-memory-surface model (this REQ's flow crosses all three).
