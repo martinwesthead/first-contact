@@ -5,7 +5,7 @@ type: chat
 title: AI Web Access
 created_by: xgd
 created_at: '2026-06-16T21:56:33.168906+00:00'
-updated_at: '2026-06-16T23:17:52.510789+00:00'
+updated_at: '2026-06-16T23:35:34.719304+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -380,6 +380,78 @@ Drafted as **DOC-9** — *Web Reference Fetching and the Design Brief*.
 The doc captures everything we shaped: the three use cases (convert / inspiration / asset links), the Reference Digest as a shared user-and-AI artifact, the per-site Design Brief as canonical memory, the two-tier model (chat-scoped vs site-scoped), the two extraction levels (Layer A signals always, Layer B transcription for convert), the digest report as primary display surface with iframe-plus-screenshot-fallback secondary, the killer-demo progressive reveal, KMS-aware document shape from day one, Cloudflare-native implementation (Worker fetch + Browser Rendering + R2 + KV), and a safety contract for SSRF / redirects / size / robots / rate limits.
 
 It cross-references DOC-4/5/7/8 in the established pattern, and closes with 9 open questions and a list of forthcoming REQ tickets to break the implementation work into. Auto-committed by the ticketing API.
+
+
+<!-- xgd-turn id="df58eb0b-7776-4daa-a44a-b5844acda125" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T23:35:34.663Z" -->
+#### You
+Please create the necessary REQs and don't forget to attach the relevant parts of this transcript so that I can pick up the conversation in the intent specific sessions - we will need to close any open design questions as you go. You cannot leave design questions open in an REQ
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T23:35:34.663Z" -->
+#### Claude
+I'll first set up tasks for tracking, then look at how chat/REQ tickets are linked and structured here.
+
+I have a clear picture now. CHAT-13 already contains the full transcript; each REQ will cross-reference it plus embed the most relevant user statements directly. I'll close every design question with a concrete decision (the user explicitly forbids open questions in REQs).
+
+Let me set up tracking tasks and start drafting.
+
+Starting REQ A. Marking task in_progress.
+
+REQ A created as **REQ-20**. Moving to REQ B (Reference Digest + Layer A).
+
+REQ B created as **REQ-21**. Onward to REQ C (Browser Rendering).
+
+REQ D created as **REQ-27**. Now REQ E (Site Transcription — the convert killer demo).
+
+REQ E created as **REQ-28**. Final one — REQ F (search + inspiration onboarding flow).
+
+All 6 REQs created. There are also REQ-23/24/25/26 created in parallel that look like the persistent-chat + KMS infrastructure my REQs reference — let me verify alignment.
+
+DOC-10 explicitly aligns with the Brief being a third memory surface accessed via tool calls, not always-in-context. Let me update REQ-27 to match that pattern.
+
+Now updating DOC-9 §14 with the actual REQ numbers.
+
+All six REQs landed and cross-linked, DOC-9 updated. Summary:
+
+## REQs created
+
+| # | Title | Story points |
+|---|---|---|
+| [REQ-20] | Web fetch safety contract — SSRF, rate limiting, robots.txt, Browser Rendering budget | 5 |
+| [REQ-21] | Reference Digest schema + static-fetch + Layer A signal extractors | 7 |
+| [REQ-22] | Browser Rendering integration — JS-rendered path with screenshots + computed CSS | 6 |
+| [REQ-27] | Design Brief — per-site canonical memory + propose-and-apply AI updates + Brief tab | 7 |
+| [REQ-28] | Site Transcription (Layer B) — convert flow → module instances + theme tokens | 9 |
+| [REQ-29] | Inspiration onboarding — search + compare + AI-led discussion | 6 |
+
+## Every REQ closes its design questions
+
+Each REQ has a `## Decisions already made (open questions closed)` section with concrete values for every open question that affects its scope. Specific resolutions of [[DOC-9]] §13:
+
+- **Rate limits**: 20/h, 100/d, burst 10/60s ([REQ-20])
+- **Browser Rendering budget**: 50s/session, 200s/account/day ([REQ-20], [REQ-22])
+- **Crawl depth**: 1 page per reference in v1 ([REQ-29])
+- **KV TTLs**: 1h URL cache, 24h digest cache, no transcription cache ([REQ-20], [REQ-21], [REQ-28])
+- **Search provider**: Brave Search ([REQ-29])
+- **Transcription confidence**: per-module low/med/high + fallback draft on validator failure ([REQ-28])
+- **Robots override UX**: folded into the destructive-confirm modal ([REQ-28])
+- **Brief size**: ≤16KB target, 32KB hint, 64KB gate ([REQ-27])
+- **Sparse signals**: every field optional, "What's missing" commentary section ([REQ-21])
+
+## Transcript attached to each REQ
+
+Each REQ has a `## Design conversation` section that quotes the most relevant operator statements verbatim and links to [[CHAT-13]] for the full thread. When you start a session on any REQ, the transcript-grounded context is right there in the ticket body — no separate lookup needed.
+
+## Two alignment notes after spotting the parallel work
+
+REQ-23/24/25/26 + DOC-10 had been created in parallel (chat persistence + AI memory tools + reference docs library). I:
+- Rewrote [REQ-27] to align with [[DOC-10]] §3's "Brief = third memory surface accessed by name" rather than always-in-context — added a `read_brief({section?})` tool, the dispatcher inlines only summary + ToC.
+- Appended short alignment sections to [REQ-21], [REQ-22], [REQ-28], [REQ-29] documenting the integration with the [REQ-23]/[REQ-24] persistence model.
+
+## DOC-9 updated
+
+[[DOC-9]] §13 was rewritten from "Open Questions" to "Open Questions — Resolved" with pointers to where each was closed; §14 now lists the concrete REQ numbers plus the [DOC-10]-related infrastructure REQs (23/24/25/26).
 
 
 <!-- xgd-chat-end -->
