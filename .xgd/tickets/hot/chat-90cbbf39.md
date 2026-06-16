@@ -5,7 +5,7 @@ type: chat
 title: Asset manager
 created_by: xgd
 created_at: '2026-06-16T22:01:48.004010+00:00'
-updated_at: '2026-06-16T23:04:38.650269+00:00'
+updated_at: '2026-06-16T23:15:00.811832+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -130,6 +130,36 @@ Two calls before I write the ticket:
 
 - **(a)** vs **(b)** on the shell ordering?
 - Edit `.md` files via TipTap WYSIWYG with marked→PM→markdown round-trip, or plain textarea with a side preview? Round-trip is the xgendev-main path but markdown serialization from PM has known fidelity issues. Textarea+preview is simpler and exact; WYSIWYG is nicer but riskier in a starter slice.
+
+
+<!-- xgd-turn id="6cd317ac-e7f6-4c7c-981a-a473b64811ef" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T23:15:00.748Z" -->
+#### You
+Unfortunately it has to be WYSIWYG or nothing for our user base. Could you just copy the code from XGD? It does everything we need.
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T23:15:00.748Z" -->
+#### Claude
+Let me peek at how xgendev-main serializes back to markdown so the ticket can name exactly what to copy.
+
+Good — that simplifies things. I'll copy the xgendev-main TipTap setup verbatim where applicable. Let me draft the scope ticket now.
+
+Now creating the scope ticket itself.
+
+Scope ticket **REQ-16** is up: `Assets tab: R2-backed asset browser with TipTap WYSIWYG markdown editor and image preview` — story points 5, status `draft`, full behavior spec + scope IN/OUT + dependencies + 10 acceptance criteria + 6 UATs.
+
+The body documents:
+
+- **R2 binding** `ASSETS_BUCKET` + four Worker routes (`/api/assets/list`, `/assets/<key>`, `/api/assets/put/<key>`, `/api/assets/delete/<key>`)
+- **WYSIWYG editor copy targets** in xgendev-main with exact line ranges: `_loadTipTapDeps` (~8634), `htmlToMarkdown` (~9662), toolbar wiring (~9095), toolbar CSS (~1049). StarterKit + Placeholder + Tables. Strip the diff machinery.
+- **Layout**: generalize `builder-layout.ts` into a `createSplitLayout` helper, then have both tabs consume it.
+- **Blocking prerequisite**: `REQ-UI-APP-SHELL` (not yet drafted — provides tab bar, content area, chat panel slot). Dev against a stub `/assets` route until shell lands.
+- **Out of scope**: image manipulation (separate REQ), publish/revisions (separate REQ), shell, AssetRef pickers, multi-tenancy.
+
+Two things to confirm before I switch to code:
+
+1. **Sign off on REQ-16's scope** — any AC to add/remove? The conflict-on-PUT path (AC 10) and "generalize builder-layout into createSplitLayout" are the two judgement calls I made unilaterally; flag if either is wrong.
+2. **REQ-UI-APP-SHELL** — do you want me to draft that too (so we land it first), or are you happy to let me develop REQ-16 against the temporary stub host and refactor when the shell ticket happens?
 
 
 <!-- xgd-chat-end -->
