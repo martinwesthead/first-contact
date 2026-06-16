@@ -86,11 +86,17 @@ export function createBuilderLayout(
   restoreBar.setAttribute("data-fc-restore", "");
   restoreBar.setAttribute("aria-label", "Restore chat");
   restoreBar.textContent = "›";
+  restoreBar.style.alignItems = "center";
+  restoreBar.style.justifyContent = "center";
+  restoreBar.style.height = "100%";
+  restoreBar.style.flexShrink = "0";
 
+  // Order matters: restoreBar must sit BEFORE previewPanel so the collapsed
+  // rail appears on the left edge (where the chat panel was), not the right.
   root.appendChild(chatPanel);
   root.appendChild(splitter);
-  root.appendChild(previewPanel);
   root.appendChild(restoreBar);
+  root.appendChild(previewPanel);
   parent.appendChild(root);
 
   applyLayout();

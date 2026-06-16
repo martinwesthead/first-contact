@@ -26,9 +26,19 @@ export function createPreviewPanel(parent: HTMLElement): PreviewPanelHandle {
   const root = doc.createElement("div");
   root.className = "fc-preview";
   root.setAttribute("data-fc-preview", "");
+  // Without an explicit flex column the iframe's height:100% resolves against
+  // an auto-height block and collapses to its intrinsic ~150px (toolbar then
+  // squashes it further). Lock the preview root to a column that fills its
+  // parent so the iframe can flex.
+  root.style.display = "flex";
+  root.style.flexDirection = "column";
+  root.style.flex = "1 1 auto";
+  root.style.minHeight = "0";
+  root.style.height = "100%";
 
   const toolbar = doc.createElement("div");
   toolbar.className = "fc-preview__toolbar";
+  toolbar.style.flex = "0 0 auto";
 
   let viewport: ViewportPreset = "desktop";
 
@@ -46,6 +56,8 @@ export function createPreviewPanel(parent: HTMLElement): PreviewPanelHandle {
   iframe.setAttribute("data-fc-preview-iframe", "");
   iframe.setAttribute("title", "Site preview");
   iframe.style.border = "0";
+  iframe.style.flex = "1 1 auto";
+  iframe.style.minHeight = "0";
   iframe.style.height = "100%";
 
   root.appendChild(toolbar);
