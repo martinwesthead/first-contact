@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-9
 created_by: xgd
 created_at: '2026-06-15T22:45:21.164605+00:00'
-updated_at: '2026-06-17T20:07:15.642984+00:00'
+updated_at: '2026-06-17T20:08:06.803555+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -111,5 +111,31 @@ Parity principle recorded in REQ body for the matrix to surface as an architectu
 <!-- xgd-chat role="user" ts="2026-06-17T20:07:08.552Z" -->
 #### You
 Are you ready to free code this?
+
+<!-- xgd-turn id="c180ed7b-f75f-4420-93d0-6d39e626ea74-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-17T20:08:05.774Z" -->
+#### Claude
+Before saying yes, I want to ground myself in the current state — REQ-8 shipped and this REQ extends it. Let me check the ticket and existing code.
+
+Let me check what REQ-8 actually shipped — the ticket assumes SSE exists from REQ-8, but I should verify.
+
+I want to surface one scope question before agreeing — the ticket says "extends the SSE channel from REQ-8" but REQ-8 shipped without SSE (`/api/chat` is a synchronous POST returning `{text, toolCalls}` — no streaming).
+
+That matters because three of the five UAT event types (`action:notify`, `validation:error`, `state:invalidate`) are inherently asynchronous — they don't fit a request/response model. Implementing them properly means introducing the SSE transport in this REQ, not "extending" one.
+
+Two options for how to land this:
+
+**A. Treat SSE as part of REQ-9** (recommended). REQ-9 introduces the SSE endpoint AND the event registry / action framework / plan-tier middleware. The ticket body's "extends from REQ-8" gets rewritten to "introduces SSE at `/api/operator/events` and the multiplexed event registry." Single coherent unit. Story points likely bumps to ~6.
+
+**B. Split out an SSE-introduction REQ first**, then REQ-9 truly extends. Cleaner dependency story but more ceremony, and the SSE channel needs concrete consumer events to design well — which is what REQ-9 brings.
+
+I'd recommend A. Before I touch any code, can you confirm:
+
+1. **A or B?** (My recommendation: A.)
+2. **Auth stub shape**: should I read `account_id` + `plan_tier` from request headers (`x-account-id`, `x-plan-tier`), or from a session cookie that defaults to `{plan_tier: 'trial'}` when absent? Headers are simpler for v1 and lets the FE just set them; cookies anticipate the magic-link REQ better.
+3. **Tool list filtering**: should state-edit tools (the 8 from REQ-8) be moved into the `OPERATOR_ACTIONS` registry too, so the registry is the single source of truth — or left as the inline `TOOL_DEFINITIONS` block in `chat.ts` and only system actions go into the registry? The parity invariant says "the AI tool list IS the operator action list," which argues for moving them in. But REQ-8's ticket said the state-edits stay grandfathered. The ticket body here also says "grandfathered from REQ-8" but then says the registry is "single source of truth." That's a contradiction.
+
+Once those are settled I'll create the scope-locked body update, then write code.
 
 <!-- xgd-chat-end -->
