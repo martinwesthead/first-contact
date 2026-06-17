@@ -1,3 +1,11 @@
+import { sessionEventBus, type SseEvent } from "./operator/events.js";
+import {
+  findAction,
+  visibleToolSpecs,
+  type ActionResult,
+} from "./operator/registry.js";
+import { extractSession, type Session } from "./operator/types.js";
+
 export interface ChatHandlerEnv {
   CLAUDE_API_KEY?: string;
   CLAUDE_MODEL?: string;
@@ -27,124 +35,20 @@ export interface ChatRequestBody {
   frameworkCatalog: FrameworkCatalogShape;
 }
 
+export interface SystemActionInvocation {
+  readonly name: string;
+  readonly input: Record<string, unknown>;
+  readonly result: ActionResult;
+}
+
 export interface ChatResponseBody {
   text: string;
   toolCalls: Array<{ name: string; input: Record<string, unknown> }>;
+  systemActions: Array<SystemActionInvocation>;
 }
 
 const ANTHROPIC_DEFAULT_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-sonnet-4-6";
-
-const TOOL_DEFINITIONS = [
-  {
-    name: "set_module_content",
-    description:
-      "Update a single content field on an existing module instance. Use for changing text, images, links etc.",
-    input_schema: {
-      type: "object",
-      properties: {
-        instance_id: { type: "string" },
-        field: { type: "string" },
-        value: {},
-      },
-      required: ["instance_id", "field", "value"],
-    },
-  },
-  {
-    name: "set_module_dial",
-    description:
-      "Set a dial (finite-enum visual property) on a module instance. Value MUST be in the module's declared dial enumeration.",
-    input_schema: {
-      type: "object",
-      properties: {
-        instance_id: { type: "string" },
-        dial: { type: "string" },
-        value: { type: "string" },
-      },
-      required: ["instance_id", "dial", "value"],
-    },
-  },
-  {
-    name: "set_module_variant",
-    description:
-      "Set the variant of a module instance. Value MUST be in the module's declared variants list.",
-    input_schema: {
-      type: "object",
-      properties: {
-        instance_id: { type: "string" },
-        variant: { type: "string" },
-      },
-      required: ["instance_id", "variant"],
-    },
-  },
-  {
-    name: "add_module",
-    description:
-      "Insert a new module instance into a page. Optionally insert after a specific existing module.",
-    input_schema: {
-      type: "object",
-      properties: {
-        page_id: { type: "string" },
-        type: { type: "string" },
-        version: { type: "number" },
-        after_instance_id: { type: "string" },
-        variant: { type: "string" },
-        dials: { type: "object" },
-        content: { type: "object" },
-        id: { type: "string" },
-      },
-      required: ["page_id", "type", "version"],
-    },
-  },
-  {
-    name: "remove_module",
-    description: "Remove a module instance by id.",
-    input_schema: {
-      type: "object",
-      properties: { instance_id: { type: "string" } },
-      required: ["instance_id"],
-    },
-  },
-  {
-    name: "reorder_modules",
-    description:
-      "Reorder all modules on a page. instance_ids must list every module on the page exactly once in the desired order.",
-    input_schema: {
-      type: "object",
-      properties: {
-        page_id: { type: "string" },
-        instance_ids: { type: "array", items: { type: "string" } },
-      },
-      required: ["page_id", "instance_ids"],
-    },
-  },
-  {
-    name: "set_theme_token",
-    description:
-      "Set a site-wide theme token. Name must be in the catalog's themeTokenNames list (e.g. 'palette.primary').",
-    input_schema: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        value: { type: "string" },
-      },
-      required: ["name", "value"],
-    },
-  },
-  {
-    name: "set_site_config",
-    description:
-      "Set a single site config field (e.g. 'businessName', 'contact.email').",
-    input_schema: {
-      type: "object",
-      properties: {
-        field: { type: "string" },
-        value: {},
-      },
-      required: ["field", "value"],
-    },
-  },
-];
 
 export async function handleChatRequest(
   request: Request,
@@ -172,6 +76,9 @@ export async function handleChatRequest(
     return jsonError("CLAUDE_API_KEY is not configured", 500);
   }
 
+  const session = extractSession(request);
+  const tools = visibleToolSpecs(session.plan_tier);
+
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const url = env.ANTHROPIC_API_URL ?? ANTHROPIC_DEFAULT_URL;
   const model = env.CLAUDE_MODEL ?? DEFAULT_MODEL;
@@ -193,7 +100,7 @@ export async function handleChatRequest(
         model,
         max_tokens: 4096,
         system,
-        tools: TOOL_DEFINITIONS,
+        tools,
         messages,
       }),
     });
@@ -212,9 +119,63 @@ export async function handleChatRequest(
   }
 
   const anthropicJson = (await anthropicResponse.json()) as AnthropicMessage;
-  const { text, toolCalls } = extractContent(anthropicJson);
-  const responseBody: ChatResponseBody = { text, toolCalls };
+  const { text, toolCalls: rawCalls } = extractContent(anthropicJson);
+
+  // Split tool calls by registry category. State-edit calls flow back to the
+  // FE for client-side validator + apply. System-action calls execute
+  // server-side here; results emit on the session SSE channel AND ride back
+  // in the response body so callers without an open SSE still see them.
+  const stateEditCalls: Array<{ name: string; input: Record<string, unknown> }> = [];
+  const systemActions: Array<SystemActionInvocation> = [];
+
+  for (const call of rawCalls) {
+    const action = findAction(call.name);
+    if (!action) {
+      // Anthropic emitted a tool we don't know — pass through to FE so the
+      // existing client-side rejection path records it.
+      stateEditCalls.push(call);
+      continue;
+    }
+    if (action.category === "state_edit") {
+      stateEditCalls.push(call);
+      continue;
+    }
+    if (!action.handler) {
+      systemActions.push({
+        name: call.name,
+        input: call.input,
+        result: {
+          status: "failed",
+          error: `system action '${call.name}' has no handler`,
+        },
+      });
+      continue;
+    }
+    const emit = sessionEmitter(session);
+    let result: ActionResult;
+    try {
+      result = await action.handler(call.input, { session, env, emit });
+    } catch (err) {
+      result = {
+        status: "failed",
+        error: `handler threw: ${String(err)}`,
+      };
+    }
+    systemActions.push({ name: call.name, input: call.input, result });
+  }
+
+  const responseBody: ChatResponseBody = {
+    text,
+    toolCalls: stateEditCalls,
+    systemActions,
+  };
   return jsonResponse(responseBody);
+}
+
+function sessionEmitter(session: Session): (event: SseEvent) => void {
+  if (!session.session_id) return () => {};
+  const sessionId = session.session_id;
+  return (event: SseEvent): void => sessionEventBus.publish(sessionId, event);
 }
 
 interface AnthropicContentBlock {

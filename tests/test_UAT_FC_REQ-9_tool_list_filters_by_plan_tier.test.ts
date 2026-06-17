@@ -1,0 +1,76 @@
+import { describe, expect, it, vi } from "vitest";
+import { handleChatRequest } from "../apps/control-app/src/chat.js";
+import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
+import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+
+const STATE_EDIT_TOOLS = [
+  "set_module_content",
+  "set_module_dial",
+  "set_module_variant",
+  "add_module",
+  "remove_module",
+  "reorder_modules",
+  "set_theme_token",
+  "set_site_config",
+];
+
+describe("UAT FC REQ-9: /api/chat tool list is filtered by session plan_tier", () => {
+  function makeMockFetch(): {
+    fetch: ReturnType<typeof vi.fn>;
+    capturedBodies: Array<{ tools: Array<{ name: string }> }>;
+  } {
+    const capturedBodies: Array<{ tools: Array<{ name: string }> }> = [];
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedBodies.push(JSON.parse(String(init?.body)));
+      return new Response(JSON.stringify({ id: "msg_x", content: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    return { fetch: fetchMock, capturedBodies };
+  }
+
+  function makeChatRequest(planTier: string): Request {
+    return new Request("https://app.1stcontact.io/api/chat", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-session-id": `sess-${planTier}`,
+        "x-plan-tier": planTier,
+      },
+      body: JSON.stringify({
+        history: [{ role: "user", content: "hi" }],
+        siteDefinition: load1stContactSite(),
+        frameworkCatalog: buildFrameworkCatalog(),
+      }),
+    });
+  }
+
+  it("trial session: tool list includes state-edit tools and report_validation_rejection but NOT publish_stub", async () => {
+    const { fetch, capturedBodies } = makeMockFetch();
+    const response = await handleChatRequest(
+      makeChatRequest("trial"),
+      { CLAUDE_API_KEY: "k" },
+      { fetch: fetch as unknown as typeof fetch },
+    );
+    expect(response.status).toBe(200);
+    expect(capturedBodies).toHaveLength(1);
+    const toolNames = capturedBodies[0].tools.map((t) => t.name);
+    for (const t of STATE_EDIT_TOOLS) expect(toolNames).toContain(t);
+    expect(toolNames).toContain("report_validation_rejection");
+    expect(toolNames).not.toContain("publish_stub");
+  });
+
+  it("paid session: tool list also includes publish_stub", async () => {
+    const { fetch, capturedBodies } = makeMockFetch();
+    const response = await handleChatRequest(
+      makeChatRequest("paid"),
+      { CLAUDE_API_KEY: "k" },
+      { fetch: fetch as unknown as typeof fetch },
+    );
+    expect(response.status).toBe(200);
+    const toolNames = capturedBodies[0].tools.map((t) => t.name);
+    expect(toolNames).toContain("publish_stub");
+    for (const t of STATE_EDIT_TOOLS) expect(toolNames).toContain(t);
+  });
+});
