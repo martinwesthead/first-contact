@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-8
 created_by: xgd
 created_at: '2026-06-13T00:14:48.015024+00:00'
-updated_at: '2026-06-13T19:53:54.375962+00:00'
+updated_at: '2026-06-16T01:15:02.409935+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -214,5 +214,137 @@ REQ-8 is committed as a free-coded slice and the ticket is at `free_coded` with 
 - 8 new test files, 13 UATs, all passing alongside the existing 112 — 125/125 green.
 - Workspace `pnpm -r build` runs clean (esbuild bundle + `tsc --noEmit` across all packages).
 - Ticket parked at `free_coded`. Promotion to `ready_to_reconcile` is your call.
+
+<!-- xgd-turn id="ce929ec8-0fa2-4a18-b49a-728fde8c63bb-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T00:45:49.020Z" -->
+#### You
+Is this a visible feature - how can I see it?
+
+<!-- xgd-turn id="ce929ec8-0fa2-4a18-b49a-728fde8c63bb-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T00:46:11.664Z" -->
+#### Claude
+Yes — it's a visible feature. The builder is a real, runnable two-panel web UI you can open in a browser locally.
+
+**How to see it:**
+
+```bash
+cd apps/control-app
+pnpm build:bundle    # esbuild → public/_assets/builder.js + starter-sites/1stcontact.json
+pnpm dev             # wrangler dev on :8788
+```
+
+Then open: `http://localhost:8788/builder?site=1stcontact`
+
+You should get the two-panel layout — collapsible chat panel on the left (chevron to collapse to a 32px bar), preview iframe on the right with mobile/tablet/desktop viewport buttons, draggable splitter between them, and the 1st Contact starter site rendered live in the iframe.
+
+**One caveat for the chat side:** the `/api/chat` endpoint needs the `CLAUDE_API_KEY` secret to actually call Anthropic. Without it the panel UI renders but a chat send returns 500. To wire it for local testing:
+
+```bash
+echo '<your-anthropic-key>' | wrangler secret put CLAUDE_API_KEY
+```
+
+Or for a no-key smoke test, you can verify the panel mechanics (collapse, splitter, viewport switch, preview render) work without ever calling the chat endpoint — those are the bits the UATs cover.
+
+**What you won't see yet:**
+- No auth wall — `/builder` is open in v1 (later REQ).
+- No D1 save — edits live in `localStorage` only (key `1stcontact_builder_panels_v1` for panel state, `1stcontact_builder_site_v1` for the site definition).
+- Reload preserves your edits; clearing localStorage resets to the starter site.
+
+<!-- xgd-turn id="163364f5-d384-4b6e-a540-62fc3ef18aae-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T00:50:11.882Z" -->
+#### You
+ok there's a few issues (1) when I collapse the left side there's no column to bring it back. Please look at the Intent Tab in ../xgendev-main to see what I want here (2) I have been using the modals to see Desktop /Tablet/Mobile and the screen height has scrunk to about 50px...hard to see
+
+<!-- xgd-turn id="163364f5-d384-4b6e-a540-62fc3ef18aae-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T01:01:45.940Z" -->
+#### Claude
+Let me find the Intent Tab and the restore-rail pattern in xgendev-main.
+
+Now let me look at our builder code.
+
+Now let me look at the preview panel for the height bug.
+
+Found both bugs. Let me check the existing UATs first so I don't break them.
+
+I have the diagnosis. Let me make the edits.
+
+**Fix 1 — restore rail (builder-layout.ts):** the rail is appended *after* the preview, so when collapsed it ends up on the right edge of the screen. I'll insert it before the preview in DOM order and add inline flex styles so it renders as a visible left rail.
+
+Now also flip restoreBar's display so that when shown (empty inline) the CSS class drives `display: flex`. Since CSS doesn't have a rule, I'll add inline `display: flex` only when collapsed — but the existing UAT expects `""`. Better: leave the inline `display = ""` and rely on CSS in builder.html. Let me update the CSS in builder.html now.
+
+**Fix 2 — preview height:** `.fc-preview` is a block element with auto height, so the iframe's `height: 100%` collapses. Set inline flex sizing on the preview root from JS so it's tested independent of the page CSS.
+
+Now update `builder.html` so the restore rail has a visible flex layout and the preview wrapper has the same belt-and-braces CSS:
+
+Now UATs and run the existing ones to confirm nothing broke.
+
+jsdom serializes `minHeight: "0"` as `"0px"`. Fix the assertion.
+
+All 15 UATs green (10 prior + 2 new + adjacents). Let me also rebuild the bundle so the change is reflected in `public/_assets/builder.js`, then commit.
+
+Good — bundle is gitignored. Staging only my four files (excluding the unrelated `.xgd/quality.yaml` deletion):
+
+A background quality-apply process grabbed my staged changes and folded them into an auto-commit (`927bf470`) with its own message — no `[FREE-CODED]` tag. I need to amend the message so merge-back review recognizes the free-coded work; no diff content changes.
+
+History got mangled by the background quality-apply: `927bf47` has my real diff (no `[FREE-CODED]` tag), `1a0e901` was an auto-ticket-report that absorbed my amended message. Rather than rewriting history without permission, let me record `927bf47` on REQ-8 and flag this for you.
+
+First, update the ticket body (preserving the existing scope content) and append `927bf47` to `fields.commits`:
+
+Now append a polish-iteration note to the body, preserving existing content:
+
+Done. Summary of what changed and what to watch:
+
+**Bugs fixed**
+
+1. **Restore rail** — moved `restoreBar` to sit *before* `previewPanel` in DOM order and gave it full-height flex-centered styling. Now matches the XGD Intent Tab `#intents-list-panel.minimized` pattern: collapsing leaves a visible 32px rail on the left edge with a `›` chevron that restores to the remembered width.
+2. **Preview height** — `.fc-preview` was a default block with auto height, so the iframe's `height:100%` collapsed against it (~50px visible). Set inline `display:flex; flex-direction:column; flex:1 1 auto; min-height:0; height:100%` on the preview root and `flex:1 1 auto; min-height:0` on the iframe. Backed by matching CSS in `builder.html`.
+
+**Tests** — 2 new UATs added; all 10 REQ-8 UATs (15 tests) pass.
+
+**To see it**: `cd apps/control-app && pnpm build:bundle && pnpm dev`, then open `http://localhost:8788/builder?site=1stcontact`. Collapse the chat with the `‹` chevron — you should now see a 32px left rail you can click to restore. The preview should fill the right pane vertically when you flip between Mobile / Tablet / Desktop.
+
+**One thing for you to know** — a background `xgd quality` auto-apply ran between my `git add` and `git commit`, so:
+- Commit `927bf47` has my actual diff but the auto-process replaced my message with `xgd(quality): apply ai.gendevlabs...` — **no `[FREE-CODED]` tag**.
+- My `git commit --amend` raced with another auto-task; the amended message landed on a *new* commit (`1a0e901`) that only contains an auto-quality report.
+- Net result: my real code is on `927bf47` without the `[FREE-CODED]` tag. Merge-back review's tag-detection will miss it unless we rewrite history.
+
+I did *not* rewrite history (would have needed `git reset --soft` to consolidate). REQ-8's `fields.commits` now includes `927bf47`, and the body documents the lineage. **Want me to soft-reset and re-commit cleanly with the `[FREE-CODED]` tag in place?** That would consolidate `927bf47` + `1a0e901` into a single proper commit. Otherwise we accept the tag is missing on the code commit.
+
+<!-- xgd-turn id="a3cbeb85-85c5-482a-913d-2f1e125d88f7-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-16T01:14:17.645Z" -->
+#### You
+Sorry — chat endpoint returned 500.
+
+I got this error
+
+<!-- xgd-turn id="a3cbeb85-85c5-482a-913d-2f1e125d88f7-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-16T01:15:01.376Z" -->
+#### Claude
+Let me look at what triggers a 500 in the chat endpoint.
+
+Let me see how the chat panel surfaces the error to the user.
+
+The 500 is almost certainly **missing `CLAUDE_API_KEY`** — that's the only path to 500 in the worker (`apps/control-app/src/chat.ts:172`). Every other failure is 400/405/502.
+
+The error body says `{"error":"CLAUDE_API_KEY is not configured"}` but the chat panel swallows it and just shows the bare status (`chat-driver.ts:60`), which is why it's not obvious.
+
+**Fix for local dev** — `wrangler dev` reads secrets from a `.dev.vars` file (`wrangler secret put` only sets the *deployed* worker, not local):
+
+```bash
+# in apps/control-app/
+cat > .dev.vars <<'EOF'
+CLAUDE_API_KEY=sk-ant-...your-key...
+EOF
+```
+
+`.dev.vars` is wrangler-default-gitignored. Restart `pnpm dev` and the next chat send should succeed.
+
+If you'd also like the chat panel to surface the *real* server error (`"CLAUDE_API_KEY is not configured"`) instead of just the status code, say the word — that's a one-spot change in `chat-driver.ts` (still REQ-8 scope) and I'll free-code it.
 
 <!-- xgd-chat-end -->
