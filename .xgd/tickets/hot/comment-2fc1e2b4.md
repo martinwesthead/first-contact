@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-9
 created_by: xgd
 created_at: '2026-06-15T22:45:21.164605+00:00'
-updated_at: '2026-06-17T20:08:06.803555+00:00'
+updated_at: '2026-06-17T20:19:39.059114+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -137,5 +137,11 @@ I'd recommend A. Before I touch any code, can you confirm:
 3. **Tool list filtering**: should state-edit tools (the 8 from REQ-8) be moved into the `OPERATOR_ACTIONS` registry too, so the registry is the single source of truth — or left as the inline `TOOL_DEFINITIONS` block in `chat.ts` and only system actions go into the registry? The parity invariant says "the AI tool list IS the operator action list," which argues for moving them in. But REQ-8's ticket said the state-edits stay grandfathered. The ticket body here also says "grandfathered from REQ-8" but then says the registry is "single source of truth." That's a contradiction.
 
 Once those are settled I'll create the scope-locked body update, then write code.
+
+<!-- xgd-turn id="f149ea7b-1761-48eb-9f41-34d2b5216981-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-17T20:19:21.699Z" -->
+#### You
+Go ahead and add SSE I believe we are going to need it. I am disappointed it was short cut.
 
 <!-- xgd-chat-end -->
