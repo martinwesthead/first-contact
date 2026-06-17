@@ -6,15 +6,17 @@ title: 'Operator API foundation: /api/operator namespace + SSE event registry + 
   framework + plan-tier authorization'
 created_by: xgd
 created_at: '2026-06-15T22:42:14.698941+00:00'
-updated_at: '2026-06-15T22:42:14.698941+00:00'
+updated_at: '2026-06-17T20:43:14.513331+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   priority: medium
   story_points: 4
   auto_merge_back: true
   needs_review: false
+  commits:
+  - 2a774df5356e19c46a16fab8483e8fd177f38570
 ---
 
 ## Scope
@@ -109,3 +111,31 @@ For **state edits** (Category 1, already in REQ-8): unchanged. Stream tool calls
 
 - **Anthropic tool list serialization size** — if `OPERATOR_ACTIONS` grows to dozens of system actions, the system prompt's tool definitions could approach token-budget limits. Acceptable for v1 (single-digit system actions expected). Add a guard that logs warning if the serialized tool spec exceeds 8K tokens.
 - **Defensive plan-tier check inside handlers** — even though the tool list filters by plan tier, handlers should still verify; defense in depth against client tampering or future auth bugs.
+
+
+
+## Scope decisions (2026-06-17, locked at start of free-coding session)
+
+The original body was written assuming REQ-8 shipped an SSE channel. It did not — REQ-8's `/api/chat` is a synchronous POST returning `{text, toolCalls}`. The phrasing "extends the channel from REQ-8" is therefore reinterpreted as **"introduces in this REQ"** for the deliverables below. The three new event types (`state:invalidate`, `action:notify`, `validation:error`) are inherently asynchronous and cannot land without SSE; deferring SSE again would force their semantics into a poll-and-pretend shape that contradicts the operator API principle.
+
+### Decision 1 — SSE introduction is in REQ-9 scope (not a prerequisite)
+
+- New endpoint: `GET /api/operator/events?session_id=<id>` opens an event-stream-encoded multiplexed channel.
+- All five event types listed in the SSE section ship in this REQ.
+- Chat responses continue to return `{text, toolCalls}` as a *synchronous* fallback for v1; `chat:append` over SSE is wired in but only fires when chat is invoked alongside an open SSE session (the FE migration to streaming chat is REQ-12 territory).
+- Heartbeat every 15s. Channel closes cleanly on client disconnect.
+- Story-points realism: bumped in spirit to ~6 (not editing frontmatter mid-flight; logging here for matrix).
+
+### Decision 2 — Auth stub uses headers, not cookies
+
+- Worker reads `x-account-id` and `x-plan-tier` from incoming requests.
+- Defaults when absent: `account_id = "anonymous"`, `plan_tier = "trial"`.
+- Trial tier sees state-edit tools but no system-action tools (publish/rollback stubs).
+- Cookies / magic-link are a future REQ and will replace the header source without changing the registry contract.
+
+### Decision 3 — `OPERATOR_ACTIONS` registry is the single source of truth, including state-edit tools
+
+- REQ-8's eight state-edit tool definitions (`set_module_content`, `set_module_dial`, `set_module_variant`, `add_module`, `remove_module`, `reorder_modules`, `set_theme_token`, `set_site_config`) move into `OPERATOR_ACTIONS` with `plan_tier: 'trial'` (available to all sessions), `category: 'state_edit'`, and `ui_route: null` (chat-driven only for now; UI affordances ship in their own REQs).
+- The `TOOL_DEFINITIONS` constant in `chat.ts` is removed; `/api/chat` now derives its tool list from `OPERATOR_ACTIONS` filtered by session plan tier.
+- State-edit tools' execution semantics are **unchanged** from REQ-8: they remain Category-1 (streamed to FE for client-side validator + application). System actions are Category-2 (executed server-side, result emitted via `action:notify`). The `category` field on each registry entry disambiguates.
+- This resolves the "grandfathered" / "single source of truth" contradiction in the original body in favor of SSOT.
