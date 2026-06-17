@@ -1,14 +1,34 @@
 import { handleChatRequest, type ChatHandlerEnv } from "./chat.js";
+import { handleSseEndpoint } from "./operator/events.js";
+import { handleOperatorActionRequest } from "./operator/router.js";
 
 export interface Env extends ChatHandlerEnv {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
 }
+
+const OPERATOR_ACTION_PREFIX = "/api/operator/";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/api/chat") {
       return handleChatRequest(request, env);
+    }
+    if (url.pathname === "/api/operator/events") {
+      return handleSseEndpoint(request);
+    }
+    if (url.pathname.startsWith(OPERATOR_ACTION_PREFIX)) {
+      const actionName = url.pathname.slice(OPERATOR_ACTION_PREFIX.length);
+      if (actionName.length === 0 || actionName.includes("/")) {
+        return new Response(
+          JSON.stringify({ error: "operator action name must be a single segment" }),
+          {
+            status: 404,
+            headers: { "content-type": "application/json; charset=utf-8" },
+          },
+        );
+      }
+      return handleOperatorActionRequest(request, env, actionName);
     }
     // /builder (and /builder/) renders the SPA shell. Backed by Workers Static
     // Assets — we rewrite to /builder.html so the Asset binding serves it.
