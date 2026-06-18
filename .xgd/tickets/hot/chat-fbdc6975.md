@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-18T22:11:01.085129+00:00'
+updated_at: '2026-06-18T22:16:28.714442+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -189,6 +189,57 @@ Assumes REQ-20, REQ-13 (both parts), REQ-21, REQ-22, REQ-28 are landed. Chat per
 - **No chat persistence (REQ-23/24 deferred)** means: if you reload mid-flow, you lose the conversation and the digest. The screenshots in R2 persist but the digest record was held in memory only. For a demo this is fine; for a usability test it might bite.
 
 Does the walkthrough match your mental model, or are there gaps in the flow you want filled in (e.g. the layout question, or the card-style affordance pattern)?
+
+
+<!-- xgd-turn id="82d687c3-b496-4a6c-a9a8-c7c138e4eb5b" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T22:16:28.658Z" -->
+#### You
+Yes we definitely want a reusable chat-card pattern please make that part of the scope.
+
+And you to be sure all the assets and styling and content are downloaded from the site and stored in R2 (do we need to install a test sandbox of that?) and then incorporated into the new site?
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T22:16:28.658Z" -->
+#### Claude
+Two things to align on before I edit the tickets:
+
+## 1. Chat-card pattern — confirmed, will add to REQ-13
+
+I'll define a `<ChatCard>` UI primitive in REQ-13: consistent shell (header + body slot + optional actions row), shared styling, used by every structured `tool_result` renderer. `<DigestReport>` (REQ-21) and `<ConvertConfirmation>` (REQ-28) become instances. Future tool_results inherit the pattern instead of each one styling itself. **+1 pt to REQ-13 (4→5).**
+
+## 2. Asset / styling / content download — needs unpacking
+
+The three words land in three different places:
+
+| What | Where it ends up today | Change needed |
+|---|---|---|
+| **Content** (headlines, body copy, nav labels) | Already transcribed into module-instance text fields by REQ-28 | None |
+| **Styling** (palette, typography, layout) | Already transcribed into framework theme tokens by REQ-28's `deriveThemeTokens` + Opus pass — we *re-express* CSS as our tokens, not mirror raw CSS files. Per DOC-7 structured-edit discipline this is load-bearing | None |
+| **Media assets** (`<img>` files, logos, photos) | Currently OUT of scope — REQ-21 records URLs only; REQ-28 module AssetRefs point at the *external* URL | **Add to REQ-28**: new Stage 4 post-transcription that downloads each referenced asset via REQ-20's `safeFetch`, uploads to R2, rewrites AssetRefs |
+
+**+~3 pts to REQ-28 (9→12).** Stage 4 walks the module list, dedups by URL, downloads each through the safety layer (so the 5 MB cap, SSRF check, rate limits all apply), uploads to R2 under `sites/{siteId}/imports/{sha256(url):16}.{ext}`, then rewrites the AssetRef to that R2 key.
+
+## 3. Test sandbox — already there
+
+No separate install needed. Wrangler's Miniflare emulates R2 locally — REQ-20 §AC #17 already covers this. For the convert-flow UATs I'll add static HTML fixtures under `tests/fixtures/convert-flow/` (plain-HTML site, JS-heavy SPA, sparse-signal site) so we can exercise the full pipeline against deterministic inputs.
+
+For real end-to-end ("convert acmeplumbing.com") you'll just point at a public URL once we hit it; no sandbox infrastructure needed.
+
+## Open questions before I edit
+
+**Q1. Asset scope.** Just `<img src>`, or also CSS `background-image: url(...)` and `<video src>`?
+*My lean:* `<img>` only in v1. CSS backgrounds are stylistic and our framework modules pick their own; video bursts the 5 MB body cap and isn't typical small-business-site content. Inline SVG icons need nothing — they're text and get transcribed directly.
+
+**Q2. Failure mode.** When a download fails (over 5 MB, 403, robots blocked, etc.) — leave the external URL in the AssetRef, or drop the asset?
+*My lean:* leave the external URL + add the failure to the post-transcription chat note ("3 images couldn't be downloaded; they're still referenced by external URL — you can replace them via the Assets tab once it's built"). Keeps the demo visually intact; the operator can fix later.
+
+**Q3. Dedup scope.** Same URL referenced from two module instances — one download or two?
+*My lean:* one. SHA-256 of URL as the R2 key prefix means identical URLs collapse automatically.
+
+**Q4. Stage timing.** Stage 4 after the LLM transcription (the screenshot-then-tokens-then-modules sequence completes, then async asset download fills in) — or before, with module placement blocked on downloads?
+*My lean:* **after**, async. Modules render with the external URLs first (operator sees the converted site immediately), then AssetRefs swap to R2 keys as each download completes (faint chat progress notes per asset). Keeps the 60-second killer-demo target intact.
+
+Confirm or push back on Q1–Q4 and I'll roll the changes into REQ-13 and REQ-28.
 
 
 <!-- xgd-chat-end -->
