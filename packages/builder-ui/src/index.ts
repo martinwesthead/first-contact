@@ -9,6 +9,8 @@ export {
   type BuilderState,
   type BuilderStoreOptions,
   type ChatMessage,
+  type ChatToolCallRecord,
+  type ChatToolResultRecord,
   type Listener,
 } from "./store.js";
 export {
@@ -33,13 +35,29 @@ export {
 } from "./components/preview-panel.js";
 export {
   createChatPanel,
+  renderMarkdownToDom,
   type ChatPanelHandle,
   type ChatPanelOptions,
 } from "./components/chat-panel.js";
 export {
+  createChatCard,
+  type ChatCardHandle,
+  type ChatCardOptions,
+  type ChatCardTone,
+} from "./components/chat-card.js";
+export {
+  clearToolResultRenderers,
+  getRegisteredToolResultRenderer,
+  registerToolResultRenderer,
+  renderToolResult,
+  type ToolResultRenderer,
+  type ToolResultRendererContext,
+} from "./components/tool-result-renderers.js";
+export {
   runChatTurn,
   type ChatApiResponse,
   type ChatDriverOptions,
+  type ChatToolResult,
   type ChatTurnResult,
 } from "./chat-driver.js";
 export { bootBuilder, type BootBuilderOptions } from "./main.js";

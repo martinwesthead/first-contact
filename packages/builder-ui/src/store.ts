@@ -1,15 +1,34 @@
 import type { Site } from "@1stcontact/site-schema";
 import { validateSite } from "@1stcontact/site-schema";
 
+export type ChatToolResultRecord =
+  | {
+      readonly ok: true;
+      readonly applied: {
+        readonly tool: string;
+        readonly args: Record<string, unknown>;
+        readonly summary: string;
+        readonly data?: unknown;
+        readonly kind?: string;
+      };
+    }
+  | {
+      readonly ok: false;
+      readonly error: { readonly tool: string; readonly validation: unknown };
+    };
+
+export interface ChatToolCallRecord {
+  readonly name: string;
+  readonly input: Record<string, unknown>;
+  readonly accepted: boolean;
+  readonly error?: string;
+  readonly result?: ChatToolResultRecord;
+}
+
 export interface ChatMessage {
   readonly role: "user" | "assistant" | "system";
   readonly content: string;
-  readonly toolCalls?: ReadonlyArray<{
-    readonly name: string;
-    readonly input: Record<string, unknown>;
-    readonly accepted: boolean;
-    readonly error?: string;
-  }>;
+  readonly toolCalls?: ReadonlyArray<ChatToolCallRecord>;
 }
 
 export interface BuilderState {

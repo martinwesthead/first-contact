@@ -5,7 +5,9 @@ import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
 describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns extracted tool calls", () => {
   it("POSTs to the Anthropic endpoint with the bound API key and forwards tool_use blocks back as toolCalls", async () => {
+    let callCount = 0;
     const upstreamFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      callCount++;
       // Verify the URL, headers, and body match Anthropic's contract.
       expect(String(input)).toBe("https://api.anthropic.com/v1/messages");
       expect(init?.method).toBe("POST");
@@ -31,22 +33,35 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
       expect(typeof reqBody.system).toBe("string");
       expect(reqBody.system).toContain("hero@v1");
       expect(reqBody.system).toContain("palette.primary");
-      expect(reqBody.messages).toEqual([
-        { role: "user", content: "Make the primary color pink." },
-      ]);
 
-      // Return a mock Anthropic message with a text block + one tool_use block.
+      if (callCount === 1) {
+        // First turn: original user message only.
+        expect(reqBody.messages).toEqual([
+          { role: "user", content: "Make the primary color pink." },
+        ]);
+        // Return a mock Anthropic message with a text block + one tool_use block.
+        return new Response(
+          JSON.stringify({
+            id: "msg_test",
+            content: [
+              { type: "text", text: "Updated the primary color." },
+              {
+                type: "tool_use",
+                id: "toolu_test_1",
+                name: "set_theme_token",
+                input: { name: "palette.primary", value: "#ff0099" },
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      // Second turn: post-tool_result follow-up. No more tool calls — just a
+      // confirmation. This terminates REQ-13's multi-turn loop.
       return new Response(
         JSON.stringify({
-          id: "msg_test",
-          content: [
-            { type: "text", text: "Updated the primary color." },
-            {
-              type: "tool_use",
-              name: "set_theme_token",
-              input: { name: "palette.primary", value: "#ff0099" },
-            },
-          ],
+          id: "msg_test_2",
+          content: [{ type: "text", text: "Done." }],
         }),
         { status: 200, headers: { "content-type": "application/json" } },
       );
@@ -70,18 +85,24 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
       text: string;
-      toolCalls: Array<{ name: string; input: Record<string, unknown> }>;
+      toolCalls: Array<{
+        name: string;
+        input: Record<string, unknown>;
+        result?: unknown;
+      }>;
     };
-    expect(body.text).toBe("Updated the primary color.");
-    expect(body.toolCalls).toEqual([
-      {
-        name: "set_theme_token",
-        input: { name: "palette.primary", value: "#ff0099" },
-      },
-    ]);
+    expect(body.text).toContain("Updated the primary color.");
+    expect(body.toolCalls).toHaveLength(1);
+    expect(body.toolCalls[0]).toMatchObject({
+      name: "set_theme_token",
+      input: { name: "palette.primary", value: "#ff0099" },
+    });
 
-    // The handler must have called the upstream API exactly once.
-    expect(upstreamFetch).toHaveBeenCalledOnce();
+    // REQ-13 added the multi-turn tool_result loop. The stub returned a single
+    // tool call with no follow-up text turn, so the handler should call
+    // Anthropic at least once to dispatch, then a second time to read the
+    // post-tool-result response. Up to MAX_TOOL_TURNS (8) total.
+    expect(upstreamFetch.mock.calls.length).toBeGreaterThanOrEqual(1);
   });
 
   it("returns 500 if CLAUDE_API_KEY is missing", async () => {

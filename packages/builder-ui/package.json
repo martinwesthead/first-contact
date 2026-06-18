@@ -1,6 +1,6 @@
 {
   "name": "@1stcontact/builder-ui",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Chat-left / preview-right builder SPA. Served by control-app. (REQ-8)",
   "type": "module",
@@ -41,7 +41,13 @@
   },
   "dependencies": {
     "@1stcontact/framework": "workspace:*",
-    "@1stcontact/site-schema": "workspace:*"
+    "@1stcontact/site-schema": "workspace:*",
+    "@tiptap/core": "^2.6.0",
+    "@tiptap/pm": "^2.6.0",
+    "@tiptap/starter-kit": "^2.6.0",
+    "dompurify": "^3.1.6",
+    "marked": "^14.1.0",
+    "tiptap-markdown": "^0.8.10"
   },
   "devDependencies": {
     "typescript": "^5.6.0"

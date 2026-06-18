@@ -58,7 +58,12 @@ export async function handleOperatorActionRequest(
 
   let result: ActionResult;
   try {
-    result = await action.handler(input, { session, env, emit });
+    result = await action.handler(input, {
+      session,
+      env,
+      emit,
+      siteDefinition: null,
+    });
   } catch (err) {
     return jsonError(`action handler threw: ${String(err)}`, 500);
   }
