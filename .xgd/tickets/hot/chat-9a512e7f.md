@@ -5,7 +5,7 @@ type: chat
 title: Mobile app technology
 created_by: xgd
 created_at: '2026-06-18T00:16:23.943504+00:00'
-updated_at: '2026-06-18T00:43:52.900592+00:00'
+updated_at: '2026-06-18T00:46:33.187543+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -138,6 +138,41 @@ DOC-12 updated. Summary of what changed:
 - **Open questions** gained two new ones (tool-surface partitioning + chat history persistence/cross-device continuity).
 
 The sequencing implication: auth tokenization (item 1) is still the only true blocker. Items 4 (push) and 6 (owner chat endpoint) gate specific mobile features but don't block bootstrapping the mobile app.
+
+
+<!-- xgd-turn id="e5b0cc03-cc53-4a64-85e6-45609d931829" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T00:46:32.142Z" -->
+#### You
+Right, I think these are different use cases if the dashboard is open we can update it using SSE, but that's a completely different news case from "you got another lead!"
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T00:46:32.142Z" -->
+#### Claude
+Right — that's the sharper framing. They're two different signals through one event channel:
+
+- **Push** = "this thing happened; you should know about it" (app closed/backgrounded)
+- **SSE** = "you're already looking at the screen that shows these; let me keep it live" (app open, dashboard active)
+
+The clean way to do this on Cloudflare is a **per-account Durable Object as an event bus**. Writers (form handler, monitoring Worker) signal it once per event; the DO fans out to (a) connected SSE subscribers and (b) Expo push for offline devices. One signal, two delivery channels, no double-implementation. DOs hibernate when idle, so the per-account cost when no one's watching is near-zero.
+
+That also means chat SSE and dashboard SSE are *different* endpoints with different shapes:
+- **Chat SSE** — `POST /api/owner/v1/chat`, request-response, 1:1, lives in the request handler, no DO.
+- **Dashboard SSE** — `GET /api/owner/v1/events`, subscribe-broadcast, goes through the account DO.
+
+This is a meaningful change to DOC-12 — it adds the account DO as v1 infrastructure (it was previously deferred) and moves the email/push fan-out out of the form handler into the DO so there's a single fan-out point. Updating now.
+
+DOC-12 updated. Summary of what changed in this pass:
+
+- **Item #15 (real-time model)** rewritten as *two delivery paths from one event bus*. Push and dashboard-SSE are no longer competing options — they're complementary surfaces over the same event signal. Chat SSE is called out as a *separate endpoint, separate shape, separate lifecycle* — explicit warning not to conflate them.
+- **New item #15a** — `AccountEventBus` per-account Durable Object. Lazy-start, idle-hibernate, broadcasts to SSE subscribers, fans out to Resend + Expo Push. This is now the *single fan-out point* for owner events.
+- **Item #12 (form handler)** — no longer calls Resend or Expo Push directly. It signals the account DO with `lead.created`; the DO does the work.
+- **Item #13 (Queues)** — still deferred, with updated reasoning (DO handles fan-out, so Queues only matter for cross-account batched delivery).
+- **Upstream worklist item #4** — promoted to the largest single item, now reading "Account event-bus DO + device registration + email/push/SSE fan-out." This is the most substantive architectural addition since the original doc. The form-handler change becomes a thin wrapper around `accountDO.signal(event)`.
+- **Item #5 (monitoring)** updated to signal the same DO on status transitions — reuses #4's fan-out instead of reinventing.
+- **Item #6 (chat)** — explicitly notes chat SSE is *not* routed through the event bus.
+- **Two new open questions** — push-during-SSE redundancy in v1, and DO ring-buffer for reconnect gap replay.
+
+The sequencing implication: the upstream worklist is now (1) auth tokenization → (2) api-contracts → (3) owner-API skeleton → (4) **AccountEventBus DO + device-reg + fan-out** → (5) monitoring → (6) owner chat endpoint. Items 1–3 still gate everything; item 4 is now the gate for the first "feels live" feature on either web or mobile.
 
 
 <!-- xgd-chat-end -->
