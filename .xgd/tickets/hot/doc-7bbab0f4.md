@@ -5,9 +5,9 @@ type: doc
 title: 'Owner-Facing Mobile Companion: Technology and Web-Architecture Impact'
 created_by: xgd
 created_at: '2026-06-18T00:26:50.482313+00:00'
-updated_at: '2026-06-18T00:26:50.482313+00:00'
+updated_at: '2026-06-18T00:41:19.247073+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: null
 fields:
   doc_kind: architecture
@@ -40,7 +40,7 @@ The owner-facing mobile companion is a read-mostly dashboard for the small-busin
 12. On every successful lead write in `apps/public-site/src/forms.ts`, after the existing Resend email best-effort path, fan out to a push-notification best-effort path that resolves all registered devices for `(account_id, site_id)` and posts to the Expo Push API. Both side-effects remain best-effort and must not fail the lead write — preserve the existing guarantee.
 13. Defer Cloudflare Queues for notification fan-out until measured volume justifies it. The form handler currently runs Resend inline; push fan-out follows the same pattern. Revisit when either (a) lead volume per site exceeds a threshold that makes inline calls latency-noticeable, or (b) a second notification channel (SMS, webhook) lands.
 14. Implement the monitoring system called for in [DOC-5] § "Basic Monitoring Architecture" as a Cron Trigger Worker that probes each published site, writes results to a `site_status` events table, and on status transition (up→down, down→up) triggers the same notification fan-out (email + push). This unblocks the mobile "site health" surface without inventing new infrastructure.
-15. Do NOT add Server-Sent Events or WebSockets to the owner-facing API for v1. Mobile relies on push for real-time signal; portal polls or refetches on focus. The control-app's existing SSE remains scoped to builder chat sessions and is not used by owner-facing surfaces.
+15. Real-time signal model is **layered**: (a) **push notifications** are non-negotiable — only APNs/FCM (via Expo Notifications) can wake a backgrounded or killed app to deliver the "new lead arrived" signal, so device registration + push fan-out are required infrastructure regardless; (b) **polling-on-focus** via TanStack Query's default focus-refetch covers v1's "feels live while looking at the screen" need at zero infrastructure cost; (c) **SSE is permitted but additive** — React Native supports SSE via the `react-native-sse` polyfill under Expo's managed workflow with no ejection, so it is not a platform constraint. SSE may be added to the owner-facing API in v1.x once a concrete UX demands sub-second cross-device updates (e.g. live leads-inbox badges while the owner is actively viewing). Adding SSE requires a fan-out story (a Durable Object per account, or pub/sub) because a Worker request cannot push events from a different request; this is the real cost, not RN compatibility. Do not add WebSockets in v1.x — SSE covers the same use cases more cheaply on Workers. The control-app's existing SSE remains scoped to builder chat sessions and is not used by owner-facing surfaces.
 16. The mobile app must support full offline-tolerant reads via TanStack Query's cache persistence; lead lists, status pages, and stats must remain readable when the app is foregrounded without network. Mutations (status changes, notes) are queued and replayed on reconnect.
 17. Account/session model: one operator → one site is acceptable for MVP but the API contracts must accept and return `site_id` on every owner-facing resource, so the existing one-site assumption can lift without breaking clients. Mobile clients are written assuming multi-site from day one (site picker in the shell, even if it shows only one entry in v1).
 18. Do not introduce a separate analytics pipeline for stats in v1. Aggregate the existing `leads` table for lead-based stats; add a minimal `site_events` table later (page_view, form_view, form_submit) if/when richer analytics are requested. Stats endpoints in the owner API must shape responses around this future move — return `{ leads_total, leads_this_week, conversion_rate? }` rather than raw event-stream data.
