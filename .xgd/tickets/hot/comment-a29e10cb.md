@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-13
 created_by: xgd
 created_at: '2026-06-16T22:13:18.202090+00:00'
-updated_at: '2026-06-18T23:28:00.605509+00:00'
+updated_at: '2026-06-18T23:42:50.418541+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -137,5 +137,93 @@ Want me to proceed?
 <!-- xgd-chat role="user" ts="2026-06-18T23:27:01.391Z" -->
 #### You
 Please proceed
+
+<!-- xgd-turn id="7be2e605-6420-4304-9b65-9c77681cf0cc-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T23:42:49.343Z" -->
+#### Claude
+Now let me wire up `get_site_definition`. First I need to thread the current site definition through `ActionContext`.
+
+Now I need to find all the call sites that build an `ActionContext` and add the new `siteDefinition` field.
+
+Now the multi-turn chat loop. This is the biggest change. Let me rewrite `chat.ts`:
+
+Now update the FE chat-driver to consume the new tool result shape (and keep backwards-compat with tests that stub the old shape):
+
+Now update the store to widen `ChatMessage.toolCalls` to include the optional server-side `result`:
+
+Now update `index.ts` exports and the `chat-driver.ts` to point to the right `ChatToolResult` type:
+
+Now run a typecheck on the control-app and builder-ui to catch issues early:
+
+Both clean. Move to task 3.
+
+Now the `ChatCard` primitive:
+
+Now the tool_result dispatcher:
+
+Now the chat panel rewrite. Replacing plaintext with marked+DOMPurify, swap textarea for TipTap:
+
+Also export `renderMarkdownToDom` so renderers and tests can use it:
+
+Now typecheck:
+
+No top-level tsconfig — typechecks are per-package. Let me move on to tests.
+
+The existing REQ-8 test uses strict `toEqual` on the toolCalls shape, which my new response shape breaks. I'll update that test to match partially — REQ-13 explicitly extends the contract:
+
+The existing mock returns the same response forever, which would make my multi-turn loop run until MAX_TOOL_TURNS. Let me update it to terminate properly:
+
+Now run the existing tests to make sure they pass before adding new ones:
+
+Now let me also check the other REQ-8 chat tests pass, then write the new REQ-13 UATs:
+
+All 165 existing tests pass. Now I'll write the REQ-13 UATs. Let me split them into focused files:
+
+Now the first REQ-13 test — structured ok result:
+
+Now the markdown rendering tests:
+
+Now the TipTap tests:
+
+Now the ChatCard tests:
+
+Final test — the dispatcher uses `kind`:
+
+Now run all the REQ-13 tests to find the issues:
+
+All 22 new REQ-13 tests pass on the first run. Let me now run the full suite to confirm nothing regressed:
+
+103 test files, 187 tests, all green. Let me also typecheck both packages and run the bundle build for the FE to make sure nothing breaks there:
+
+Quality run is clean. Let me update the ticket body and commit:
+
+Now update the ticket body. I'll preserve the original content and append a "Free-coded delivery" section:
+
+Now update the ticket to free_coded status with the commit sha and append the delivery section to the body:
+
+The append-list used a literal key `fields.commits` instead of nesting `commits` under `fields`. Let me fix this:
+
+Frontmatter is clean. `commits: [8628a0a...]`, status: `free_coded`. Let me confirm with `xgd ticket get` and finalize tasks:
+
+REQ-13 is complete and committed as **`8628a0a`**. Summary of what shipped:
+
+**Part 1 — AI state visibility** (`apps/control-app/src/chat.ts`, `operator/registry.ts`)
+- Multi-turn Anthropic loop (cap 8 iterations). After each `tool_use`, executes the call server-side, builds a structured `tool_result` (`{ok:true, applied:{tool,args,summary}}` or `{ok:false, error:{tool,validation}}`), and re-calls Anthropic until no more tools. System prompt's site-state snapshot is recomputed per iteration from the working site.
+- New `get_site_definition` system action (plan_tier=trial). `ActionContext.siteDefinition` threading added; handler returns the current draft, serialized into `applied.data` for the AI.
+
+**Part 2 — Chat markdown rendering** (`packages/builder-ui/src/components/chat-panel.ts`)
+- Assistant messages: `marked` (GFM, links → `target=_blank` + `rel="noopener noreferrer"`) → `DOMPurify`. `<script>` and on-event handlers stripped.
+- Input editor: TipTap (`@tiptap/core` + `@tiptap/starter-kit` + `tiptap-markdown`). Paste renders markdown formatted, submit serializes back to markdown. Cmd/Ctrl+Enter to send.
+
+**Part 3 — `<ChatCard>` + dispatcher** (`packages/builder-ui/src/components/{chat-card,tool-result-renderers}.ts`)
+- `createChatCard(parent, options)` vanilla factory (mirrors REQ's React props). Tones: neutral/info/success/warning/danger. Collapse toggle, actions row.
+- `registerToolResultRenderer(kind, fn)` + `renderToolResult(ctx)`. Known kinds route to registered components ([[REQ-21]]/[[REQ-28]] register their own). Unknown kinds and failure results fall back to ChatCard.
+
+**Adaptations from REQ wording** (codebase is vanilla TS/DOM, not React): React-markdown → `marked + DOMPurify`; React `<ChatCard>` → vanilla factory. TipTap kept as specified.
+
+**Tests**: 12 new files, 22 cases under `tests/test_UAT_FC_REQ-13_*`, covering every UAT in the REQ. Updated `test_UAT_FC_REQ-8_chat_endpoint_invokes_anthropic` for the new multi-turn shape. **187/187 tests pass**, `xgd quality run --all-tests` clean.
+
+**Ticket**: REQ-13 status → `free_coded`, `fields.commits = [8628a0a]`, body appended with delivery section preserving the original scope.
 
 <!-- xgd-chat-end -->
