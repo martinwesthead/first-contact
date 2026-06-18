@@ -5,7 +5,7 @@ type: chat
 title: Mobile app technology
 created_by: xgd
 created_at: '2026-06-18T00:16:23.943504+00:00'
-updated_at: '2026-06-18T00:41:28.660317+00:00'
+updated_at: '2026-06-18T00:43:52.900592+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -104,6 +104,40 @@ DOC-12 updated. Policy item #15 now reads as a layered model:
 - **WebSockets** stay out of v1.x — SSE covers the same use cases more cheaply on Workers.
 
 The takeaway for sequencing: device-registration + push fan-out (item #4 in the upstream list) still lands first because it's needed for the killer feature. SSE becomes a separately-scoped follow-up if/when we want live in-app updates — which means the auth, contracts, and owner-API tickets do not need to assume SSE in their first design.
+
+
+<!-- xgd-turn id="e035fed6-2bec-4470-a2ae-56551f35730b" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T00:43:52.863Z" -->
+#### You
+I think it's only relevant when we're using the app but for the chat feature which I think should exist in the app, it seems like the right solution polling is really clunky. We should use push notifications for out of band updates
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T00:43:52.863Z" -->
+#### Claude
+You're right and I missed that chat was in scope for mobile. Chat streaming via polling is awful — you either poll every 200ms (wasteful, still clunky) or wait for whole-message completion (kills the perceived-latency win). SSE is the standard answer for AI chat streaming, and it costs us very little here because we already have it: the control-app already runs an SSE multiplex keyed by `session_id` for the builder chat — same primitive, just exposed under owner auth.
+
+That also simplifies the fan-out concern I raised before. Chat SSE is **1:1** (one stream per active session, lives only while the user has the chat screen open), not a fan-out from a write event to every device. No Durable Object or pub/sub needed.
+
+Two quick architectural notes before I update the doc:
+
+1. **Same backend infrastructure as the builder's chat** — same SSE format, same session model, same Worker. The owner-mobile chat just uses a different system prompt and a different tool surface (CRM actions: mark lead status, draft a follow-up email, summarize this week — NOT site-editing tools). Whether that's one `/api/owner/v1/chat` endpoint with a `mode` param or a separate route is a product decision, not an architectural one; both work.
+2. **Push covers backgrounded.** When the app is closed and a lead comes in, the OS wakes the app via push. When the user opens the chat to ask "what just happened?", SSE streams the reply. The two are complementary, not alternatives.
+
+Updating DOC-12.
+
+DOC-12 updated. Summary of what changed:
+
+- **Overview** — chat is now in scope, framed as an "AI assistant chat for non-editing tasks" (lead questions, follow-up drafting, activity summaries, CRM actions via natural language). Explicit guardrail: mobile chat's tool surface excludes site-editing.
+- **Policy item #15** rewritten as a four-way layered model:
+  - Out-of-band events → push
+  - In-app chat streaming → SSE (1:1 stream, reuses existing builder SSE infrastructure — no Durable Object needed)
+  - List/status freshness → TanStack Query focus-refetch
+  - Cross-device live updates → explicitly deferred (this is the only case that would justify the DO/pub-sub cost)
+- **New policy item #10a** — `POST /api/owner/v1/chat` (SSE response) reusing existing chat infrastructure with a different system prompt and tool surface. Whether it's a `mode` param or a separate route is a follow-up product call; the architectural commitment is "no parallel chat stack."
+- **Upstream worklist** grew from 5 to 6 items — added "Owner chat endpoint with non-builder tool surface" — small layer over existing primitives, ideally lands before the first mobile chat screen.
+- **Open questions** gained two new ones (tool-surface partitioning + chat history persistence/cross-device continuity).
+
+The sequencing implication: auth tokenization (item 1) is still the only true blocker. Items 4 (push) and 6 (owner chat endpoint) gate specific mobile features but don't block bootstrapping the mobile app.
 
 
 <!-- xgd-chat-end -->
