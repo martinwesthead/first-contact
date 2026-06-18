@@ -9,6 +9,32 @@ workers_dev = true
 directory = "public"
 binding = "ASSETS"
 
+# Web-fetch safety layer: rate-limit, response, robots, and browser-rendering
+# budget counters (REQ-20). Real namespace IDs filled in at deploy time; in
+# `wrangler dev` Miniflare emulates KV locally so the placeholder is fine.
+[[kv_namespaces]]
+binding = "FETCH_RATE_KV"
+id = "placeholder_fetch_rate_kv"
+
+[[kv_namespaces]]
+binding = "FETCH_CACHE_KV"
+id = "placeholder_fetch_cache_kv"
+
+[[kv_namespaces]]
+binding = "FETCH_ROBOTS_KV"
+id = "placeholder_fetch_robots_kv"
+
+[[kv_namespaces]]
+binding = "BROWSER_BUDGET_KV"
+id = "placeholder_browser_budget_kv"
+
+# R2 assets bucket (REQ-20). Backs the /api/assets/* + /assets/<key> routes
+# and is the target for downstream screenshot/asset persistence (REQ-21/22)
+# and the assets-tab editor (REQ-16).
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "1stcontact-assets"
+
 [env.production]
 routes = [
   { pattern = "app.1stcontact.io/*", zone_name = "1stcontact.io" }
@@ -17,3 +43,23 @@ routes = [
 [env.production.assets]
 directory = "public"
 binding = "ASSETS"
+
+[[env.production.kv_namespaces]]
+binding = "FETCH_RATE_KV"
+id = "placeholder_fetch_rate_kv"
+
+[[env.production.kv_namespaces]]
+binding = "FETCH_CACHE_KV"
+id = "placeholder_fetch_cache_kv"
+
+[[env.production.kv_namespaces]]
+binding = "FETCH_ROBOTS_KV"
+id = "placeholder_fetch_robots_kv"
+
+[[env.production.kv_namespaces]]
+binding = "BROWSER_BUDGET_KV"
+id = "placeholder_browser_budget_kv"
+
+[[env.production.r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "1stcontact-assets"

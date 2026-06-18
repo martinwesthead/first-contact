@@ -15,9 +15,9 @@ suites:
     - packages/builder-ui/src
     - packages/framework/src
     - packages/site-schema/src
+    - packages/web-fetch-safety/src
     test_dirs:
     - tests
-    per_test_timeout: 30000
     lint:
       tool: eslint
     build:
