@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-20
 created_by: xgd
 created_at: '2026-06-18T22:45:33.857090+00:00'
-updated_at: '2026-06-18T22:48:41.352260+00:00'
+updated_at: '2026-06-18T23:05:16.608943+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -65,5 +65,85 @@ Want me to proceed, or push back on either call before I start?
 #### You
 Yes, please update REQ-10 to capture this decision
 Agreed
+
+<!-- xgd-turn id="6f55a459-e53a-4e65-99b0-64d211098a87-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T23:05:15.493Z" -->
+#### Claude
+On it. I'll patch REQ-10 with a coordination note about the `account_id` extraction contract, then kick off REQ-20 with a task list.
+
+REQ-10 updated with the coordination note. Task list set up (13 items). Starting with task #1 — scaffolding the package.
+
+Now the core types module — single source of truth for the discriminated unions referenced by every other file.
+
+Reading AC-1 carefully: it shows `reason: "private_ip"` and says "Same for" all the others. The test will literally assert `reason === "private_ip"` per the criterion — so I'll collapse SSRF subreasons to that single public label and keep the subreason in `detail`.
+
+Now the SSRF + scheme validator. Marking task #1 done as scaffold (package.json, tsconfig, types) is in place; starting task #2.
+
+Now `safeFetch`. Manual redirect handling so each hop revalidates. Body cap enforced by streaming the reader and aborting at the threshold.
+
+Task #5 (KV-backed URL response cache) is already implemented inside `safe-fetch.ts` — cacheKey/sha256, write on 2xx, read on entry — so I'll mark it done. Now task #6: the rate-limit middleware.
+
+Package core complete. Now Worker-side wiring: account extractor, safety health route, R2 assets routes, and the chat-dispatcher hook for intent-token minting.
+
+Now I'll add the Worker-side safety health route + R2 assets routes, hook the intent-minting into the chat handler, and wire the index.
+
+Now wire everything into `index.ts` and update `wrangler.toml`. Also: add `@1stcontact/web-fetch-safety` as a workspace dep of control-app.
+
+Now install workspace deps and verify the TypeScript builds before writing tests.
+
+Package builds clean. Now control-app:
+
+Builds clean. Wrangler config done. Now the 12 UAT tests. I'll write helpers + the test files.
+
+I'll write a small KV/R2 mock helper first, then the 12 UATs. The mock keeps test cost low; the `wrangler_dev` AC-17 spins up Miniflare for a true emulator check.
+
+Now the 12 UAT test files. AC-1 to AC-12 first, then AC-13 to AC-17.
+
+For AC-17 (wrangler-dev emulator), I'll use `getPlatformProxy` from wrangler — it provides the same local R2/KV emulator that `wrangler dev` uses.
+
+All 12 UATs written. Run the suite:
+
+Three real spec interpretations to fix:
+
+1. **AC2/AC3 ordering**: `file://` and `data:` should be `disallowed_scheme`, but `http://127.0.0.1` should be `private_ip` (the SSRF rejection beats the scheme rejection only when the scheme can carry a host). I'll reorder: scheme triage first for "no-host" schemes, then SSRF, then http-conditional.
+2. **AC17 stream**: Miniflare's R2 requires a known body length. Buffer the request body before put.
+
+All 12 UATs, 29 assertions, green. Now run the full suite to make sure nothing else regressed (the chat.ts edit + control-app Env interface widening could touch existing tests).
+
+All 91 test files, 165 tests green. No regressions. Now the build:
+
+Build is clean. Quality run + commit + ticket update.
+
+The `per_test_timeout` field is a pre-existing config issue (rejected by the plugin schema), not introduced by REQ-20. Per CLAUDE.md, config edits are exempt from free-coding. I'll remove the bad field and add `packages/web-fetch-safety/src` to the source_dirs.
+
+Quality is green. Now commit + ticket update.
+
+I'll explicitly stage only REQ-20 files. The pre-existing `package.json` / `pnpm-lock.yaml` / `.dev.vars` dirt is from before this session.
+
+Before I commit: the session-start state showed pre-existing dirt (root `package.json`, `pnpm-lock.yaml`, untracked `.dev.vars`). My changes to `pnpm-lock.yaml` for the new workspace package are mixed in with the pre-existing `@vitest/coverage-v8` devDep addition.
+
+Bundling into the REQ-20 commit (the coverage devDep is harmless and the lock has to stay in sync). Skipping `.dev.vars` — that's secrets.
+
+Done. REQ-20 is committed (`212b974`) and the ticket is at `status: free_coded` with the SHA recorded.
+
+**Summary of what landed**
+
+| Half | What shipped | Where |
+|---|---|---|
+| Safety layer | `validateTarget`, `safeFetch` (manual redirect, 5 MB cap, 1h KV cache), `RobotsTxtCache`, `checkRateLimit` (20/h, 100/d, 10/60s burst), `chargeBrowserBudget` (50s/session, 200s/day), `mintIntentToken` / `verifyIntentToken` | new package `packages/web-fetch-safety` |
+| Worker plumbing | `/api/_safety/health`, `extractAccountId` hook, chat-dispatcher intent-token mint | `apps/control-app/src/safety/`, `apps/control-app/src/chat.ts` |
+| R2 assets | `GET /api/assets/list`, `GET /assets/<key>`, `PUT /api/assets/put/<key>` (with `If-Match`), `DELETE /api/assets/delete/<key>` | `apps/control-app/src/assets/routes.ts` |
+| Bindings | `FETCH_RATE_KV`, `FETCH_CACHE_KV`, `FETCH_ROBOTS_KV`, `BROWSER_BUDGET_KV`, `ASSETS_BUCKET` (root + `[env.production]`) | `apps/control-app/wrangler.toml` |
+| Tests | 12 UAT files covering AC 1–17 (29 assertions); AC-17 boots `wrangler.getPlatformProxy` against the real config for an actual `wrangler dev`-shape R2 round-trip | `tests/test_UAT_FC_REQ-20_*.test.ts` |
+| Coordination | Append-note in REQ-10 documenting the `extractAccountId` contract so the accounts schema work knows what to plug in | `request-6e7f0ebe` |
+| Side fix | Removed stale `per_test_timeout` field from `.xgd/quality.yaml` that the vitest plugin schema rejected; added `packages/web-fetch-safety/src` to `source_dirs` | `.xgd/quality.yaml` |
+
+**Verification**
+- Full vitest suite: **91 files, 165 tests, all green** (no regressions).
+- `pnpm build` clean across all workspace packages.
+- `xgd quality run --test-filter-expression REQ-20`: **SUCCESS**.
+
+One uncommitted file remains in the tree by design: `apps/control-app/.dev.vars` (untracked at session start — almost certainly secrets, deliberately not staged).
 
 <!-- xgd-chat-end -->
