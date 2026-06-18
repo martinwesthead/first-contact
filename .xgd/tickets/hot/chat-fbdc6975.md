@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-18T22:16:28.714442+00:00'
+updated_at: '2026-06-18T22:27:51.225886+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -240,6 +240,48 @@ For real end-to-end ("convert acmeplumbing.com") you'll just point at a public U
 *My lean:* **after**, async. Modules render with the external URLs first (operator sees the converted site immediately), then AssetRefs swap to R2 keys as each download completes (faint chat progress notes per asset). Keeps the 60-second killer-demo target intact.
 
 Confirm or push back on Q1–Q4 and I'll roll the changes into REQ-13 and REQ-28.
+
+
+<!-- xgd-turn id="ddb6b8f9-bf96-4944-a993-d78a379ebf49" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T22:27:51.174Z" -->
+#### You
+Just `<img src>`, or also CSS `background-image: url(...)` and `<video src>`? <-- our goal is to be able to reproduce their site so it looks as identical as possible using our framework if there are gaps we need to understand what they are. Q2 - agree with your proposal Q3 - yes it would actually be nice if the web tool understood the URL connection and only download  a URL once. Q4 - agree with your suggestion.
+
+Please make sure that all the tickets are clearly updated to reflect this conversation and then I will implement those tickets directly.
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T22:27:51.174Z" -->
+#### Claude
+I'll roll all decisions into the tickets. Plan:
+
+1. **REQ-13** — full rewrite to add the `<ChatCard>` primitive (+1 pt → 5)
+2. **REQ-21** — expand asset inventory to capture `background-image` and `<video>` URLs; weaken the REQ-23/24 alignment block to "future wire-up, not blocking"
+3. **REQ-22** — add `background-image` to computed-CSS extraction; same alignment-note adjustment
+4. **REQ-28** — add **Stage 4 asset download** (per Q1–Q4); remove from OUT; bump 9 → 12; add test fixtures; same alignment-note adjustment
+5. **REQ-23 / REQ-24 / REQ-27** — append a "deferred from demo" note
+
+Let me draft the four full bodies and apply them.
+
+Now apply the four full-body updates and the three deferred-note appends in parallel.
+
+Now the deferred-from-demo notes on REQ-23, REQ-24, REQ-27.
+
+All seven tickets updated. Final demo critical-path slice:
+
+| REQ | Title | Pts | Change |
+|---|---|---|---|
+| REQ-20 | Web fetch safety + R2 assets bucket | **7** | (earlier) absorbed R2 plumbing from REQ-16 |
+| REQ-13 | AI state visibility + chat markdown + `<ChatCard>` | **5** | added `<ChatCard>` primitive + tool_result dispatcher (+1) |
+| REQ-21 | Reference Digest + static fetch + Layer A | **7** | expanded asset inventory: `img` / `background` / `video` with dedup |
+| REQ-22 | Browser Rendering + screenshots + computed CSS | **6** | added computed `background-image` extraction; merges into inventory |
+| REQ-28 | Site Transcription (Layer B) | **12** | added Stage 4 asset mirroring to R2 (+3) |
+| | **Total** | **37** | |
+
+**Deferred (annotated with "deferred from demo critical-path" note):** REQ-23, REQ-24, REQ-27. The convert tools' future-alignment notes are now framed as "wire-up later", not blocking.
+
+**Untouched (deferred until after the demo validates the framework):** REQ-10, 11, 12, 14, 15, 16, 17, 18, 19, 25, 26, 29.
+
+Tickets are ready for implementation. Per the free-coding protocol they're already scope-defined — you can pick any of the five and start, with REQ-20 the natural first (it unblocks the others). REQ-13 and REQ-21 are independent of each other once REQ-20 lands; REQ-22 depends on REQ-21; REQ-28 depends on all four.
 
 
 <!-- xgd-chat-end -->
