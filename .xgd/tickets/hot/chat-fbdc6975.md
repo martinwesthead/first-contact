@@ -5,11 +5,84 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-18T21:52:07.116888+00:00'
+updated_at: '2026-06-18T21:59:12.313904+00:00'
 completed_at: null
-last_field_updated: title
+last_field_updated: body
 status: open
 fields: {}
 ---
+
+<!-- xgd-turn id="b0612689-fa40-4eef-af0b-a5ab1fcee7b2" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T21:59:11.229Z" -->
+#### You
+Please can you quickly review the REQ's that we have in draft state and they're related design documents.
+
+I want to have a discussion about the correct ordering of these requirements. My immediate concern is to validate that the choices of framework restriction that we have made give us the flexibility that we require to build beautiful websites. I believe the best way to validate this is to implement the on boarding use case we discussed, where the AI is charged with reproducing roughly and existing website.
+
+To do this, we would need the web browsing/access tools and basic asset and content management capability (not necessarily editors). 
+
+We have around 20 REQs can you help me define an ordering for them and possible scoping to help me get to this test?
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T21:59:11.229Z" -->
+#### Claude
+Let me verify what foundation REQs (REQ-1 through REQ-9) are already done, so I can ground the recommendation in current state.
+
+Here's where I landed. Foundation REQ-1..REQ-8 are already bundled (chat builder + framework + in-browser preview exist), and REQ-9 (operator API foundation) is mid-reconcile. So the substrate for the demo is already in place — we just need the fetch/transcribe path.
+
+## The demo's irreducible critical path
+
+To get "paste URL → AI reproduces site as editable draft" working:
+
+| # | REQ | Pts | Why it's required |
+|---|---|---|---|
+| 1 | **REQ-20** Web-fetch safety | 5 | Every fetch must go through it; can't ship REQ-21/22 without it |
+| 2 | **REQ-21** Reference Digest + static fetch + Layer A | 7 | Produces the artifact AI consumes |
+| 3 | **REQ-22** Browser Rendering + screenshots | 6 | Without this, most real sites give an empty digest |
+| 4 | **REQ-28** Site Transcription (Layer B) | 9 | The actual "make this a 1stContact site" step |
+
+That's **27 points**. Plus a sliver to land: R2 bucket binding (currently bundled inside REQ-16's assets-tab REQ; you'd want it pulled out).
+
+## Things I'd defer outright
+
+| REQ | Reason to defer |
+|---|---|
+| REQ-10/11/12/18 | Publish/revision/draft-published lifecycle — irrelevant until the demo proves the framework |
+| REQ-14, REQ-15 | Nav/page tools and responsive dials — nice editing polish, not validation-blocking |
+| REQ-16 (UI), REQ-19, REQ-17 | Assets tab UI, image manipulation, app shell — operator workflow, not framework-flexibility validation |
+| REQ-25, REQ-26 | Chat session list UI + reference-docs seed — polish on top of persistence |
+| REQ-29 | Search-based inspiration is the *other* killer demo; reproduce-from-URL doesn't need it |
+
+## The judgment calls — where I want your input
+
+**Q1. Chat persistence (REQ-23/24) — align now or defer?**
+REQ-21/22/28 each say "tool calls run through REQ-24's dispatcher and persist via REQ-23." Strictly we can implement the digest/transcribe tools directly against the current chat handler and refactor when REQ-23/24 land. Saves ~8 pts but creates known rework. My lean: **defer**, because the demo doesn't need cross-session memory and the rework is mechanical.
+
+**Q2. Design Brief (REQ-27) — drop for the demo?**
+REQ-28 nudges the AI to call `propose_brief_update` post-transcription, but it's a polish hook, not a flow blocker. My lean: **drop it from the demo slice** (saves 7 pts). The Brief is a separate validation question; doesn't belong on the framework-flexibility path.
+
+**Q3. REQ-13 (structured tool_results + chat markdown) — needed?**
+The digest is a markdown report. Without REQ-13, it renders as a raw blob in chat. My lean: **include the digest-rendering half of REQ-13** (structured tool_results + marked output), defer the TipTap input + get_site_definition tool. That's maybe 2 pts of the 4.
+
+**Q4. R2 binding split.**
+REQ-22 needs R2 to store screenshots. REQ-16 currently bundles the R2 binding with the full assets UI. Cleanest move: pull the binding out as a tiny standalone change (or fold into REQ-20). I'd recommend splitting REQ-16 into 16a (binding, ~1 pt) and 16b (UI, the rest).
+
+## Suggested ordering (assuming you defer REQ-23/24 and REQ-27)
+
+```
+REQ-16a (R2 binding, split)   ~1 pt   prerequisite plumbing
+REQ-20 (safety)                5 pts   foundation
+REQ-13a (tool_results half)   ~2 pts   so the digest renders
+REQ-21 (Layer A)               7 pts   parallel-able with REQ-13a after REQ-20
+REQ-22 (Browser Rendering)     6 pts   depends on REQ-21
+REQ-28 (Layer B transcribe)    9 pts   the demo goal
+                              ────
+                              ~30 pts
+```
+
+REQ-21 and REQ-13a can run in parallel once REQ-20 lands.
+
+**What I'd like to decide before scoping any tickets:** Q1, Q2, Q3 above, and whether you're comfortable splitting REQ-16. Once those are settled I can help re-scope the affected REQs with a fresh body and we're ready to start.
+
 
 <!-- xgd-chat-end -->
