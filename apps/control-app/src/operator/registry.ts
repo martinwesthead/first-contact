@@ -17,6 +17,15 @@ export interface ActionContext {
   readonly session: Session;
   readonly env: ChatHandlerEnv;
   readonly emit: (event: SseEvent) => void;
+  /**
+   * Current draft site definition snapshot. Read-only — system action handlers
+   * MUST NOT mutate it. Used by read tools (e.g. get_site_definition) so the
+   * AI can verify canonical state without going through the client.
+   * `null` when the handler is invoked outside the chat dispatch path (e.g.
+   * the direct /api/operator/<action> POST route, which doesn't carry site
+   * state).
+   */
+  readonly siteDefinition: unknown;
 }
 
 export type ActionHandler = (
@@ -233,7 +242,32 @@ const reportValidationRejectionHandler: ActionHandler = async (input, ctx) => {
   return { status: "ok", payload: data };
 };
 
+const getSiteDefinitionHandler: ActionHandler = async (_input, ctx) => {
+  return {
+    status: "ok",
+    payload: { site_definition: ctx.siteDefinition ?? null },
+  };
+};
+
 const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
+  {
+    name: "get_site_definition",
+    category: "system_action",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Read-only. Returns the current draft site definition so the AI can verify canonical state after edits (REQ-13 §Part 1).",
+    tool_spec: {
+      name: "get_site_definition",
+      description:
+        "Read the current site definition (draft state). Use this when you need to confirm what the site looks like after a sequence of edits, or before making a change that depends on existing content/structure.",
+      input_schema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    handler: getSiteDefinitionHandler,
+  },
   {
     name: "publish_stub",
     category: "system_action",
