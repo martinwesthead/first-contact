@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-20
 created_by: xgd
 created_at: '2026-06-18T22:45:33.857090+00:00'
-updated_at: '2026-06-18T22:46:40.444232+00:00'
+updated_at: '2026-06-18T22:48:41.352260+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -58,5 +58,12 @@ Yes — I'm ready. Recon checks out:
 - **Intent-token minting**: ticket says "hook on the AI tool dispatcher." I'll add the mint step into `apps/control-app/src/chat.ts` (cheap heuristic: operator message contains a URL or a fetch keyword → mint a 60s token, attach to the next AI turn's tool context). Storage in `FETCH_RATE_KV` keyed by `intent:<token>` since tokens are ephemeral.
 
 Want me to proceed, or push back on either call before I start?
+
+<!-- xgd-turn id="6f55a459-e53a-4e65-99b0-64d211098a87-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T22:48:32.197Z" -->
+#### You
+Yes, please update REQ-10 to capture this decision
+Agreed
 
 <!-- xgd-chat-end -->
