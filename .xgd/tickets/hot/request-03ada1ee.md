@@ -6,9 +6,9 @@ title: 'AI state visibility + chat markdown rendering: structured tool_results, 
   read tool, marked output, TipTap input'
 created_by: xgd
 created_at: '2026-06-16T22:12:02.773721+00:00'
-updated_at: '2026-06-18T23:41:23.462878+00:00'
+updated_at: '2026-06-18T23:41:25.495348+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -181,3 +181,57 @@ This REQ delivers the dispatcher + the `<ChatCard>` primitive. Downstream REQs s
 ## Story points
 
 5. State-visibility plumbing + read tool + react-markdown wiring + TipTap chat input + `<ChatCard>` primitive + dispatcher. (Was 4 before the chat-card pattern was added.)
+
+
+
+## Free-coded delivery (2026-06-18)
+
+**Status**: implemented, all tests pass (187/187), `xgd quality run --all-tests` clean, bundle built.
+
+### Commit
+- `8628a0a` — feat(chat): AI state visibility + chat markdown + ChatCard primitive (REQ-13) [FREE-CODED]
+
+### Implementation notes (deviations from the original spec)
+
+- **React → vanilla**: The original deliverables called for `react-markdown` + a `<ChatCard>` React component, but `packages/builder-ui` is vanilla TypeScript / DOM end-to-end. Translated to:
+  - `marked@14` + `DOMPurify@3` for assistant message rendering (closer to XGD's reference `marked@9` pattern).
+  - `createChatCard(parent, options)` vanilla factory matching the existing `createChatPanel` / `createPreviewPanel` style. Same props (title, icon, tone, body, actions, collapsed, onToggleCollapse), same UX.
+- **TipTap stays as specified** (`@tiptap/core` + `@tiptap/starter-kit` + `tiptap-markdown`). Works in vanilla JS because it's built on ProseMirror, not React.
+- **State-edit validator stays on the client** (REQ-8 §5.3 validator-of-record contract preserved). Server runs `applyToolCall` against a working copy *for the tool_result summary only*; the FE re-runs it to authoritatively apply.
+
+### Files
+
+- `apps/control-app/src/chat.ts` — multi-turn Anthropic loop (max 8 iterations) with structured `tool_result` blocks.
+- `apps/control-app/src/operator/registry.ts` — `get_site_definition` system action; `ActionContext.siteDefinition` threading.
+- `apps/control-app/src/operator/router.ts` — passes `siteDefinition: null` to handlers invoked via direct `/api/operator/*` route.
+- `packages/builder-ui/src/components/chat-card.ts` — `<ChatCard>` primitive.
+- `packages/builder-ui/src/components/tool-result-renderers.ts` — kind→renderer registry + fallback dispatcher.
+- `packages/builder-ui/src/components/chat-panel.ts` — marked+DOMPurify assistant rendering, TipTap input, tool_result dispatcher wired into the message renderer.
+- `packages/builder-ui/src/store.ts` — widened `ChatMessage.toolCalls` to include optional `result: ChatToolResultRecord`.
+- `packages/builder-ui/src/chat-driver.ts` — consumes the new server `result` field, still re-applies via `applyToolCall` client-side.
+
+### Tests (12 files, 22 cases, all passing)
+
+UATs match every test listed in the REQ deliverables section:
+- `tool_call_returns_structured_ok_result` — `tool_result` content block reaches the next Anthropic prompt with `ok:true` + summary.
+- `tool_call_returns_structured_error_result` — invalid dial value → `ok:false` with structured validator output, `is_error:true` on the block.
+- `get_site_definition_returns_current_draft` — read tool returns the current draft via `applied.data.site_definition`.
+- `get_site_definition_available_on_trial` — all tiers see the tool; registration sanity.
+- `assistant_markdown_renders_headers_lists_code` — `<h2>`, `<ul><li>`, `<pre><code>` from markdown source.
+- `assistant_markdown_strips_inline_html` — `<script>` and on-event handlers removed by DOMPurify.
+- `chat_input_paste_markdown_renders_formatted` — `setInputMarkdown("# Title\n\n**bold**")` renders `<h1>` and `<strong>` in the TipTap surface.
+- `chat_input_submission_serializes_back_to_markdown` — send delivers markdown to `onSend`, not HTML.
+- `chatcard_renders_with_title_body_actions` — header / body / actions row; clicks dispatch callbacks.
+- `chatcard_tone_applies_accent` — all 5 tones add the correct class + `data-fc-chat-card-tone`.
+- `chatcard_collapse_toggles_body` — caret click toggles body visibility, fires `onToggleCollapse(next)`.
+- `tool_result_dispatcher_uses_kind` — registered kind routes to its renderer; unknown kind falls back to markdown; failures render danger-toned card.
+
+### Bundle impact
+
+`apps/control-app/public/_assets/builder.js` is now 1.2 MB unminified (≈250–400 KB gzipped) — TipTap/ProseMirror dominate. Accepted per the REQ's own §Risks note (desktop-first builder, DOC-8 §8.1 mobile budget does not apply).
+
+### Out-of-scope items deliberately not delivered (confirms with REQ)
+
+- No streaming token-by-token rendering.
+- No diff-style visualization.
+- No per-kind components (`<DigestReport>`, `<ConvertConfirmation>`, `<TranscribeProgress>`) — registered through the dispatcher by their owning REQs (REQ-21, REQ-28).
