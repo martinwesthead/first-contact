@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-18T22:07:48.180421+00:00'
+updated_at: '2026-06-18T22:11:01.085129+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -124,6 +124,71 @@ Both updates applied. Here's the recap of where the planning landed:
 **Deferred until the demo validates the framework:** REQ-10, 11, 12, 14, 15, 16, 17, 18, 19, 23, 24, 25, 26, 27, 29.
 
 Want me to do anything else with the tickets (e.g. add explicit `blocks` / `blocked_by` field links between REQ-20→21, 21→22, 22→28, or annotate the deferred ones with a note about the demo ordering)? Or are we ready to move into scoping the first slice?
+
+
+<!-- xgd-turn id="5107e8b5-a90f-4df8-a69c-ad03dc67bb7f" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T22:11:01.019Z" -->
+#### You
+Let's talk about 13 for a second I thought that was rendering in the chat window? If we implement this can you just play back what you understand the user experience to be. Walk me through I give the chat a URL and say reproduce the site what does it do and what do I see?
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T22:11:01.019Z" -->
+#### Claude
+Let me re-read REQ-13 in full and re-skim REQ-21/22/28 for what they actually render in the chat, so I can play the experience back accurately.
+
+Let me re-read REQ-21, 22, 28 for what they actually surface to the operator.
+
+Two things to confirm before the walkthrough:
+
+**REQ-13 is actually two things bundled together.** You're right that one half is chat rendering. The other half is back-end:
+
+- **Part 1: AI state visibility** (back-end) — structured `tool_result` blocks back to the AI, a new `get_site_definition` read tool, and a fresh per-turn state summary in the system prompt. The operator never sees this directly — it's so the AI doesn't drift when it's chained 5 tool calls deep.
+- **Part 2: chat markdown rendering** (UI) — assistant messages render via react-markdown (today they're raw text); chat input becomes TipTap (today it's `<textarea>`), supports pasted markdown, submits as markdown.
+
+So when I said "all of REQ-13", I included Part 1. If you want to scope it down to *just* rendering, that's a real choice — but Part 1 is needed in the convert flow specifically because `transcribe_site` chains three sequential tool batches and the AI's narration afterwards ("I matched the hero with high confidence but…") depends on it actually knowing what landed.
+
+---
+
+## User experience walkthrough — paste URL, "reproduce this site"
+
+Assumes REQ-20, REQ-13 (both parts), REQ-21, REQ-22, REQ-28 are landed. Chat persistence (REQ-23/24) and Brief (REQ-27) deferred.
+
+**1. Compose.** You type into the chat input (now TipTap, REQ-13 Part 2): pasted URL renders as a clickable link, your text wraps below. Cmd+Enter sends.
+
+**2. Intent token mints (invisible).** REQ-20's dispatcher sees a URL in your message and mints a 60-second `operator_intent_token` for the AI's next turn. Without this, the AI cannot fetch.
+
+**3. AI calls `analyze_page(url)`.** REQ-21 takes over.
+- `safeFetch` pulls the HTML. REQ-22's `shouldEscalateToRendered` checks — for a JS-heavy site, escalation fires, Browser Rendering launches in `@cloudflare/puppeteer`, captures three screenshots (mobile/tablet/desktop), runs `getComputedStyle` for typography/palette refinement, uploads PNGs to R2.
+- Deterministic extractors run (palette role inference, typography, layout, imagery, content tree).
+- A Haiku 4.5 commentary pass writes the Summary + per-section comments + "What's missing" using the digest body **and** the desktop screenshot as multimodal input.
+- A `ReferenceDigest` + rendered markdown comes back as a structured `tool_result`.
+
+**What you see at this point:** the preview panel (where the iframe normally lives) renders a **`<DigestReport>`** — screenshot strip at top (mobile/tablet/desktop), palette swatches, type sample, content tree, asset inventory, AI summary. ~8 seconds for a small static site, ~20–30s when Browser Rendering fires. The chat panel meanwhile has an AI assistant message rendered as markdown (REQ-13 Part 2) saying something like "I pulled the site — here's what I found. Want me to convert it into your draft?"
+
+**4. AI calls `transcribe_site(digestId)`.** REQ-28 takes over.
+- First call returns `requires_confirmation` because `convertConfirmed[chatId]` isn't set.
+
+**What you see:** a **`ConvertConfirmation` card** appears in the chat — "Convert will replace your current draft with a transcription of acmeplumbing.com. This cannot be automatically undone." with `[Confirm] [Cancel]` and an `[ ] I own this site` checkbox (the checkbox also flips a robots override for the origin).
+
+**5. You click Confirm.** Re-invocation. Three staged AI tool batches dispatch on a Worker orchestration:
+
+- **Stage 1 (~0–2s after confirm):** `apply_screenshot_preview` writes an ephemeral preview module that displays the desktop screenshot. The preview iframe re-renders → you see the *captured screenshot* of acmeplumbing.com full-bleed in the preview panel. A faint chat note ("✓ screenshot captured") appears.
+- **Stage 2 (~2–8s):** `set_theme_tokens` derived deterministically from the digest's palette + typography. The preview's CSS variables flip — `--surface`, `--text`, `--accent`, `--action`, body font, heading font — to acmeplumbing's colors and type. The screenshot is still showing but the framing is now themed. Chat note: "✓ theme applied".
+- **Stage 3 (~10–60s):** Opus 4.7 multimodal call (catalog + digest + desktop screenshot + rendered DOM) → JSON output validated against `site-schema`. On validation failure: one retry with errors fed back; second failure → hero-only fallback. On success: the screenshot module is removed; the draft's module list is replaced with real 1stContact module instances (hero, services-grid, contact-form, etc.) styled with the new tokens. Preview re-renders with the actual transcribed site. Chat note: "✓ modules placed".
+
+**6. Post-transcription chat message:** "I converted https://acmeplumbing.com into a draft. Confidence: high overall. Low-confidence items: testimonial-block (couldn't match — fell back to text-block), team-grid (couldn't match)." Each low-confidence item has a "Verify or replace" affordance that prefills a chat reply. This list renders as a proper markdown bullet list thanks to REQ-13 Part 2.
+
+**7. Iterate.** "make the hero darker" — Opus calls existing edit tools from REQ-8. After each tool call it sees `{ok: true, summary: "hero.dials.spacingTop set to 'lg'"}` (REQ-13 Part 1), and if it wants to verify the result it can call `get_site_definition` (also Part 1).
+
+---
+
+**A few caveats worth flagging:**
+
+- **Where the digest renders** — REQ-21 says "right panel" which in REQ-8's chat-left/preview-right layout means the preview panel gets displaced by `<DigestReport>` until Stage 1 of convert swaps it back to the preview iframe. If you'd prefer the digest to render *inside* the chat panel as a long card (so the preview iframe stays visible), that's a small REQ-21 amendment — worth deciding now.
+- **No `ConvertConfirmation` modal in chat means no card-style chat affordances exist yet.** REQ-28 adds the first one. If you want it to look polished, we should plan for a small "chat card" pattern that future structured tool_results can reuse.
+- **No chat persistence (REQ-23/24 deferred)** means: if you reload mid-flow, you lose the conversation and the digest. The screenshots in R2 persist but the digest record was held in memory only. For a demo this is fine; for a usability test it might bite.
+
+Does the walkthrough match your mental model, or are there gaps in the flow you want filled in (e.g. the layout question, or the card-style affordance pattern)?
 
 
 <!-- xgd-chat-end -->
