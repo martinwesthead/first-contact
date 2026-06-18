@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-18T21:59:12.313904+00:00'
+updated_at: '2026-06-18T22:07:48.180421+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -83,6 +83,47 @@ REQ-28 (Layer B transcribe)    9 pts   the demo goal
 REQ-21 and REQ-13a can run in parallel once REQ-20 lands.
 
 **What I'd like to decide before scoping any tickets:** Q1, Q2, Q3 above, and whether you're comfortable splitting REQ-16. Once those are settled I can help re-scope the affected REQs with a fresh body and we're ready to start.
+
+
+<!-- xgd-turn id="641af948-862b-4fb9-b389-63430f1aa1a7" -->
+
+<!-- xgd-chat role="user" ts="2026-06-18T22:07:48.117Z" -->
+#### You
+Lets defer 1 and 2, lets do all of 3. Please take the R2 content out of 16 and add it to 20
+
+<!-- xgd-chat role="assistant" ts="2026-06-18T22:07:48.117Z" -->
+#### Claude
+Good — to make those edits I need to read REQ-16 and REQ-20 in full so I can identify the R2 plumbing to move, then use the ticket CLI to update bodies.
+
+Now let me check the xgd ticket CLI for the update interface.
+
+Now I'll write the updated bodies. I'll keep them tight and surgical — moving only the R2 plumbing.
+
+Now I'll apply the body updates and adjust title + story points on both tickets.
+
+Both updates applied. Here's the recap of where the planning landed:
+
+**Decided**
+- **Defer REQ-23 / REQ-24** (chat persistence) — implement digest/transcribe tools against current chat handler; refactor later
+- **Defer REQ-27** (Design Brief) — separate validation concern
+- **Include all of REQ-13** (structured tool_results + chat markdown + get_site_definition + TipTap input)
+- **REQ-20 absorbs R2 plumbing** — `ASSETS_BUCKET` binding + 4 CRUD routes; bumped 5→7 pts
+- **REQ-16 becomes UI-only** — depends on REQ-20 for storage; dropped 5→3 pts
+
+**Demo critical path (now)**
+
+| # | REQ | Pts |
+|---|---|---|
+| 1 | REQ-20 (safety + R2 binding/routes) | 7 |
+| 2 | REQ-13 (full — structured tool_results, marked rendering, TipTap input, get_site_definition) | 4 |
+| 3 | REQ-21 (Reference Digest + static fetch + Layer A) — parallel-able with REQ-13 once REQ-20 lands | 7 |
+| 4 | REQ-22 (Browser Rendering + screenshots) — depends on REQ-21 | 6 |
+| 5 | REQ-28 (Layer B transcribe) — the demo goal | 9 |
+| | **Total** | **33** |
+
+**Deferred until the demo validates the framework:** REQ-10, 11, 12, 14, 15, 16, 17, 18, 19, 23, 24, 25, 26, 27, 29.
+
+Want me to do anything else with the tickets (e.g. add explicit `blocks` / `blocked_by` field links between REQ-20→21, 21→22, 22→28, or annotate the deferred ones with a note about the demo ordering)? Or are we ready to move into scoping the first slice?
 
 
 <!-- xgd-chat-end -->
