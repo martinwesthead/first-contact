@@ -6,9 +6,9 @@ title: 'D1 schema: accounts, sites (draft + published), revisions, slug validati
   1stcontact seed'
 created_by: xgd
 created_at: '2026-06-15T22:42:21.300689+00:00'
-updated_at: '2026-06-15T22:42:21.300689+00:00'
+updated_at: '2026-06-18T22:49:54.593220+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: medium
@@ -146,3 +146,12 @@ A one-time seed migration `005_seed_1stcontact.sql` that inserts the platform-ow
 - **JSON column size** — D1 SQLite TEXT columns hold large JSON fine; site definitions are typically well under 1MB. Add a guard in API REQs that rejects definitions exceeding 5MB pre-persist.
 - **Slug-uniqueness race** — `INSERT` race on slug uniqueness is handled by the UNIQUE constraint at the DB level. API REQs catch the constraint violation and return a 409 with suggestions.
 - **Bootstrap path** — the 1st Contact site is currently file-backed (`sites/1stcontact/site.json` per REQ-6). Post-this-REQ it's also in D1 via seed. Both paths coexist briefly; `tools/generate` should be updated by a later REQ to read from D1 when available.
+
+
+## Coordination note from REQ-20 (added 2026-06-18)
+
+REQ-20 (web fetch safety + R2 assets) is landing **before** this REQ and needs an `account_id` for its per-account rate-limit and Browser Rendering budget counters. Because the `accounts` table does not yet exist, REQ-20 extracts `account_id` from the `x-account-id` request header with a `"default"` fallback, behind a single function (`extractAccountId(request, env)`) in `apps/control-app/src/safety/account.ts`.
+
+**Action for REQ-10:** when implementing the accounts schema and the auth path that issues `account_id`, update `extractAccountId` (or replace the call site) to resolve `account_id` from the authenticated session / magic-link cookie instead of the header. The function signature is the only contract REQ-20 depends on — replacing the body is sufficient; no shape change in the KV counter keys is required.
+
+KV counters in `FETCH_RATE_KV` and `BROWSER_BUDGET_KV` are keyed by `account_id`. Switching from `"default"` to real account IDs migrates cleanly (existing default-keyed counters become orphaned and age out via TTL).
