@@ -6,15 +6,17 @@ title: 'AI state visibility + chat markdown rendering: structured tool_results, 
   read tool, marked output, TipTap input'
 created_by: xgd
 created_at: '2026-06-16T22:12:02.773721+00:00'
-updated_at: '2026-06-18T22:27:06.696087+00:00'
+updated_at: '2026-06-18T23:41:23.462878+00:00'
 completed_at: null
-last_field_updated: story_points
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: high
   story_points: 5
   auto_merge_back: true
   needs_review: false
+  fields.commits:
+  - 8628a0a8ea863795e3c285088b03eac5fc5912b6
 ---
 
 ## Scope
