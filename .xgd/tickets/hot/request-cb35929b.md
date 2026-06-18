@@ -5,9 +5,9 @@ type: request
 title: 'D1 schema: chat sessions + messages (FTS5) + reference docs (FTS5)'
 created_by: xgd
 created_at: '2026-06-16T23:26:59.484714+00:00'
-updated_at: '2026-06-16T23:26:59.484714+00:00'
+updated_at: '2026-06-18T22:27:26.918407+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: medium
@@ -197,3 +197,15 @@ For resuming this work in an intent-specific session.
 ### From current conversation (assistant, proposed shape)
 
 > D1 with FTS5 for sessions and messages, R2 for blobs … `sessions(id, site_id, title, created_at, updated_at, last_message_at)` … `messages(id, session_id, ord, role, content, tool_calls_json, ts)` + FTS5 over `content`.
+
+
+
+---
+
+## Demo critical-path status (added 2026-06-18)
+
+**Deferred from the convert-flow demo critical path** per the 2026-06-18 planning chat. The demo (paste URL → reproduce site) runs against [[REQ-8]]'s in-memory chat handler with no persistence. This REQ lands the durable foundation; the integration-back into the convert tools ([[REQ-21]] / [[REQ-22]] / [[REQ-28]]) is a follow-on refactor.
+
+Those three REQs each carry a "Future alignment: persistent chat infrastructure" section describing the eventual wire-up — those notes describe the post-this-REQ runtime path, not the demo's flow. When this REQ lands, the refactor is mechanical (the structured `tool_result` payloads already produced by the convert tools reach the `chat_messages` row through this REQ's dispatcher without schema changes).
+
+Implementation ordering: the demo slice (REQ-20 → REQ-13 → REQ-21 → REQ-22 → REQ-28) lands first to validate framework flexibility against a real reproduction target. This REQ comes after the demo confirms the framework is the right shape.
