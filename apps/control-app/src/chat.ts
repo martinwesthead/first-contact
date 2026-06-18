@@ -1,3 +1,7 @@
+import {
+  mintIntentToken,
+  operatorMessageImpliesIntent,
+} from "@1stcontact/web-fetch-safety";
 import { sessionEventBus, type SseEvent } from "./operator/events.js";
 import {
   findAction,
@@ -10,6 +14,7 @@ export interface ChatHandlerEnv {
   CLAUDE_API_KEY?: string;
   CLAUDE_MODEL?: string;
   ANTHROPIC_API_URL?: string;
+  FETCH_RATE_KV?: KVNamespace;
 }
 
 export interface ChatHandlerDeps {
@@ -45,6 +50,7 @@ export interface ChatResponseBody {
   text: string;
   toolCalls: Array<{ name: string; input: Record<string, unknown> }>;
   systemActions: Array<SystemActionInvocation>;
+  intentToken?: string | null;
 }
 
 const ANTHROPIC_DEFAULT_URL = "https://api.anthropic.com/v1/messages";
@@ -78,6 +84,8 @@ export async function handleChatRequest(
 
   const session = extractSession(request);
   const tools = visibleToolSpecs(session.plan_tier);
+
+  const intentToken = await maybeMintIntentToken(env, session, body.history);
 
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const url = env.ANTHROPIC_API_URL ?? ANTHROPIC_DEFAULT_URL;
@@ -168,8 +176,25 @@ export async function handleChatRequest(
     text,
     toolCalls: stateEditCalls,
     systemActions,
+    intentToken: intentToken ?? null,
   };
   return jsonResponse(responseBody);
+}
+
+async function maybeMintIntentToken(
+  env: ChatHandlerEnv,
+  session: Session,
+  history: ChatRequestBody["history"],
+): Promise<string | null> {
+  if (!env.FETCH_RATE_KV || !session.session_id) return null;
+  const lastUser = [...history].reverse().find((m) => m.role === "user");
+  if (!lastUser || typeof lastUser.content !== "string") return null;
+  if (!operatorMessageImpliesIntent(lastUser.content)) return null;
+  const { token } = await mintIntentToken(
+    { FETCH_RATE_KV: env.FETCH_RATE_KV },
+    { sessionId: session.session_id, accountId: session.account_id },
+  );
+  return token;
 }
 
 function sessionEmitter(session: Session): (event: SseEvent) => void {

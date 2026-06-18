@@ -1,18 +1,28 @@
+import { handleAssetsRequest, matchAssetsRoute, type AssetsEnv } from "./assets/routes.js";
 import { handleChatRequest, type ChatHandlerEnv } from "./chat.js";
 import { handleSseEndpoint } from "./operator/events.js";
 import { handleOperatorActionRequest } from "./operator/router.js";
+import { handleSafetyHealth, type SafetyHealthEnv } from "./safety/health.js";
 
-export interface Env extends ChatHandlerEnv {
+export interface Env extends ChatHandlerEnv, AssetsEnv, SafetyHealthEnv {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
+  FETCH_RATE_KV: KVNamespace;
 }
 
 const OPERATOR_ACTION_PREFIX = "/api/operator/";
+const SAFETY_HEALTH_PATH = "/api/_safety/health";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/api/chat") {
       return handleChatRequest(request, env);
+    }
+    if (url.pathname === SAFETY_HEALTH_PATH) {
+      return handleSafetyHealth(request, env);
+    }
+    if (matchAssetsRoute(url)) {
+      return handleAssetsRequest(request, env);
     }
     if (url.pathname === "/api/operator/events") {
       return handleSseEndpoint(request);

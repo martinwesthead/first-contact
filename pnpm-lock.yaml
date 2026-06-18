@@ -24,7 +24,7 @@ importers:
         specifier: ^4.20250601.0
         version: 4.20260612.1
       '@vitest/coverage-v8':
-        specifier: ^2.1.0
+        specifier: ^2.1.9
         version: 2.1.9(vitest@2.1.9(@types/node@20.19.43)(jsdom@29.1.1))
       astro:
         specifier: ^4.16.0
@@ -56,6 +56,9 @@ importers:
       '@1stcontact/builder-ui':
         specifier: workspace:*
         version: link:../../packages/builder-ui
+      '@1stcontact/web-fetch-safety':
+        specifier: workspace:*
+        version: link:../../packages/web-fetch-safety
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20250601.0
@@ -126,6 +129,15 @@ importers:
         version: 5.9.3
 
   packages/ui-kit: {}
+
+  packages/web-fetch-safety:
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20250601.0
+        version: 4.20260612.1
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
 
   tools/generate:
     dependencies:
