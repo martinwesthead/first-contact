@@ -134,6 +134,9 @@ importers:
       '@1stcontact/site-schema':
         specifier: workspace:*
         version: link:../site-schema
+      '@1stcontact/web-fetch-safety':
+        specifier: workspace:*
+        version: link:../web-fetch-safety
       linkedom:
         specifier: ^0.18.5
         version: 0.18.12
