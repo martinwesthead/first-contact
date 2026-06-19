@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Assets-Heavy Reference — REQ-28 Stage 4 Fixture</title>
+  <style>
+    body {
+      background: #ffffff;
+      color: #1f2937;
+      font-family: "Inter", system-ui, sans-serif;
+      font-size: 16px;
+    }
+    h1, h2 { color: #2563eb; font-family: "Playfair Display", Georgia, serif; }
+    .hero {
+      background-image: url("https://assets-heavy.test/hero-bg.jpg");
+      background-size: cover;
+      padding: 80px 24px;
+    }
+    .team-section {
+      background-image: url("https://assets-heavy.test/texture.png");
+      padding: 60px 24px;
+    }
+    button, .cta { background-color: #2563eb; color: white; padding: 12px 24px; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="#about">About</a>
+      <a href="#services">Services</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Acme Catering Co.</h1>
+    <p>Weddings, corporate events, intimate dinners — at your venue or ours.</p>
+    <img src="https://assets-heavy.test/hero-product.jpg" alt="A platter of small bites" width="800" height="500">
+  </section>
+
+  <section id="services">
+    <h2>What we cater</h2>
+    <ul>
+      <li><img src="https://assets-heavy.test/icon-wedding.svg" alt="Wedding"> Weddings</li>
+      <li><img src="https://assets-heavy.test/icon-corporate.svg" alt="Corporate"> Corporate</li>
+      <li><img src="https://assets-heavy.test/icon-private.svg" alt="Private"> Private</li>
+    </ul>
+  </section>
+
+  <section id="team" class="team-section">
+    <h2>Meet the team</h2>
+    <figure>
+      <img src="https://assets-heavy.test/chef-headshot.jpg" alt="Head chef">
+      <figcaption>Sam — Head Chef</figcaption>
+    </figure>
+  </section>
+
+  <section id="reel">
+    <h2>Watch our reel</h2>
+    <video src="https://assets-heavy.test/reel.mp4" controls width="640" height="360"></video>
+  </section>
+
+  <!-- Oversize asset (Stage 4 test will simulate >5MB) -->
+  <section id="oversize">
+    <img src="https://assets-heavy.test/oversize-banner.png" alt="Oversize">
+  </section>
+
+  <section id="contact">
+    <h2>Contact us</h2>
+    <button class="cta">Get a quote</button>
+  </section>
+</body>
+</html>
