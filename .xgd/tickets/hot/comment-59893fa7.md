@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-30
 created_by: xgd
 created_at: '2026-06-19T22:27:36.674214+00:00'
-updated_at: '2026-06-19T22:36:48.087050+00:00'
+updated_at: '2026-06-19T23:02:11.466468+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -138,5 +138,99 @@ Updating REQ-30's body with these three clarifications (preserving everything el
 <!-- xgd-chat role="user" ts="2026-06-19T22:36:35.686Z" -->
 #### You
 yes
+
+<!-- xgd-turn id="54d32e23-b327-4c33-92fa-37273afcfc82-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:02:11.432Z" -->
+#### Claude
+Now I'll update the ticket body with the three clarifications (preserving everything else) and read the relevant source files in parallel.
+
+Now let me look at the existing tests for REQ-28, the fixtures, and the builder-ui state-edit tools (need to understand `applyToolCall` so I can add page CRUD).
+
+I'll set up TaskCreate so we have a clear plan to track, then continue reading the test helpers and tool registry.
+
+Quick check for sitemap support before I size multi-page work, plus look at the site-schema slug helper and the existing assets-heavy fixture.
+
+Setting up a streamlined task list, then updating the ticket body with the three clarifications.
+
+Let me check the ticket update CLI before editing.
+
+I'll write the updated ticket body to a temp file (precise edits, rest preserved), then pass it via `--body-file`.
+
+Ticket updated. Now into the RED phase — writing failing UATs first. Let me examine the existing helpers, the schema's Site/Page shape, the existing `tools.test`, and the chat handler test to model the UATs correctly.
+
+Tasks are tracking fine. Now I have enough context to write the failing UATs. Let me start the RED phase — I'll create the UATs systematically, one per AC.
+
+Writing the failing UATs now. I'll structure them so they fail in obvious ways against the current code, then turn green after each GREEN-phase task.
+
+Continuing with the rest of the UATs. AC7, AC8 next, then the mocked-LLM E2E demos.
+
+Now the two killer-demo UATs (AC9/AC10) and the REQ-28 backward-compat update. These use the mocked LLM via the existing harness.
+
+Let me check session extraction so the killer-demo test cookies set siteId correctly.
+
+Session is from headers not cookies. Updating the two killer demo tests.
+
+Let me confirm RED by running the new tests. They should all fail.
+
+RED confirmed across the new UATs. Moving to GREEN — starting with the extractor refactor.
+
+The extractor refactor cascades — several REQ-28 tests reference dropped functions. Let me audit them before continuing.
+
+Deleting the tests for removed code (per No Legacy Modes), and examining the rest.
+
+Marking extractor refactor complete and moving to the handler reshape.
+
+Now mark task #4 complete and move to task #5 (`read_transcription_digest`).
+
+Now task #6 — page CRUD tools. First update the builder-ui tools, then register them.
+
+Let me fix the nav-entry shape in the remove_page test (the schema uses pageId, not slug), then implement the page-CRUD tools.
+
+Now register the three new state-edit tools + `read_transcription_digest` in the operator registry.
+
+Let me run the tests I've covered so far to verify GREEN progress.
+
+22 passing. Now run the per-page-plan and asset-inventory tests.
+
+All passing. Now task #7 — the how-to doc + chat-prompt wiring.
+
+The doc needs to be readable from both vitest (Node) and the bundled worker. I'll maintain it as a `.md` canonical file plus a TS constant, with a drift-catching test. Let me write the doc and the constant.
+
+Now wire the doc constant into `buildSystemPrompt`.
+
+Add the drift-catching assertion to the system-prompt test.
+
+System prompt wired in. Now task #8 — multi-page fixture + REQ-28 backward-compat update (already done a chunk of #8 inline; finishing the fixture creation and verifying).
+
+Now run all REQ-30 + REQ-28 tests to check the full landscape.
+
+All 73 REQ-28+REQ-30 tests pass. Running the full suite to catch broader regressions.
+
+All 303 tests pass across 142 files. Now task #9 — quality gate, commit, status update.
+
+One new TS warning to fix (unused import). The pre-existing `Env` errors are not my problem. Let me fix the new one.
+
+Now run the REQ-6 flaky test alone — likely transient filesystem race.
+
+Quality gate is green. Now commit and update the ticket.
+
+The bump script is a stub. Let me set the ticket status directly via `xgd ticket update`.
+
+Ticket moved to `free_coded` with both commit SHAs. Marking task #9 complete.
+
+REQ-30 is `free_coded` with both SHAs. Quick summary:
+
+**Done.** REQ-30 free-coded in two commits (`44c637a` + `1d249b0`).
+
+What landed:
+- `transcribe_site` is mechanical-only — internal Opus synthesis removed; writes a `TranscriptionDigest` to `sites/{siteId}/transcription/digest.json` and returns `{kind, digestKey, summary}`.
+- New `read_transcription_digest` system_action + new `add_page` / `remove_page` / `reorder_pages` state_edit tools.
+- New `docs/llm-context/reproducing-a-website.md` mirrored as a TS constant and appended to the chat system prompt (drift-caught by a test).
+- Multi-page discovery via same-origin nav-link cache lookups (unbounded N).
+- 30 new REQ-30 UATs + relaxed two REQ-28 backward-compat tests (AC12). Six REQ-28 tests for now-removed code deleted per "No Legacy Modes".
+- Full suite: 303 tests passing across 142 files; `xgd quality run --all-tests` clean.
+
+Two follow-up notes (pre-existing, not introduced here): `apps/control-app/src/index.ts` has an unrelated `Env`-extends-AssetsEnv typecheck conflict, and `test_UAT_FC_REQ-6_public_site_serves_generated_index.test.ts` has an occasional ENOTEMPTY race on filesystem cleanup. Neither is from REQ-30.
 
 <!-- xgd-chat-end -->
