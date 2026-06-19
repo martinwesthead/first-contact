@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T21:51:40.457674+00:00'
+updated_at: '2026-06-19T22:08:17.822081+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -486,6 +486,46 @@ So the AI's behavior right now is fully consistent with what you saw: it gets th
 Ticket 1 is the smallest change that should turn "underwhelming" into "recognizably the source site, single page." Tickets 2 and 3 follow naturally and you can stop after 1 if it's good enough.
 
 Want me to scope Ticket 1 now (write the request ticket per the free-coding protocol) and start on it? I'll cut a `branch-<ticket>` and follow RED/GREEN with UATs named `test_UAT_FC_REQ-XX_*` per the protocol.
+
+
+<!-- xgd-turn id="6cfb911c-6883-4ea4-acd9-34722c72c5cf" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T22:08:16.752Z" -->
+#### You
+Sorry continue
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T22:08:16.752Z" -->
+#### Claude
+Setting up tasks and scoping the ticket.
+
+REQ-30 will be the new ID. I have what I need. Let me also quickly check whether `add_page` was already specced in REQ-14 (which mentioned "page management" in the title) so I know whether to extend an existing spec or write fresh.
+
+REQ-14 specced page-CRUD tools but is still in `draft` status — never implemented. I'll have REQ-30 swallow the page-CRUD piece (we need it for the demo) and note that REQ-14's nav-editing + duplicate-module remain as backlog. Now writing the ticket.
+
+REQ-30 created (uid `request-8561a708`). Cleaning up duplicate tasks and marking scope complete.
+
+## Ticket scoped: REQ-30
+
+**Title:** Convert flow rework: mechanical transcribe_site + R2 digest + page-CRUD tools + LLM how-to doc
+**Status:** draft (awaiting your sign-off)
+**Story points:** 8
+**File:** `.xgd/tickets/hot/request-8561a708.md`
+
+**What it covers:**
+1. Drop the internal Opus synthesis in `packages/extractor/src/transcribe.ts`. `transcribe_site` becomes purely mechanical: builds digest, mirrors assets, writes `sites/{siteId}/transcription/digest.json` to R2, returns `{digestKey, summary}`.
+2. New `read_transcription_digest` system_action tool — AI fetches the digest from R2.
+3. New `add_page` / `remove_page` / `reorder_pages` state_edit tools (claiming REQ-14's page-mgmt section).
+4. New `docs/llm-context/reproducing-a-website.md` — static AI-facing workflow doc; loaded into the chat system prompt at init.
+5. 12 ACs including end-to-end killer-demo UAT and a multi-page UAT (new fixture).
+
+**Explicitly OUT:** nav-editing tools, `duplicate_module`, asset-mirror race fix (no longer relevant — mirror runs inline now), pixel-equivalent reproduction, machine-readable per-module confidence.
+
+Before I cut `branch-REQ-30` and start RED UATs — please skim the ticket and tell me if anything is wrong-shaped. Two specific spots worth a glance:
+
+- **§Decisions → "Synthesis lives in the chat loop"** — confirms we drop the internal Opus call. Once you sign off this is non-reversible without another ticket.
+- **§AC9 (killer demo) properties** — the test asserts pages ≥1, theme tokens differ from defaults, ≥1 image field resolves to R2, ≥1 text field contains source content. If you want a stricter bar (e.g. multi-page minimum), I'll tighten.
+
+Want me to proceed with the branch + RED UATs, or revise the ticket first?
 
 
 <!-- xgd-chat-end -->
