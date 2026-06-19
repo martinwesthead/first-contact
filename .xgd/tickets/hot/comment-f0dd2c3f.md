@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-28
 created_by: xgd
 created_at: '2026-06-19T01:18:01.754021+00:00'
-updated_at: '2026-06-19T01:18:42.059873+00:00'
+updated_at: '2026-06-19T01:19:41.557565+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -39,5 +39,12 @@ Yes, ready — with two flags before I start changing code.
 2. **One scope question I want to nail before coding.** Stage 4's R2 key shape in the body is `sites/{siteId}/imports/{sha256(url):0..16}.{ext}` — but the chat metadata in the demo path is in-memory and the site is the current draft (likely the seeded 1stcontact site or whatever's active in the SPA). I'll read `ASSETS_BUCKET` binding wiring and the site-id source from REQ-20's existing code and infer `siteId` from session/draft state. Flagging in case you expect a different key prefix (e.g. `imports/{sha}` site-agnostic).
 
 If those are fine, I'll start with the pure-function extractor additions (`deriveThemeTokens`, `composePromptForTranscription`, `validateTranscription`, `collectReferencedAssetUrls`, `rewriteAssetRefs`) and their UATs — that's the safest first commit because everything else depends on those primitives. Want me to go?
+
+<!-- xgd-turn id="a6eecbf2-40cc-4bf7-a2f2-8fbfc038c5b7-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T01:19:31.071Z" -->
+#### You
+Split this into multiple commits if it helps
+ALL FINE GO
 
 <!-- xgd-chat-end -->
