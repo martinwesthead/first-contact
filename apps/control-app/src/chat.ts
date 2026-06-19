@@ -1,3 +1,19 @@
+import { applyToolCall, type ToolName } from "@1stcontact/builder-ui/tools";
+import type { FrameworkCatalog } from "@1stcontact/builder-ui/catalog";
+import type { Site } from "@1stcontact/site-schema";
+import {
+  mintIntentToken,
+  operatorMessageImpliesIntent,
+} from "@1stcontact/web-fetch-safety";
+import { REPRODUCING_A_WEBSITE_DOC } from "./llm-context.js";
+import { sessionEventBus, type SseEvent } from "./operator/events.js";
+import {
+  findAction,
+  visibleToolSpecs,
+  type ActionResult,
+} from "./operator/registry.js";
+import { extractSession, type Session } from "./operator/types.js";
+
 export interface ChatHandlerEnv {
   CLAUDE_API_KEY?: string;
   CLAUDE_MODEL?: string;
@@ -33,124 +49,50 @@ export interface ChatRequestBody {
   frameworkCatalog: FrameworkCatalogShape;
 }
 
+export interface SystemActionInvocation {
+  readonly name: string;
+  readonly input: Record<string, unknown>;
+  readonly result: ActionResult;
+}
+
+/**
+ * Structured tool result handed to the AI on the next turn (REQ-13 §Part 1).
+ * The same shape is what the FE driver reads back so it can surface a
+ * `tool_result` in the chat UI consistently.
+ */
+export type ChatToolResult =
+  | {
+      readonly ok: true;
+      readonly applied: {
+        readonly tool: string;
+        readonly args: Record<string, unknown>;
+        readonly summary: string;
+        readonly data?: unknown;
+        readonly kind?: string;
+      };
+    }
+  | {
+      readonly ok: false;
+      readonly error: {
+        readonly tool: string;
+        readonly validation: unknown;
+      };
+    };
+
 export interface ChatResponseBody {
   text: string;
-  toolCalls: Array<{ name: string; input: Record<string, unknown> }>;
+  toolCalls: Array<{
+    name: string;
+    input: Record<string, unknown>;
+    result: ChatToolResult;
+  }>;
+  systemActions: Array<SystemActionInvocation>;
+  intentToken?: string | null;
 }
 
 const ANTHROPIC_DEFAULT_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-sonnet-4-6";
-
-const TOOL_DEFINITIONS = [
-  {
-    name: "set_module_content",
-    description:
-      "Update a single content field on an existing module instance. Use for changing text, images, links etc.",
-    input_schema: {
-      type: "object",
-      properties: {
-        instance_id: { type: "string" },
-        field: { type: "string" },
-        value: {},
-      },
-      required: ["instance_id", "field", "value"],
-    },
-  },
-  {
-    name: "set_module_dial",
-    description:
-      "Set a dial (finite-enum visual property) on a module instance. Value MUST be in the module's declared dial enumeration.",
-    input_schema: {
-      type: "object",
-      properties: {
-        instance_id: { type: "string" },
-        dial: { type: "string" },
-        value: { type: "string" },
-      },
-      required: ["instance_id", "dial", "value"],
-    },
-  },
-  {
-    name: "set_module_variant",
-    description:
-      "Set the variant of a module instance. Value MUST be in the module's declared variants list.",
-    input_schema: {
-      type: "object",
-      properties: {
-        instance_id: { type: "string" },
-        variant: { type: "string" },
-      },
-      required: ["instance_id", "variant"],
-    },
-  },
-  {
-    name: "add_module",
-    description:
-      "Insert a new module instance into a page. Optionally insert after a specific existing module.",
-    input_schema: {
-      type: "object",
-      properties: {
-        page_id: { type: "string" },
-        type: { type: "string" },
-        version: { type: "number" },
-        after_instance_id: { type: "string" },
-        variant: { type: "string" },
-        dials: { type: "object" },
-        content: { type: "object" },
-        id: { type: "string" },
-      },
-      required: ["page_id", "type", "version"],
-    },
-  },
-  {
-    name: "remove_module",
-    description: "Remove a module instance by id.",
-    input_schema: {
-      type: "object",
-      properties: { instance_id: { type: "string" } },
-      required: ["instance_id"],
-    },
-  },
-  {
-    name: "reorder_modules",
-    description:
-      "Reorder all modules on a page. instance_ids must list every module on the page exactly once in the desired order.",
-    input_schema: {
-      type: "object",
-      properties: {
-        page_id: { type: "string" },
-        instance_ids: { type: "array", items: { type: "string" } },
-      },
-      required: ["page_id", "instance_ids"],
-    },
-  },
-  {
-    name: "set_theme_token",
-    description:
-      "Set a site-wide theme token. Name must be in the catalog's themeTokenNames list (e.g. 'palette.primary').",
-    input_schema: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        value: { type: "string" },
-      },
-      required: ["name", "value"],
-    },
-  },
-  {
-    name: "set_site_config",
-    description:
-      "Set a single site config field (e.g. 'businessName', 'contact.email').",
-    input_schema: {
-      type: "object",
-      properties: {
-        field: { type: "string" },
-        value: {},
-      },
-      required: ["field", "value"],
-    },
-  },
-];
+const MAX_TOOL_TURNS = 8;
 
 export async function handleChatRequest(
   request: Request,
@@ -178,80 +120,335 @@ export async function handleChatRequest(
     return jsonError("CLAUDE_API_KEY is not configured", 500);
   }
 
+  const session = extractSession(request);
+  const tools = visibleToolSpecs(session.plan_tier);
+  const intentToken = await maybeMintIntentToken(env, session, body.history);
+  const operatorLastMessage =
+    [...body.history].reverse().find((m) => m.role === "user")?.content ?? null;
+
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const url = env.ANTHROPIC_API_URL ?? ANTHROPIC_DEFAULT_URL;
   const model = env.CLAUDE_MODEL ?? DEFAULT_MODEL;
-  const system = buildSystemPrompt(body.frameworkCatalog, body.siteDefinition);
-  const messages = body.history
-    .filter((m) => m.role === "user" || m.role === "assistant")
+
+  const initialMessages: AnthropicMessageEntry[] = body.history
+    .filter(
+      (m): m is { role: "user" | "assistant"; content: string } =>
+        m.role === "user" || m.role === "assistant",
+    )
     .map((m) => ({ role: m.role, content: m.content }));
 
-  let anthropicResponse: Response;
-  try {
-    anthropicResponse = await fetchImpl(url, {
-      method: "POST",
-      headers: {
-        "x-api-key": env.CLAUDE_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system,
-        tools: TOOL_DEFINITIONS,
-        messages,
-      }),
-    });
-  } catch (err) {
-    log("anthropic_call_failed", { error: String(err) });
-    return jsonError("upstream chat provider unreachable", 502);
-  }
+  const accumulatedText: string[] = [];
+  const allToolCalls: Array<{
+    name: string;
+    input: Record<string, unknown>;
+    result: ChatToolResult;
+  }> = [];
+  const allSystemActions: SystemActionInvocation[] = [];
+  let workingSite: unknown = body.siteDefinition;
+  const catalog = body.frameworkCatalog as FrameworkCatalog;
+  const messages: AnthropicMessageEntry[] = [...initialMessages];
 
-  if (!anthropicResponse.ok) {
-    const text = await safeReadText(anthropicResponse);
-    log("anthropic_non_ok", { status: anthropicResponse.status, text });
-    return jsonError(
-      `chat provider returned ${anthropicResponse.status}`,
-      502,
+  for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
+    const system = buildSystemPrompt(catalog, workingSite);
+    let anthropicResponse: Response;
+    try {
+      anthropicResponse = await fetchImpl(url, {
+        method: "POST",
+        headers: {
+          "x-api-key": env.CLAUDE_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          system,
+          tools,
+          messages,
+        }),
+      });
+    } catch (err) {
+      log("anthropic_call_failed", { error: String(err), turn });
+      return jsonError("upstream chat provider unreachable", 502);
+    }
+
+    if (!anthropicResponse.ok) {
+      const text = await safeReadText(anthropicResponse);
+      log("anthropic_non_ok", {
+        status: anthropicResponse.status,
+        text,
+        turn,
+      });
+      return jsonError(
+        `chat provider returned ${anthropicResponse.status}`,
+        502,
+      );
+    }
+
+    const anthropicJson = (await anthropicResponse.json()) as AnthropicMessage;
+    const blocks = anthropicJson.content ?? [];
+
+    // Preserve the assistant turn verbatim so the next tool_result lines up
+    // with its tool_use_id.
+    messages.push({ role: "assistant", content: blocks });
+
+    for (const block of blocks) {
+      if (block.type === "text" && typeof block.text === "string") {
+        accumulatedText.push(block.text);
+      }
+    }
+
+    const toolUseBlocks = blocks.filter(
+      (b): b is AnthropicContentBlock & { type: "tool_use"; id: string } =>
+        b.type === "tool_use" && typeof b.name === "string" &&
+        typeof b.id === "string" && isPlainObject(b.input),
     );
+
+    if (toolUseBlocks.length === 0) break;
+
+    const toolResultBlocks: AnthropicContentBlock[] = [];
+
+    for (const block of toolUseBlocks) {
+      const callName = block.name as string;
+      const callInput = block.input as Record<string, unknown>;
+      const action = findAction(callName);
+
+      let result: ChatToolResult;
+
+      if (!action) {
+        result = {
+          ok: false,
+          error: {
+            tool: callName,
+            validation: { message: `unknown tool '${callName}'` },
+          },
+        };
+        allToolCalls.push({ name: callName, input: callInput, result });
+      } else if (action.category === "state_edit") {
+        const applyResult = applyToolCall(
+          workingSite as Site,
+          catalog,
+          { name: callName as ToolName, input: callInput },
+        );
+        if (applyResult.ok) {
+          workingSite = applyResult.next;
+          result = {
+            ok: true,
+            applied: {
+              tool: callName,
+              args: callInput,
+              summary: summarizeStateEdit(callName, callInput),
+            },
+          };
+        } else {
+          result = {
+            ok: false,
+            error: {
+              tool: callName,
+              validation: applyResult.error,
+            },
+          };
+        }
+        allToolCalls.push({ name: callName, input: callInput, result });
+      } else {
+        // system_action
+        if (!action.handler) {
+          const validation = {
+            message: `system action '${callName}' has no handler`,
+          };
+          result = { ok: false, error: { tool: callName, validation } };
+          allSystemActions.push({
+            name: callName,
+            input: callInput,
+            result: { status: "failed", error: validation.message },
+          });
+        } else {
+          let actionResult: ActionResult;
+          try {
+            actionResult = await action.handler(callInput, {
+              session,
+              env,
+              emit: sessionEmitter(session),
+              siteDefinition: workingSite,
+              operatorLastMessage,
+            });
+          } catch (err) {
+            actionResult = {
+              status: "failed",
+              error: `handler threw: ${String(err)}`,
+            };
+          }
+          allSystemActions.push({
+            name: callName,
+            input: callInput,
+            result: actionResult,
+          });
+          if (actionResult.status === "ok") {
+            const payload = actionResult.payload ?? {};
+            const hasKindPayload = typeof payload.kind === "string";
+            // get_site_definition is the legacy read tool that pre-dates the
+            // kind-tagged tool_result model; every NEW system action that
+            // produces structured data does so via `payload.kind`. Both
+            // routes surface the payload to the AI (as `applied.data`) so
+            // the next turn can reason about the returned data.
+            const surfacesData =
+              callName === "get_site_definition" || hasKindPayload;
+            result = {
+              ok: true,
+              applied: {
+                tool: callName,
+                args: callInput,
+                summary: summarizeSystemAction(callName, payload),
+                ...(surfacesData ? { data: payload } : {}),
+                ...(hasKindPayload
+                  ? { kind: payload.kind as string }
+                  : {}),
+              },
+            };
+          } else {
+            result = {
+              ok: false,
+              error: {
+                tool: callName,
+                validation: { message: actionResult.error },
+              },
+            };
+          }
+        }
+        // System actions that produce a kind-tagged structured payload (or
+        // fail) also surface in body.toolCalls so the chat-driver can route
+        // them through the tool_result_renderers dispatcher. The legacy
+        // get_site_definition stays out — it has no `kind` and existing FE
+        // code reads it from body.systemActions.
+        const surfacesAsToolCall =
+          !result.ok ||
+          (result.ok && typeof result.applied.kind === "string");
+        if (surfacesAsToolCall) {
+          allToolCalls.push({ name: callName, input: callInput, result });
+        }
+      }
+
+      toolResultBlocks.push({
+        type: "tool_result",
+        tool_use_id: block.id,
+        content: JSON.stringify(result),
+        ...(result.ok ? {} : { is_error: true }),
+      });
+    }
+
+    messages.push({ role: "user", content: toolResultBlocks });
   }
 
-  const anthropicJson = (await anthropicResponse.json()) as AnthropicMessage;
-  const { text, toolCalls } = extractContent(anthropicJson);
-  const responseBody: ChatResponseBody = { text, toolCalls };
+  const responseBody: ChatResponseBody = {
+    text: accumulatedText.join("\n").trim(),
+    toolCalls: allToolCalls,
+    systemActions: allSystemActions,
+    intentToken: intentToken ?? null,
+  };
   return jsonResponse(responseBody);
 }
 
+async function maybeMintIntentToken(
+  env: ChatHandlerEnv,
+  session: Session,
+  history: ChatRequestBody["history"],
+): Promise<string | null> {
+  if (!env.FETCH_RATE_KV || !session.session_id) return null;
+  const lastUser = [...history].reverse().find((m) => m.role === "user");
+  if (!lastUser || typeof lastUser.content !== "string") return null;
+  if (!operatorMessageImpliesIntent(lastUser.content)) return null;
+  const { token } = await mintIntentToken(
+    { FETCH_RATE_KV: env.FETCH_RATE_KV },
+    { sessionId: session.session_id, accountId: session.account_id },
+  );
+  return token;
+}
+
+function sessionEmitter(session: Session): (event: SseEvent) => void {
+  if (!session.session_id) return () => {};
+  const sessionId = session.session_id;
+  return (event: SseEvent): void => sessionEventBus.publish(sessionId, event);
+}
+
 interface AnthropicContentBlock {
-  type: "text" | "tool_use" | string;
+  type: "text" | "tool_use" | "tool_result" | string;
   text?: string;
   name?: string;
+  id?: string;
   input?: Record<string, unknown>;
+  tool_use_id?: string;
+  content?: unknown;
+  is_error?: boolean;
 }
+
 interface AnthropicMessage {
   content?: AnthropicContentBlock[];
 }
 
-function extractContent(message: AnthropicMessage): {
-  text: string;
-  toolCalls: Array<{ name: string; input: Record<string, unknown> }>;
-} {
-  const blocks = message.content ?? [];
-  const texts: string[] = [];
-  const toolCalls: Array<{ name: string; input: Record<string, unknown> }> = [];
-  for (const block of blocks) {
-    if (block.type === "text" && typeof block.text === "string") {
-      texts.push(block.text);
-    } else if (
-      block.type === "tool_use" &&
-      typeof block.name === "string" &&
-      isPlainObject(block.input)
-    ) {
-      toolCalls.push({ name: block.name, input: block.input });
-    }
+interface AnthropicMessageEntry {
+  role: "user" | "assistant";
+  content: string | AnthropicContentBlock[];
+}
+
+function summarizeStateEdit(
+  name: string,
+  input: Record<string, unknown>,
+): string {
+  switch (name) {
+    case "set_module_content":
+      return `set content.${stringy(input.field)} on ${stringy(input.instance_id)}`;
+    case "set_module_dial":
+      return `set dial '${stringy(input.dial)}' to '${stringy(input.value)}' on ${stringy(input.instance_id)}`;
+    case "set_module_variant":
+      return `set variant to '${stringy(input.variant)}' on ${stringy(input.instance_id)}`;
+    case "set_theme_token":
+      return `set theme token '${stringy(input.name)}' to '${stringy(input.value)}'`;
+    case "set_site_config":
+      return `set site config '${stringy(input.field)}'`;
+    case "add_module":
+      return `added ${stringy(input.type)}@v${stringy(input.version)} to page ${stringy(input.page_id)}`;
+    case "remove_module":
+      return `removed module ${stringy(input.instance_id)}`;
+    case "reorder_modules":
+      return `reordered modules on page ${stringy(input.page_id)}`;
+    default:
+      return `applied ${name}`;
   }
-  return { text: texts.join("\n").trim(), toolCalls };
+}
+
+function summarizeSystemAction(
+  name: string,
+  payload: Record<string, unknown>,
+): string {
+  switch (name) {
+    case "get_site_definition":
+      return "returned current site definition";
+    case "publish_stub": {
+      const url = typeof payload.site_url === "string" ? payload.site_url : "";
+      return url ? `published to ${url}` : "published";
+    }
+    case "analyze_page": {
+      const digest = payload.digest as
+        | { sourceUrl?: unknown; signals?: unknown }
+        | undefined;
+      const src =
+        digest && typeof digest.sourceUrl === "string"
+          ? digest.sourceUrl
+          : "reference";
+      const cache = typeof payload.cache === "string" ? payload.cache : "MISS";
+      return `produced reference digest for ${src} (cache ${cache})`;
+    }
+    case "report_validation_rejection":
+      return `logged validation rejection`;
+    default:
+      return `ran ${name}`;
+  }
+}
+
+function stringy(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  return JSON.stringify(v ?? null);
 }
 
 function buildSystemPrompt(
@@ -282,9 +479,13 @@ ${dials}`;
     "Rules:",
     "- Always use exact dial/variant values from the catalog (e.g. 'rounded', not 'rounded-md').",
     "- One tool call per atomic change. Multiple tool calls per turn are fine.",
-    "- After the tool calls, reply with one short sentence describing what you changed.",
+    "- After each tool call you will receive a structured tool_result confirming success (with a short summary) or reporting a validation error. Read these results to decide what to do next.",
+    "- Call get_site_definition when you need to verify the current state — e.g. before a complex change that depends on existing content/structure, or after a sequence of edits to confirm the result.",
+    "- When done, reply with one short sentence describing what you changed.",
     "",
-    "Current site definition (read-only — your tool calls produce edits):",
+    REPRODUCING_A_WEBSITE_DOC,
+    "",
+    "Current site definition snapshot (computed fresh each turn from the canonical state):",
     JSON.stringify(siteDefinition).slice(0, 16_000),
   ].join("\n");
 }
