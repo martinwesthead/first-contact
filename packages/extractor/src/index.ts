@@ -60,6 +60,21 @@ export {
   SCREENSHOT_BYTES_CAP,
 } from "./upload-screenshots.js";
 export {
+  mirrorAssetToR2,
+  mirrorAssetBatchToR2,
+  urlContentHash,
+  r2KeyFor,
+  classifyContentType,
+  type MirrorAssetArgs,
+  type MirrorAssetResult,
+  type MirrorAssetSuccess,
+  type MirrorAssetFailure,
+  type MirrorAssetFailureReason,
+  type MirrorBatchArgs,
+  type MirrorBatchResult,
+  type SafeFetchFn,
+} from "./mirror-asset.js";
+export {
   TRANSCRIPTION_CATALOG,
   deriveThemeTokens,
   applyTokenPatch,
