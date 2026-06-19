@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-1
 created_by: xgd
 created_at: '2026-06-19T20:57:31.300229+00:00'
-updated_at: '2026-06-19T21:07:53.629642+00:00'
+updated_at: '2026-06-19T21:07:59.163609+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -93,5 +93,19 @@ BUG-1 is now `status: free_coded` with both SHAs and `version: 0.14.1235` record
 <!-- xgd-chat role="user" ts="2026-06-19T21:07:44.384Z" -->
 #### You
 is any installation required?
+
+<!-- xgd-turn id="9985f209-ca8c-49d2-a216-1eb15db835ee-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T21:07:59.135Z" -->
+#### Claude
+No installation required. The fix is purely a CSS edit inside the static `apps/control-app/public/builder.html` shell — no new dependencies, no new TipTap extensions, no SPA bundle changes.
+
+What you need depending on how you're running it:
+
+- **`wrangler dev` running locally**: just refresh the browser (hard refresh — `Cmd-Shift-R` — to bust the cache on `builder.html`). The static-asset server picks up the file directly from disk.
+- **Deployed to Cloudflare**: redeploy the control-app (`pnpm --filter control-app deploy` or however you normally ship it). The bundled `builder.js` is unchanged, so this is just a static-asset re-upload.
+- **Production cache**: if you have a CDN cache on `/builder.html`, you may need to purge it or wait for TTL.
+
+Quick sanity check: do you want me to confirm by starting `wrangler dev` and visiting `/builder` to see the editor render?
 
 <!-- xgd-chat-end -->
