@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:30:33.925284+00:00'
+updated_at: '2026-06-19T23:39:07.217785+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -714,6 +714,63 @@ Done. Summary:
 **Status of REQ-31:** parked at `free_coded` per FREE-CODING.md — promotion to `ready_to_reconcile` is your call when ready.
 
 Note in passing: I noticed commit `44c637a` exists on `xgd-working` — REQ-30 has been free-coded already in parallel with this session. So the Reset button you just gained will be especially useful for iterating the REQ-30 demo flow.
+
+
+<!-- xgd-turn id="7ca129b0-3541-4849-9d1e-21e58108701b" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:39:06.175Z" -->
+#### You
+OK, there are so many things going wrong here I almost don't know where to start. 
+
+1. Let's start with the multi pages. When I click on one of the tabs at the top of the panel it takes me to the root page of the site "Hello from app.1stcontact.io".
+2. The consent panel does not trigger a response I had to give an explicit consent message
+3. I'm still not seeing any pictures
+
+Lets look at those three
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:39:06.175Z" -->
+#### Claude
+Three clean diagnoses. Each is a real, independent bug in REQ-30's implementation. None are caused by my Reset-button change. Summary:
+
+---
+
+### Bug 1 — Multi-page tabs navigate the iframe to control-app root
+
+**Root cause:** `navHref` in `packages/framework/src/render/browser.ts:147-152` emits absolute paths like `/menu`. That format is correct for the production Astro static-site output (separate HTML files per page), but the preview is a single-document iframe populated via `document.open/write/close` (`packages/builder-ui/src/preview.ts:9-19`) with **no link-click interception**. Clicking `/menu` makes the iframe navigate to `http://localhost:8788/menu`, which hits the control-app catch-all (`apps/control-app/src/index.ts:63-66`) returning "Hello from app.1stcontact.io".
+
+**Fix shape:** either emit fragment hrefs (`#/menu`) + intercept `hashchange` → re-render via `renderSiteToHtml(site, {pageId})`, or intercept link clicks → prevent default → re-render. Probably ~3 SP. Touches `browser.ts` + `preview.ts`.
+
+---
+
+### Bug 2 — Convert confirmation button click goes into the void
+
+**Root cause:** Two missing wires:
+- `ConvertConfirmation` button dispatches `CustomEvent("fc:convert-confirmed")` on the document (`packages/builder-ui/src/components/convert-confirmation.ts:89-94`), but **no listener exists anywhere in the codebase** for that event.
+- `registerConvertConfirmation()` is exported but **never called** in `bootBuilder` (`main.ts:43` calls `registerDigestReport()` and not its sibling).
+
+So the card renders, the button clicks, the event fires, nothing hears it. The card collapses; the chat AI never re-invokes `transcribe_site`.
+
+**Fix shape:** call `registerConvertConfirmation()` in `bootBuilder`; add a listener that synthesizes a chat turn (or directly drives a tool re-invocation) on `fc:convert-confirmed`. Probably ~2 SP. Touches `main.ts` + a small driver function.
+
+---
+
+### Bug 3 — No images (type mismatch between docs and schema)
+
+**Root cause:** The framework schema and renderer require image content fields to be `AssetRef` **objects** — `{ id, src, alt, focalPoint? }` (`packages/site-schema/src/schema.ts:24-34`; renderer reads `image.src` at `packages/framework/src/render/browser.ts:161`). The new how-to doc `docs/llm-context/reproducing-a-website.md:19` instructs the AI to pass a **string** `/assets/{r2Key}`. The AI complies; `set_module_content` either rejects on schema validation or accepts but the renderer can't read `.src` on a string → no `<img>` is emitted.
+
+All other layers work: R2 mirror runs and writes assets; digest's `assetInventory` is populated with `r2Key`s; control-app `/assets/...` route serves R2 (`apps/control-app/src/assets/routes.ts:64-71`).
+
+**Fix shape:** update the how-to doc so the AI constructs `{ id: r2Key, src: "/assets/" + r2Key, alt: altText }` from the inventory entries. Possibly tighten the digest's `assetInventory` entry shape to make the mapping mechanical. ~1 SP. Doc + maybe small extractor tweak.
+
+---
+
+## Where do you want to start?
+
+These are three independent bugs in different code paths. I'd suggest three bug tickets (one per intent) so each can be free-coded surgically without cross-coupling. Three short, focused commits.
+
+If you'd rather collapse them under one "convert-flow regressions" umbrella, that's also OK — but multiple unrelated changes in one ticket is on FREE-CODING.md's "common mistakes" list, so I lean toward three.
+
+Want me to scope and free-code them one at a time, in the order you want? Bug 3 (images) is the smallest; Bug 2 (consent) is next; Bug 1 (multi-page nav) is the most code. Suggest starting with whichever lights up your demo most — probably Bug 3 since "no images" is the most visible loss, but Bug 2 is the friction you're hitting on every attempt. Which first?
 
 
 <!-- xgd-chat-end -->
