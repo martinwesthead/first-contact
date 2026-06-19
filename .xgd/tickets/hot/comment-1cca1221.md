@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-5
 created_by: xgd
 created_at: '2026-06-19T23:44:30.816656+00:00'
-updated_at: '2026-06-19T23:44:30.917592+00:00'
+updated_at: '2026-06-19T23:47:31.415803+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -40,5 +40,11 @@ Diagnosis for issue 3 (no images):
 All upstream layers are healthy: R2 mirror runs, digest is populated with `r2Key`s, control-app `/assets/...` route serves R2. The bug is exclusively at the LLM-instruction layer.
 
 Fix shape: (a) update the how-to doc to instruct the AI to construct `{ id: r2Key, src: "/assets/" + r2Key, alt: altText }` — include a worked example; (b) precompute an `assetRef` field on each `assetInventory` entry in the digest so the AI can drop it in mechanically (`set_module_content({ ..., value: digest.assetInventory[i].assetRef })`). Removes ambiguity, prevents future doc drift from re-introducing the bug. ~1 SP.
+
+<!-- xgd-turn id="e58fcc0f-c840-43ea-a539-4d3208f6e31d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:44:13.330Z" -->
+#### You
+Please free code a fix for this
 
 <!-- xgd-chat-end -->
