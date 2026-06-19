@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:09:21.108362+00:00'
+updated_at: '2026-06-19T23:15:27.939832+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -651,6 +651,34 @@ So the bytes path for what you see in the preview:
 | Initial site (cold load) | Static file `/starter-sites/1stcontact.json` from the control-app worker |
 
 Which means: at this point in the system's evolution, the site shown in the right panel is **not persisted on the server side at all** — it lives in your browser's memory between reloads. The reason it "still shows the changes" after a restart is something I need to confirm by tracing what happens on page reload — there may be a localStorage / sessionStorage cache, or the builder may be re-bootstrapping from a different source than the cold JSON. Want me to nail that down?
+
+
+<!-- xgd-turn id="614fd8f6-7442-4ae3-8142-bd32c1c4a5cd" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:15:26.896Z" -->
+#### You
+howe do I clear it?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:15:26.896Z" -->
+#### Claude
+Let me find where it's actually persisted client-side so I can give you a concrete clear-it action.
+
+The site is persisted in **browser localStorage** under the key `1stcontact_builder_site_v1` (`packages/builder-ui/src/store.ts:41`). That's why it survives reload — the chat is in-memory only, but the site object is written to localStorage on every store change.
+
+**Three ways to clear it:**
+
+1. **Browser console** (fastest):
+   ```js
+   localStorage.removeItem('1stcontact_builder_site_v1'); location.reload();
+   ```
+
+2. **DevTools → Application tab** → Storage → Local Storage → `http://localhost:8788` → delete the `1stcontact_builder_site_v1` row → reload.
+
+3. **Nuke all site data for the origin**: DevTools → Application → Storage → "Clear site data" → reload.
+
+After clearing, on the next reload the builder cold-loads `/starter-sites/1stcontact.json` and you're back to the demo baseline.
+
+Note: this is exactly the "reset action" I floated earlier as option (a) — the same effect, just driven via DevTools instead of a button. If you'd like a real in-app reset action so you don't have to crack open DevTools between demos, that's a small separate ticket (~1 SP). Want me to scope it?
 
 
 <!-- xgd-chat-end -->
