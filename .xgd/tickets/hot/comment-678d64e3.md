@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-4
 created_by: xgd
 created_at: '2026-06-19T23:44:28.241594+00:00'
-updated_at: '2026-06-19T23:46:15.820149+00:00'
+updated_at: '2026-06-19T23:50:00.401375+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -46,5 +46,36 @@ Fix shape: register the renderer in `bootBuilder`; add a listener that synthesiz
 <!-- xgd-chat role="user" ts="2026-06-19T23:44:09.490Z" -->
 #### You
 Please free code a fix for this
+
+<!-- xgd-turn id="5f7bf826-fc17-491c-9d81-2512de477b70-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:50:00.373Z" -->
+#### Claude
+Now I have enough context. Let me bump the version and implement the fix.
+
+Now I'll implement the fix.
+
+Now let me write the UAT tests.
+
+Let me run the new tests and the REQ-28 regression scope.
+
+All 13 tests pass. Let me also do a quick TypeScript check.
+
+Now let me bump the version and commit.
+
+There are unrelated changes in the working tree (BUG-3 work and other in-flight edits). I'll stage only the BUG-4 files.
+
+Now I'll update the ticket body to reflect the converged state, then promote to `free_coded`.
+
+BUG-4 is at `free_coded` with the commit recorded. Summary:
+
+**What changed** (`packages/builder-ui/src/main.ts`, commit `5242e88`):
+- `bootBuilder` now calls `registerConvertConfirmation()` so the dispatcher routes `kind: 'convert_confirmation'` tool_results to the warning-toned card.
+- Document-level listeners for `fc:convert-confirmed` and `fc:convert-cancelled` drive synthetic user turns through `runChatTurn`: `"I confirm. Proceed with converting <url>."` (with `" I own this site."` when ownsSite) and `"Cancel the conversion of <url>."`.
+- Both listeners removed in `destroy()`.
+
+**Tests** (`tests/test_UAT_FC_BUG-4_convert_confirmation_listener.test.ts`): 5 UATs covering renderer registration, both event paths, ownsSite clause, and listener cleanup. Regression scope (REQ-28 confirmation-card tests + REQ-31 boot tests) all pass — 13/13 green.
+
+**Next**: ticket parked at `free_coded`; promote to `ready_to_reconcile` when you're ready for reconcile.
 
 <!-- xgd-chat-end -->
