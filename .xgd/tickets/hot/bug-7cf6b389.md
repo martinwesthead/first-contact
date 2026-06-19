@@ -5,16 +5,19 @@ type: bug
 title: 'Convert flow: ConvertConfirmation Confirm/Cancel buttons are unwired'
 created_by: xgd
 created_at: '2026-06-19T23:43:39.348958+00:00'
-updated_at: '2026-06-19T23:49:40.235332+00:00'
+updated_at: '2026-06-19T23:49:48.502417+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: high
   severity: high
   story_points: 2
   auto_merge_back: true
   needs_review: false
+  commits:
+  - 5242e88657f9018756420ac6e9ccc480f9a853f5
+  version: 0.14.1236
 ---
 
 ## Symptom
