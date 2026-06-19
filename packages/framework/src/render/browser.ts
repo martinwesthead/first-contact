@@ -25,8 +25,11 @@ export function escapeAttr(value: unknown): string {
   return String(value ?? "").replace(/[&<>"]/g, (c) => ESC_ATTR[c] ?? c);
 }
 
+export type RenderTarget = "production" | "preview";
+
 export interface RenderSiteOptions {
   pageId?: string;
+  target?: RenderTarget;
 }
 
 export function renderSiteToHtml(
@@ -36,7 +39,8 @@ export function renderSiteToHtml(
   const themeCss = generateThemeCss(site.theme);
   const moduleCss = MODULE_CSS;
   const page = pickPage(site, options.pageId);
-  const body = renderPageBody(page);
+  const target = options.target ?? "production";
+  const body = renderPageBody(page, target);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -51,12 +55,15 @@ ${body}
 </html>`;
 }
 
-export function renderPageBody(page: Page): string {
-  return page.modules.map(renderModuleInstance).join("\n");
+export function renderPageBody(page: Page, target: RenderTarget = "production"): string {
+  return page.modules.map((m) => renderModuleInstance(m, target)).join("\n");
 }
 
-export function renderModuleInstance(instance: ModuleInstance): string {
-  const inner = dispatchRenderer(instance);
+export function renderModuleInstance(
+  instance: ModuleInstance,
+  target: RenderTarget = "production",
+): string {
+  const inner = dispatchRenderer(instance, target);
   return `<div id="${escapeAttr(instance.id)}" data-module-instance="${escapeAttr(
     instance.id,
   )}">${inner}</div>`;
@@ -70,10 +77,10 @@ function pickPage(site: Site, pageId?: string): Page {
   return site.pages[0]!;
 }
 
-function dispatchRenderer(instance: ModuleInstance): string {
+function dispatchRenderer(instance: ModuleInstance, target: RenderTarget): string {
   switch (instance.type) {
     case "header":
-      return renderHeader(instance);
+      return renderHeader(instance, target);
     case "hero":
       return renderHero(instance);
     case "footer":
@@ -104,7 +111,7 @@ function content<T = unknown>(instance: ModuleInstance, key: string): T | undefi
   return instance.content?.[key] as T | undefined;
 }
 
-function renderHeader(instance: ModuleInstance): string {
+function renderHeader(instance: ModuleInstance, target: RenderTarget): string {
   const variant = instance.variant ?? "top-nav";
   const dials = dialClasses("fc-header", instance.dials);
   const logo = content<unknown>(instance, "logo");
@@ -117,7 +124,7 @@ function renderHeader(instance: ModuleInstance): string {
     .map(
       (e) =>
         `<li class="fc-header__entry"><a href="${escapeAttr(
-          navHref(e.target),
+          navHref(e.target, target),
         )}">${escapeHtml(e.label)}</a></li>`,
     )
     .join("");
@@ -144,10 +151,16 @@ function renderLogo(logo: unknown): string {
   return "";
 }
 
-function navHref(target: { kind: string; href?: string; pageId?: string; moduleId?: string }): string {
+function navHref(
+  target: { kind: string; href?: string; pageId?: string; moduleId?: string },
+  renderTarget: RenderTarget,
+): string {
   if (target.kind === "url") return target.href ?? "#";
   if (target.kind === "anchor") return `#${target.moduleId ?? ""}`;
-  if (target.kind === "page") return `/${target.pageId ?? ""}`;
+  if (target.kind === "page") {
+    const pageId = target.pageId ?? "";
+    return renderTarget === "preview" ? `#/${pageId}` : `/${pageId}`;
+  }
   return "#";
 }
 
