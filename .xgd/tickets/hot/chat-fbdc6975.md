@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T19:58:55.592640+00:00'
+updated_at: '2026-06-19T20:04:38.474931+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -376,6 +376,32 @@ Asset keys are scoped under `sites/{accountId}/imports/{sha256(url):16}.{ext}` s
 - **The "destructive overwrite" warning in the UI is currently aspirational** — there's no save call to overwrite anything in storage.
 
 If you want me to either (a) wire up the actual draft persistence or (b) split out a `1stcontact-assets-dev` bucket for `--remote` use, that'd be a scoped ticket each.
+
+
+<!-- xgd-turn id="6d5f8a00-80ea-4c7a-a29b-c3eb7b32e121" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T20:04:37.395Z" -->
+#### You
+So I can run the demo and it will make no destructive changes to the existing site?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T20:04:37.395Z" -->
+#### Claude
+Let me verify the FE side before answering definitively.
+
+Yes — confirmed by tracing both sides:
+
+**Server**: `transcribe_site` handler returns the constructed Site as payload, never writes to D1.
+
+**FE**: `applyToolCall` in `packages/builder-ui/src/tools.ts:46-71` only knows seven tool names (`set_module_content`, `add_module`, etc.). `transcribe_site` isn't in the union, so it hits the `default` branch and returns `unknown tool: transcribe_site`. Result: `setSiteDefinition()` is never called, so even **localStorage stays untouched**. The returned Site is effectively discarded — only the `<TranscribeProgress>` chat card renders and SSE stage events fire.
+
+So the only persistent side-effect of running the demo is:
+
+- **Plain `wrangler dev`** — zero side effects beyond the chat scrollback. Local R2 emulator is in-process and dies with the worker.
+- **`wrangler dev --remote` or deployed** — Stage 4 will write mirrored asset bytes to the real `1stcontact-assets` R2 bucket under `sites/{accountId}/imports/...`. No D1 writes, no draft mutation, but real R2 objects get created (and they cost storage). Safe to delete after.
+
+Existing site content (D1, in-memory draft, localStorage) is untouched in all modes.
+
+Worth flagging: this means the "killer demo" currently shows you the transcribed site in chat-card form but **doesn't actually replace the preview iframe** either, because the iframe reads from the store and the store never updated. The progressive-reveal preview path described in the ticket (theme tokens flipping CSS variables, modules re-rendering) isn't wired — that's a real gap vs. the spec.
 
 
 <!-- xgd-chat-end -->
