@@ -6,10 +6,10 @@ title: 'Site Transcription (Layer B): convert flow that maps a Reference Digest 
   module instances and theme tokens'
 created_by: xgd
 created_at: '2026-06-16T23:29:01.955584+00:00'
-updated_at: '2026-06-18T22:27:10.114144+00:00'
+updated_at: '2026-06-19T01:39:38.151816+00:00'
 completed_at: null
-last_field_updated: story_points
-status: draft
+last_field_updated: status
+status: in_progress
 fields:
   priority: high
   story_points: 12
