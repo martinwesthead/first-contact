@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T21:44:55.426941+00:00'
+updated_at: '2026-06-19T21:51:40.457674+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -458,6 +458,34 @@ Fix the primary bug first as one tightly-scoped free-coded ticket: make `transcr
 Multi-page and the asset-mirror race are best as separate follow-up tickets — they're real but smaller-impact, and bundling them inflates the scope of the fix that matters most.
 
 Want me to scope the primary-bug ticket and start there? I'd also like to confirm one thing before writing the fix: should the apply step **fully replace** the existing site (pages, modules, theme, nav) — matching the DOC-9 §7.3 "transcription completes, module instances populate the draft" framing — or **merge** the transcribed theme tokens onto the existing draft while replacing only pages/modules? Full replacement is closer to the killer-demo intent; merge is safer if a user has already started editing.
+
+
+<!-- xgd-turn id="d3a12df2-94f8-40ea-a5ac-11b7db7de260" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T21:51:39.416Z" -->
+#### You
+I'm not sure how that could work. Surely transcribe site is just mechanically downloading all the pieces and to digesting them for the AI to understand. We then have to take that digested site and turn it into something that fits our framework. My expectation is not that this will be identical (pixel equivalent) but it should be very similar - same color same (similar) fonts same text, same images. Doesn't the AI have to do that?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T21:51:39.416Z" -->
+#### Claude
+The tool-surface audit confirms it. Here's what's actually present vs. missing for the chat AI to construct a site that resembles a source:
+
+**Present:** `set_theme_token`, `set_module_content`, `add_module`, `remove_module`, `reorder_modules`, `set_module_variant`, `set_module_dial`, `set_site_config`.
+**Missing:** any page CRUD (`add_page`, `remove_page`), explicit nav-pattern control, and any guidance in the chat system prompt about what to do after `transcribe_site` returns. The prompt (`chat.ts:453-488`) doesn't mention transcribe outputs, R2 asset keys, or post-transcribe construction at all.
+
+So the AI's behavior right now is fully consistent with what you saw: it gets the digest, has no explicit instruction to translate it into edits, has no asset inventory to point images at, and couldn't make multi-page even if it tried.
+
+## Proposed split
+
+**Ticket 1 — Killer-demo fix (single page, but actually resembles source).** Reshape `transcribe_site` into a pure digest: drop the internal Opus synthesis, return `{ themeTokens, perPageModulePlan, assetInventory[], extractedContent, narrative }` with R2 keys embedded in `assetInventory`. Update the chat system prompt to drive post-transcribe construction: apply theme tokens, replace modules on home using the plan, point image fields at R2 keys from the inventory. Keep `transcribe_site` as a `system_action` (correct category — it doesn't itself edit state).
+
+**Ticket 2 — Multi-page.** Add `add_page` / `remove_page` / `reorder_pages` state_edit tools, extend the digest's `perPageModulePlan` to be per-page, update the prompt to drive multi-page construction.
+
+**Ticket 3 — Nav patterns + asset-mirror race.** Explicit nav-pattern tool; ensure asset mirror completes before AI references R2 keys (or have the AI tolerate "pending" placeholders).
+
+Ticket 1 is the smallest change that should turn "underwhelming" into "recognizably the source site, single page." Tickets 2 and 3 follow naturally and you can stop after 1 if it's good enough.
+
+Want me to scope Ticket 1 now (write the request ticket per the free-coding protocol) and start on it? I'll cut a `branch-<ticket>` and follow RED/GREEN with UATs named `test_UAT_FC_REQ-XX_*` per the protocol.
 
 
 <!-- xgd-chat-end -->
