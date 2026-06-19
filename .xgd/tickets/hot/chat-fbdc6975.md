@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:55:27.561727+00:00'
+updated_at: '2026-06-19T23:57:53.387693+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -881,6 +881,58 @@ Doesn't change much from my earlier table — titles/labels stay inline JSON, bo
 4. **REQ-16 dependency** — this REQ ships without waiting for REQ-16. R2 routes exist; AI tools handle write; the user just doesn't have a GUI editor for the copy files until REQ-16 lands. OK?
 
 Say "go with those" or redirect any. ~5 SP estimate — schema + renderer + transcribe-site mechanical write + 1 new AI tool + doc update.
+
+
+<!-- xgd-turn id="f7c99408-46c7-4004-b7fa-5d98396d236d" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:57:53.351Z" -->
+#### You
+This conversation is making me feel extremely uncomfortable. Where is the existing text that I am seeing coming from
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:57:53.351Z" -->
+#### Claude
+That's a fair signal — I've been racing ahead. Let me back up and show you concretely where the text lives right now, then we can decide what to change.
+
+Direct answer: **the text you're seeing comes from inline strings in `sites/1stcontact/site.json`** (260 lines, baked into the package). That file is the source of truth for the 1stcontact baseline site. A copy is served to the builder at `/starter-sites/1stcontact.json` on cold load.
+
+Concretely:
+
+- `sites/1stcontact/site.json:109` — page title `"1st Contact — Stop worrying about your website"`
+- `:152` — hero heading `"Stop worrying about your website."`
+- `:153` — hero subhead `"<p>We build it, maintain it, and operate it…</p>"` (HTML string)
+- `:173` — text-block body `"<p>Most small businesses don't need an agency…</p>"`
+- `:191-200` — services-grid item titles and bodies (`"Build"`, `"Maintain"`, `"Operate"` + their paragraph descriptions)
+- `:219, :234` — about-section and form intro body strings
+
+**Every single piece of text** you see in the preview is a string literal in that JSON. There is no separate "copy" file, no R2 text, no CMS — the words are inline.
+
+The flow you've been looking at goes:
+
+```
+sites/1stcontact/site.json     (260-line JSON, inline strings)
+       │
+       ▼
+/starter-sites/1stcontact.json (same JSON, served by control-app on cold load)
+       │
+       ▼
+Browser loads it into a JS Site object
+       │
+       ▼
+Convert-flow AI calls set_module_content(...) which OVERWRITES the inline
+strings with the AI's paraphrase of joyfulculinarycreations.com's content
+       │
+       ▼
+Mutated Site object → persisted to localStorage (1stcontact_builder_site_v1)
+       │
+       ▼
+renderSiteToHtml(siteObject) → HTML written into the iframe
+```
+
+So after you ran convert, the words you saw on the page were the AI's paraphrase — not the source's words, not 1stcontact's words — because the AI's tool call mutated `site.json`'s inline strings in your in-memory copy.
+
+There is no copy of the original 1stcontact text preserved anywhere except in the file on disk (and git history). The Reset button I added gets you back to the on-disk version. There is no third "source" you might be unaware of.
+
+If that matches what you were trying to verify, say so and I'll stop. If you suspected text was coming from somewhere else (a database, a remote service, a server-rendered fragment) — it's not. It's only what's in that one file plus whatever the AI has written into your browser's localStorage.
 
 
 <!-- xgd-chat-end -->
