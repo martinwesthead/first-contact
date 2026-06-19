@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-30
 created_by: xgd
 created_at: '2026-06-19T22:27:36.674214+00:00'
-updated_at: '2026-06-19T22:30:48.492344+00:00'
+updated_at: '2026-06-19T22:35:43.047341+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -110,5 +110,13 @@ Three things I want to flag before coding rather than after:
 3. **The new multi-page fixture for AC10.** REQ-28's fixtures are single-page; I'll add `tests/fixtures/convert-flow/multi-page/` with 3 linked HTML pages + shared header nav + a small asset inventory. Confirming that's in scope (it's named in AC10 but worth a sanity check on fixture-creation effort).
 
 If you're good with (1a) and (2 = constant import), and (3) is in scope, I'll proceed: read current `transcribe.ts`, `chat.ts`, registry conventions, and REQ-28's two backward-compat tests; then implement in the order RED→GREEN per AC.
+
+<!-- xgd-turn id="61eefaaf-2a2c-4fdb-be5b-b0ccc52a0bdf-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T22:35:21.743Z" -->
+#### You
+1 We cannot call the LLM in automated tests - these have to be mocked
+2 I have no proference
+3 We should be able to support N pages, why 3? Is there a real need to bound N? If so, it should be a big number
 
 <!-- xgd-chat-end -->
