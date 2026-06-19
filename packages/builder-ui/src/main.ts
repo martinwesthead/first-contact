@@ -5,6 +5,7 @@ import { createBuilderLayout } from "./components/builder-layout.js";
 import { createChatPanel } from "./components/chat-panel.js";
 import { createPreviewPanel } from "./components/preview-panel.js";
 import { registerDigestReport } from "./components/digest-report.js";
+import { registerConvertConfirmation } from "./components/convert-confirmation.js";
 import { runChatTurn } from "./chat-driver.js";
 
 export interface BootBuilderOptions {
@@ -41,6 +42,7 @@ export function bootBuilder(options: BootBuilderOptions): {
   const reloadPage =
     options.reloadPage ?? (() => globalThis.location?.reload?.());
   registerDigestReport();
+  registerConvertConfirmation();
   const catalog = buildFrameworkCatalog();
   const store = new BuilderStore(
     { siteDefinition: options.initialSite, chatHistory: [] },
@@ -77,9 +79,42 @@ export function bootBuilder(options: BootBuilderOptions): {
   });
   preview.render(store.getState().siteDefinition);
 
+  const doc = options.root.ownerDocument;
+  const handleConvertConfirmed = (event: Event): void => {
+    const detail = (event as CustomEvent).detail as
+      | { url?: string; ownsSite?: boolean }
+      | null
+      | undefined;
+    const url = detail?.url ?? "";
+    const ownsClause = detail?.ownsSite === true ? " I own this site." : "";
+    const text = `I confirm. Proceed with converting ${url}.${ownsClause}`;
+    void runChatTurn(text, {
+      store,
+      catalog,
+      endpoint: options.chatEndpoint,
+    });
+  };
+  const handleConvertCancelled = (event: Event): void => {
+    const detail = (event as CustomEvent).detail as
+      | { url?: string }
+      | null
+      | undefined;
+    const url = detail?.url ?? "";
+    const text = `Cancel the conversion${url ? ` of ${url}` : ""}.`;
+    void runChatTurn(text, {
+      store,
+      catalog,
+      endpoint: options.chatEndpoint,
+    });
+  };
+  doc.addEventListener("fc:convert-confirmed", handleConvertConfirmed);
+  doc.addEventListener("fc:convert-cancelled", handleConvertCancelled);
+
   return {
     store,
     destroy: () => {
+      doc.removeEventListener("fc:convert-confirmed", handleConvertConfirmed);
+      doc.removeEventListener("fc:convert-cancelled", handleConvertCancelled);
       unsubscribe();
       chat.destroy();
       layout.destroy();
