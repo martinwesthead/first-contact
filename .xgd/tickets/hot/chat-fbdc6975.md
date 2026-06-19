@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T22:38:22.701014+00:00'
+updated_at: '2026-06-19T23:06:16.990386+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -597,6 +597,31 @@ Yes — now I get it. "Two destinations" = the two write paths the handler had (
 So REQ-30 is the complete scope. No follow-up tickets needed for the killer demo. The only things explicitly OUT of REQ-30 are pixel-equivalent reproduction (best-effort layout fidelity instead) and machine-readable per-module confidence (replaced by AI narrative naming low-confidence sections).
 
 Want me to also append this clarification to REQ-30's body or the chat-transcript comment so the "do we need more tickets?" question is answered in-ticket? Otherwise REQ-30 is ready for you to start on.
+
+
+<!-- xgd-turn id="351c7ab5-c3c5-4e32-bb63-cfecf57e890e" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:06:16.934Z" -->
+#### You
+So I was expecting based on what we discussed that restarting the system would reset it - the chat window clears but the site panel still shows the changes that were made
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:06:16.934Z" -->
+#### Claude
+I don't think we discussed that explicitly in this thread — what we settled was the digest goes to R2 and the AI rebuilds the site via `state_edit` tools. Those edits still flow through the existing draft persistence path (REQ-10's D1 schema), so the site survives reload by design. REQ-28's in-memory caveat covers only the chat metadata (destructive-confirmation flag, robots overrides) — not the site itself, which has always been persisted.
+
+So what you're seeing matches the current architecture:
+- **Chat** → in-memory (per REQ-23/24 deferral), clears on reload.
+- **Site draft** → D1-persisted (REQ-10), survives reload.
+
+REQ-30 doesn't change that — it changes *how* the AI constructs the converted site, but the construction still calls `state_edit` tools that mutate the draft in D1.
+
+There are two ways the behavior you expected could be true, both new work:
+
+**(a) Reset action on the draft.** A `reset_site_to_seed` operator action (probably a `system_action` that wipes the working draft and re-seeds from `1stcontact`'s baked-in definition via the REQ-6 `tools/generate` output). Cheap. Doesn't change the convert flow. Operator clicks "reset" or types it into chat → draft back to baseline.
+
+**(b) Ephemeral-preview-then-commit model for convert.** Bigger architectural shift — convert writes to an ephemeral preview state that's not persisted until the operator says "keep this". Doesn't match REQ-28's "writes directly into the operator's current draft" decision; that decision was made to win the killer-demo's "single explicit confirmation, then go" pattern. Reversing it is a real reshape.
+
+My guess is you want (a) — same demo flow, but easy reset between attempts. Want me to scope that as a separate ticket? It's small (1–2 story points) and orthogonal to REQ-30.
 
 
 <!-- xgd-chat-end -->
