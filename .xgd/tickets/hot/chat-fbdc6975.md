@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:15:27.939832+00:00'
+updated_at: '2026-06-19T23:30:33.925284+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -679,6 +679,41 @@ The site is persisted in **browser localStorage** under the key `1stcontact_buil
 After clearing, on the next reload the builder cold-loads `/starter-sites/1stcontact.json` and you're back to the demo baseline.
 
 Note: this is exactly the "reset action" I floated earlier as option (a) — the same effect, just driven via DevTools instead of a button. If you'd like a real in-app reset action so you don't have to crack open DevTools between demos, that's a small separate ticket (~1 SP). Want me to scope it?
+
+
+<!-- xgd-turn id="40ea56ce-29c3-4731-9948-bd3e96aff25a" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:30:32.845Z" -->
+#### You
+Good can you give me a "reset" button at the top of the panel that does that please while we are testing
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:30:32.845Z" -->
+#### Claude
+Free-coding this. Step 1: scope ticket; Step 1.5: capture transcript; then code + UAT + commit.
+
+Now implementing. Mark task #10 complete, #12 in_progress.
+
+All 4 UATs pass. Now running the full test suite + typecheck to make sure I didn't break adjacent tests.
+
+REQ-31 is now `free_coded` (SHA `e601a77`). Capturing the design transcript.
+
+Done. Summary:
+
+**REQ-31** (`request-21208719`) — `free_coded`, story points 1, commit `e601a77`.
+
+**What landed:**
+- `store.ts` — `LS_KEY` renamed to exported `DEFAULT_STORAGE_KEY`.
+- `preview-panel.ts` — `createPreviewPanel(parent, { onReset })` adds a Reset button to the toolbar (right-aligned via `margin-left: auto`). Backwards compatible: omit the option → no button.
+- `main.ts` — `bootBuilder` wires the click to `confirm(...) → removeItem(key) → reload()`. Confirm/reload/key are injectable for tests (`resetPrompt`, `reloadPage`, `storageKey`).
+- `tests/test_UAT_FC_REQ-31_preview_panel_reset_button.test.ts` — 4 UATs covering all four paths (no callback / click invokes handler / confirm=true clears+reloads / confirm=false leaves untouched).
+
+**Verification:** 307 tests pass across 143 files (including the existing REQ-8 viewport-switch UAT which uses the no-options form). `tsc --noEmit` clean. `xgd quality run --tests …` passes lint + typecheck.
+
+**COMMENT-106** captures the design-thread turns that produced this ticket (your "restart should reset it" observation → preview architecture trace → localStorage discovery → "give me a button" request → implementation summary).
+
+**Status of REQ-31:** parked at `free_coded` per FREE-CODING.md — promotion to `ready_to_reconcile` is your call when ready.
+
+Note in passing: I noticed commit `44c637a` exists on `xgd-working` — REQ-30 has been free-coded already in parallel with this session. So the Reset button you just gained will be especially useful for iterating the REQ-30 demo flow.
 
 
 <!-- xgd-chat-end -->
