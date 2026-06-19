@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T20:28:46.902476+00:00'
+updated_at: '2026-06-19T21:44:55.426941+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -422,6 +422,42 @@ A few things to watch for given what we found:
 - You'll need to run `analyze_page` first on the URL to populate the digest cache before `transcribe_site` will find it.
 
 Ready when you are.
+
+
+<!-- xgd-turn id="e0c9c393-e740-44c0-8b81-24ea49a51748" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T21:44:55.387Z" -->
+#### You
+OK, I have created the site and the results I'm sorry to say pretty underwhelming.
+
+I started it using pnpm dev it is running on 
+
+http://localhost:8788/builder?site=1stcontact
+
+Against site: 
+
+https://joyfulculinarycreations.com/
+
+The system did a good job downloading the assets, content and building a site map as far as I can tell. It then attempted to rebuilt the original demo site (1stcontact) as Joyful culinary creations...but it looks like the old site with some of the text pasted in. I see no images. Its all on one page (original site has 4) it retains a lot of the 1stcontact content and all of its style and fonts...
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T21:44:55.387Z" -->
+#### Claude
+## Diagnosis
+
+The investigation found a clean root cause. `transcribe_site` produces a fully-formed site definition (modules + theme tokens + rewritten asset refs), but it's registered as a `system_action` in `apps/control-app/src/operator/registry.ts:341-364`, while only `state_edit` handlers actually apply their result to the working draft (`apps/control-app/src/chat.ts:226-251`). So the transcribed site is computed, returned to the UI as a payload, surfaced to the AI for narration — and then **dropped on the floor**. Whatever you see in the builder is the original 1stcontact draft plus whatever incidental `set_module_content` calls the AI made afterward from looking at the digest. That fully explains "old demo with text pasted in, no images, original fonts."
+
+Two secondary issues are also real but separate:
+
+- **Single-page by design.** `packages/extractor/src/transcribe.ts:381-386` hardcodes one `home` page. Multi-page would need extending the prompt + `buildSiteFromTranscription`.
+- **Asset mirror is async.** Stage 4 runs after the handler returns and rewrites refs in the payload — but if the payload was never applied (primary bug), the rewrites have nothing to land on.
+
+## Recommendation
+
+Fix the primary bug first as one tightly-scoped free-coded ticket: make `transcribe_site` apply its `payload.site` to the working draft as an atomic replacement (clear existing pages/modules/theme on the target site, install the transcribed site), and gate it behind the existing AC1 confirmation. That alone should turn the demo from "underwhelming" to "the thing the docs describe."
+
+Multi-page and the asset-mirror race are best as separate follow-up tickets — they're real but smaller-impact, and bundling them inflates the scope of the fix that matters most.
+
+Want me to scope the primary-bug ticket and start there? I'd also like to confirm one thing before writing the fix: should the apply step **fully replace** the existing site (pages, modules, theme, nav) — matching the DOC-9 §7.3 "transcription completes, module instances populate the draft" framing — or **merge** the transcribed theme tokens onto the existing draft while replacing only pages/modules? Full replacement is closer to the killer-demo intent; merge is safer if a user has already started editing.
 
 
 <!-- xgd-chat-end -->
