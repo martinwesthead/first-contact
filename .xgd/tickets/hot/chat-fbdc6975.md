@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T20:04:38.474931+00:00'
+updated_at: '2026-06-19T20:28:46.902476+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -402,6 +402,26 @@ So the only persistent side-effect of running the demo is:
 Existing site content (D1, in-memory draft, localStorage) is untouched in all modes.
 
 Worth flagging: this means the "killer demo" currently shows you the transcribed site in chat-card form but **doesn't actually replace the preview iframe** either, because the iframe reads from the store and the store never updated. The progressive-reveal preview path described in the ticket (theme tokens flipping CSS variables, modules re-rendering) isn't wired — that's a real gap vs. the spec.
+
+
+<!-- xgd-turn id="551a2114-2111-467f-bd9b-14dae2b2a037" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T20:28:46.851Z" -->
+#### You
+ok lets see what it does - I will start it
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T20:28:46.851Z" -->
+#### Claude
+Sounds good. Tell me how you're starting it (`wrangler dev`, `wrangler dev --remote`, or via a package script) and what URL you'll paste in, and I'll watch for what to expect / help diagnose anything unexpected.
+
+A few things to watch for given what we found:
+
+- The `<ConvertConfirmation>` and `<TranscribeProgress>` chat cards should appear.
+- The preview iframe will **not** update (FE doesn't apply `transcribe_site` — known gap).
+- Without `--remote`, no real screenshot (Browser Rendering needs remote); Stage 1 will likely emit a null/missing screenshot.
+- You'll need to run `analyze_page` first on the URL to populate the digest cache before `transcribe_site` will find it.
+
+Ready when you are.
 
 
 <!-- xgd-chat-end -->
