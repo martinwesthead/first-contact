@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-1
 created_by: xgd
 created_at: '2026-06-19T20:57:31.300229+00:00'
-updated_at: '2026-06-19T21:06:56.913046+00:00'
+updated_at: '2026-06-19T21:07:53.629642+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -87,5 +87,11 @@ Fix complete.
 - `e76cfbb` chore: bump version 0.0.2 → 0.0.3 [FREE-CODED]
 
 BUG-1 is now `status: free_coded` with both SHAs and `version: 0.14.1235` recorded.
+
+<!-- xgd-turn id="9985f209-ca8c-49d2-a216-1eb15db835ee-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T21:07:44.384Z" -->
+#### You
+is any installation required?
 
 <!-- xgd-chat-end -->
