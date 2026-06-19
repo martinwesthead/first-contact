@@ -2,6 +2,12 @@ export interface ChatHandlerEnv {
   CLAUDE_API_KEY?: string;
   CLAUDE_MODEL?: string;
   ANTHROPIC_API_URL?: string;
+  FETCH_RATE_KV?: KVNamespace;
+  FETCH_CACHE_KV?: KVNamespace;
+  FETCH_ROBOTS_KV?: KVNamespace;
+  BROWSER_BUDGET_KV?: KVNamespace;
+  BROWSER?: unknown;
+  ASSETS_BUCKET?: R2Bucket;
 }
 
 export interface ChatHandlerDeps {
