@@ -2,6 +2,9 @@ import { handleChatRequest, type ChatHandlerEnv } from "./chat.js";
 
 export interface Env extends ChatHandlerEnv {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
+  FETCH_RATE_KV: KVNamespace;
+  BROWSER_BUDGET_KV?: KVNamespace;
+  BROWSER?: unknown;
 }
 
 export default {

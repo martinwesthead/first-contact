@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>External Stylesheet Background — Reference Fixture</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/">Acme</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </header>
+  <main>
+    <section class="hero">
+      <h1>Find a local plumber, fast</h1>
+      <p>This fixture's hero background-image lives in an external stylesheet — invisible to the static parser, recovered by the rendered fetch's getComputedStyle pass. The body is intentionally rich enough that the escalation heuristic does NOT fire on thin-body grounds; force-rendered is the exercise path for the computed background-image extraction.</p>
+      <button class="cta">Get a quote</button>
+    </section>
+    <section class="features">
+      <h2>Why Acme</h2>
+      <ul>
+        <li>Vetted local trades</li>
+        <li>Same-day availability</li>
+        <li>Transparent pricing</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
