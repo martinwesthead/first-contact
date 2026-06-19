@@ -11,6 +11,15 @@ export interface PreviewPanelHandle {
   render(site: Site): void;
 }
 
+export interface PreviewPanelOptions {
+  /**
+   * Optional click handler for a Reset button rendered at the top of the panel.
+   * When provided, the panel toolbar includes a Reset button that invokes this
+   * callback. When omitted, no Reset button is rendered.
+   */
+  onReset?: () => void;
+}
+
 export const VIEWPORT_PRESETS: Readonly<Record<ViewportPreset, string>> = {
   mobile: "375px",
   tablet: "768px",
@@ -21,7 +30,10 @@ export const VIEWPORT_PRESETS: Readonly<Record<ViewportPreset, string>> = {
  * Vanilla DOM preview panel — same-origin iframe + viewport switcher.
  * (DOC-8 §3.2 + §3.4)
  */
-export function createPreviewPanel(parent: HTMLElement): PreviewPanelHandle {
+export function createPreviewPanel(
+  parent: HTMLElement,
+  options: PreviewPanelOptions = {},
+): PreviewPanelHandle {
   const doc = parent.ownerDocument;
   const root = doc.createElement("div");
   root.className = "fc-preview";
@@ -39,6 +51,8 @@ export function createPreviewPanel(parent: HTMLElement): PreviewPanelHandle {
   const toolbar = doc.createElement("div");
   toolbar.className = "fc-preview__toolbar";
   toolbar.style.flex = "0 0 auto";
+  toolbar.style.display = "flex";
+  toolbar.style.alignItems = "center";
 
   let viewport: ViewportPreset = "desktop";
 
@@ -50,6 +64,18 @@ export function createPreviewPanel(parent: HTMLElement): PreviewPanelHandle {
   toolbar.appendChild(buttons.mobile);
   toolbar.appendChild(buttons.tablet);
   toolbar.appendChild(buttons.desktop);
+
+  if (options.onReset) {
+    const onReset = options.onReset;
+    const resetBtn = doc.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "fc-preview__reset";
+    resetBtn.setAttribute("data-fc-preview-reset", "");
+    resetBtn.textContent = "Reset";
+    resetBtn.style.marginLeft = "auto";
+    resetBtn.addEventListener("click", () => onReset());
+    toolbar.appendChild(resetBtn);
+  }
 
   const iframe = doc.createElement("iframe");
   iframe.className = "fc-preview__iframe";
