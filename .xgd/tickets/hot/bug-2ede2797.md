@@ -5,16 +5,19 @@ type: bug
 title: 'Builder preview: multi-page nav links navigate iframe to control-app root'
 created_by: xgd
 created_at: '2026-06-19T23:43:35.267511+00:00'
-updated_at: '2026-06-19T23:43:35.267511+00:00'
+updated_at: '2026-06-19T23:53:09.760240+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: high
   severity: high
   story_points: 3
   auto_merge_back: true
   needs_review: false
+  commits:
+  - ccfd392b7a07ed5490ace376b3f2b47ede5cf15a
+  version: 0.14.1236
 ---
 
 ## Symptom
