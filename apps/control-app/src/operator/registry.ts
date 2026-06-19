@@ -322,6 +322,11 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
             description:
               "Optional. A token minted by /api/chat when the operator's message implied fetch intent. Pass this through verbatim when re-invoking via the direct /api/operator endpoint.",
           },
+          forceRendered: {
+            type: "boolean",
+            description:
+              "Optional. Use only when the operator explicitly asks for a rendered analysis (e.g. 'render this page'). Forces Browser Rendering escalation even when the static-fetch signals would have been sufficient. Costs against the per-session browser budget.",
+          },
         },
         required: ["url"],
       },

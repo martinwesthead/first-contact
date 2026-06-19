@@ -13,7 +13,8 @@
   "dependencies": {
     "@1stcontact/builder-ui": "workspace:*",
     "@1stcontact/extractor": "workspace:*",
-    "@1stcontact/web-fetch-safety": "workspace:*"
+    "@1stcontact/web-fetch-safety": "workspace:*",
+    "@cloudflare/puppeteer": "^1.1.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250601.0",

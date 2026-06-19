@@ -35,6 +35,12 @@ id = "placeholder_browser_budget_kv"
 binding = "ASSETS_BUCKET"
 bucket_name = "1stcontact-assets"
 
+# Browser Rendering binding (REQ-22). Drives @cloudflare/puppeteer from the
+# analyze_page rendered-fetch path. Bound only in production — Wrangler dev
+# does not emulate Browser Rendering locally (requires `--remote`), and the
+# `analyze_page` handler degrades gracefully when env.BROWSER is undefined.
+# Use `wrangler dev --remote` (or full deploy) to exercise the rendered path.
+
 [env.production]
 routes = [
   { pattern = "app.1stcontact.io/*", zone_name = "1stcontact.io" }
@@ -63,3 +69,6 @@ id = "placeholder_browser_budget_kv"
 [[env.production.r2_buckets]]
 binding = "ASSETS_BUCKET"
 bucket_name = "1stcontact-assets"
+
+[env.production.browser]
+binding = "BROWSER"

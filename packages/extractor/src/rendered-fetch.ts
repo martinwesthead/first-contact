@@ -1,0 +1,176 @@
+/**
+ * renderedFetch — Layer A escalation path that drives Browser Rendering
+ * (via @cloudflare/puppeteer at the binding boundary). The extractor stays
+ * pure: it defines the `BrowserDriver` interface and the in-page extraction
+ * script. The control-app supplies a concrete driver that wraps puppeteer.
+ *
+ * Tests inject a fake driver that returns deterministic computed-style and
+ * screenshot data without ever spinning up a real browser instance.
+ */
+
+export type ViewportName = "mobile" | "tablet" | "desktop";
+
+export interface Viewport {
+  readonly name: ViewportName;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Viewport choices documented on REQ-22:
+ *   - mobile  390×844  (iPhone 13 reference, portrait)
+ *   - tablet  820×1180 (iPad Air reference, portrait)
+ *   - desktop 1440×900 (mainstream laptop reference)
+ */
+export const DEFAULT_VIEWPORTS: readonly Viewport[] = [
+  { name: "mobile", width: 390, height: 844 },
+  { name: "tablet", width: 820, height: 1180 },
+  { name: "desktop", width: 1440, height: 900 },
+];
+
+export interface ComputedTypeStyle {
+  readonly family: string;
+  readonly size: string;
+  readonly weight: string;
+}
+
+export interface ComputedStyles {
+  readonly body: ComputedTypeStyle & { readonly backgroundColor: string };
+  readonly h1: ComputedTypeStyle;
+  readonly h2: ComputedTypeStyle;
+  readonly h3: ComputedTypeStyle;
+  /** Computed background-color of the largest above-the-fold element. */
+  readonly primaryBackgroundColor: string;
+}
+
+export interface ComputedBackgroundAsset {
+  /** Absolute URL resolved against the page origin by the driver. */
+  readonly url: string;
+  /** Selector or selector-with-index the URL was read from (for debug). */
+  readonly selector: string;
+}
+
+export interface DriverResult {
+  /** Hydrated HTML captured from the desktop viewport after networkidle0. */
+  readonly html: string;
+  readonly computedStyles: ComputedStyles;
+  readonly computedBackgroundAssets: readonly ComputedBackgroundAsset[];
+  /** PNG bytes per viewport, keyed by viewport name. Missing entries mean
+   *  the viewport was unreachable (timeout) or out of budget. */
+  readonly screenshots: Partial<Record<ViewportName, Uint8Array>>;
+  /** Wall-clock seconds consumed across all viewports — charged to budget. */
+  readonly durationSeconds: number;
+}
+
+export interface BrowserDriver {
+  renderForViewports(
+    url: string,
+    viewports: readonly Viewport[],
+  ): Promise<DriverResult>;
+}
+
+export interface RenderedFetchOptions {
+  readonly driver: BrowserDriver;
+  readonly url: string;
+  readonly viewports?: readonly Viewport[];
+}
+
+/**
+ * Run the rendered-fetch path against the supplied driver. Thin wrapper that
+ * passes the default viewport set unless an override is provided. The driver
+ * is responsible for puppeteer.launch + networkidle0 wait + screenshot loop.
+ */
+export async function renderedFetch(
+  opts: RenderedFetchOptions,
+): Promise<DriverResult> {
+  const viewports = opts.viewports ?? DEFAULT_VIEWPORTS;
+  return opts.driver.renderForViewports(opts.url, viewports);
+}
+
+/**
+ * In-page script. Drivers call `page.evaluate(COMPUTED_EXTRACTION_SCRIPT)` to
+ * run this in the browser context after the page has settled. Returns a
+ * structured object the driver maps onto `ComputedStyles` +
+ * `ComputedBackgroundAsset[]`.
+ *
+ * Kept as a string so drivers don't need to bundle the function — puppeteer
+ * accepts string scripts via `page.evaluate`. The output URLs are still
+ * relative; the driver resolves them against the page's final URL.
+ */
+export const COMPUTED_EXTRACTION_SCRIPT = `
+(() => {
+  function readType(el) {
+    if (!el) return { family: "", size: "", weight: "", backgroundColor: "", backgroundImage: "" };
+    var cs = getComputedStyle(el);
+    return {
+      family: cs.fontFamily || "",
+      size: cs.fontSize || "",
+      weight: cs.fontWeight || "",
+      backgroundColor: cs.backgroundColor || "",
+      backgroundImage: cs.backgroundImage || "",
+    };
+  }
+
+  var body = readType(document.body);
+  var h1 = readType(document.querySelector("h1"));
+  var h2 = readType(document.querySelector("h2"));
+  var h3 = readType(document.querySelector("h3"));
+
+  var primaryBackgroundColor = "";
+  var largestArea = 0;
+  var atfElements = document.querySelectorAll("body *");
+  for (var i = 0; i < atfElements.length; i++) {
+    var el = atfElements[i];
+    if (!el.getBoundingClientRect) continue;
+    var r = el.getBoundingClientRect();
+    if (r.top > window.innerHeight) continue;
+    var visW = Math.max(0, Math.min(r.right, window.innerWidth) - Math.max(r.left, 0));
+    var visH = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
+    var area = visW * visH;
+    if (area <= largestArea) continue;
+    var cs = getComputedStyle(el);
+    if (!cs.backgroundColor || cs.backgroundColor === "rgba(0, 0, 0, 0)" || cs.backgroundColor === "transparent") continue;
+    largestArea = area;
+    primaryBackgroundColor = cs.backgroundColor;
+  }
+
+  var bgSelectors = ["body", "header", "section"];
+  var heroSelectors = [".hero", "[data-hero]", "main > section:first-child", ".banner", "[class*='hero']"];
+  var seen = {};
+  var allSelectors = [];
+  for (var k = 0; k < bgSelectors.length; k++) {
+    if (!seen[bgSelectors[k]]) { allSelectors.push(bgSelectors[k]); seen[bgSelectors[k]] = true; }
+  }
+  for (var k2 = 0; k2 < heroSelectors.length; k2++) {
+    if (!seen[heroSelectors[k2]]) { allSelectors.push(heroSelectors[k2]); seen[heroSelectors[k2]] = true; }
+  }
+
+  var urlRe = /url\\(["']?([^"')]+)["']?\\)/g;
+  var bgAssets = [];
+  for (var s = 0; s < allSelectors.length; s++) {
+    var sel = allSelectors[s];
+    var els;
+    try { els = document.querySelectorAll(sel); } catch (_) { continue; }
+    for (var n = 0; n < els.length; n++) {
+      var elN = els[n];
+      var csN = getComputedStyle(elN);
+      var bgi = csN.backgroundImage;
+      if (!bgi || bgi === "none") continue;
+      var match;
+      urlRe.lastIndex = 0;
+      while ((match = urlRe.exec(bgi)) !== null) {
+        bgAssets.push({ url: match[1], selector: els.length > 1 ? sel + "[" + n + "]" : sel });
+      }
+    }
+  }
+
+  return {
+    body: body,
+    h1: h1,
+    h2: h2,
+    h3: h3,
+    primaryBackgroundColor: primaryBackgroundColor,
+    bgAssets: bgAssets,
+  };
+})();
+`;
