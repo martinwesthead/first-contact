@@ -106,16 +106,36 @@
       .fc-chat__input {
         display: flex;
         gap: 6px;
+        align-items: stretch;
       }
-      .fc-chat__textarea {
+      .fc-chat__editor {
         flex: 1 1 auto;
+        min-width: 0;
         background: #0f172a;
-        color: #f8fafc;
         border: 1px solid #334155;
         border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .fc-chat__editor:focus-within {
+        border-color: #2563eb;
+      }
+      .fc-chat__editor-content {
+        flex: 1 1 auto;
+        min-height: 60px;
+        max-height: 200px;
+        overflow-y: auto;
+        color: #f8fafc;
         padding: 6px 8px;
         font: inherit;
-        resize: vertical;
+        outline: none;
+      }
+      .fc-chat__editor-content p {
+        margin: 0 0 4px;
+      }
+      .fc-chat__editor-content p:last-child {
+        margin-bottom: 0;
       }
       .fc-chat__send {
         background: #2563eb;
@@ -124,6 +144,11 @@
         border-radius: 4px;
         padding: 6px 12px;
         cursor: pointer;
+        flex: 0 0 auto;
+        align-self: flex-end;
+      }
+      .fc-chat__send:hover {
+        background: #1d4ed8;
       }
       .fc-preview {
         display: flex;
