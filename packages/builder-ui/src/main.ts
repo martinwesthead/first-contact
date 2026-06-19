@@ -4,6 +4,7 @@ import { BuilderStore } from "./store.js";
 import { createBuilderLayout } from "./components/builder-layout.js";
 import { createChatPanel } from "./components/chat-panel.js";
 import { createPreviewPanel } from "./components/preview-panel.js";
+import { registerDigestReport } from "./components/digest-report.js";
 import { runChatTurn } from "./chat-driver.js";
 
 export interface BootBuilderOptions {
@@ -26,6 +27,7 @@ export function bootBuilder(options: BootBuilderOptions): {
   destroy: () => void;
 } {
   const storage = options.storage ?? globalThis.localStorage ?? null;
+  registerDigestReport();
   const catalog = buildFrameworkCatalog();
   const store = new BuilderStore(
     { siteDefinition: options.initialSite, chatHistory: [] },

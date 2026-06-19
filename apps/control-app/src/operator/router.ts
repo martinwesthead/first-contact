@@ -63,6 +63,7 @@ export async function handleOperatorActionRequest(
       env,
       emit,
       siteDefinition: null,
+      operatorLastMessage: null,
     });
   } catch (err) {
     return jsonError(`action handler threw: ${String(err)}`, 500);

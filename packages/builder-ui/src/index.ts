@@ -54,6 +54,10 @@ export {
   type ToolResultRendererContext,
 } from "./components/tool-result-renderers.js";
 export {
+  createDigestReportRenderer,
+  registerDigestReport,
+} from "./components/digest-report.js";
+export {
   runChatTurn,
   type ChatApiResponse,
   type ChatDriverOptions,

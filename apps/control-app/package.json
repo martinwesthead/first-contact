@@ -1,6 +1,6 @@
 {
   "name": "@1stcontact/control-app",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@1stcontact/builder-ui": "workspace:*",
+    "@1stcontact/extractor": "workspace:*",
     "@1stcontact/web-fetch-safety": "workspace:*"
   },
   "devDependencies": {
