@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-5
 created_by: xgd
 created_at: '2026-06-19T23:44:30.816656+00:00'
-updated_at: '2026-06-19T23:47:31.415803+00:00'
+updated_at: '2026-06-19T23:53:40.444020+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -46,5 +46,49 @@ Fix shape: (a) update the how-to doc to instruct the AI to construct `{ id: r2Ke
 <!-- xgd-chat role="user" ts="2026-06-19T23:44:13.330Z" -->
 #### You
 Please free code a fix for this
+
+<!-- xgd-turn id="e58fcc0f-c840-43ea-a539-4d3208f6e31d-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:53:40.405Z" -->
+#### Claude
+Now I have a complete picture. Let me make the changes. First, let me create the TODO list mentally and start implementing.
+
+Now check the index exports for extractor:
+
+Now update the doc:
+
+Now mirror it in the inlined version:
+
+Now let me write the UATs. First the doc-format one:
+
+Now the digest assetRef UAT:
+
+Now I'll write the E2E test:
+
+Now let me run the new tests:
+
+All 6 new UATs pass. Now let me run the regression scope — the related digest/asset/system-prompt tests:
+
+All regression tests pass. Let me also run a wider sweep across the extractor + builder-ui + framework tests since I touched the `transcribe.ts` interface:
+
+All 324 tests pass. Let me also check lint and typecheck:
+
+Now commit:
+
+Tree clean. Now move the ticket to `free_coded`:
+
+Ticket moved to `free_coded`. Now verify state and check the body is still current:
+
+Body still reflects the implementation accurately — the fix matched the plan in the ticket body exactly. Final state:
+
+- **Ticket**: BUG-5 at `status=free_coded`, commit `775351c` recorded in `fields.commits`
+- **Commit**: `fix(convert-flow): image fields require AssetRef objects, not strings (BUG-5) [FREE-CODED]`
+- **Changes**:
+  - `packages/extractor/src/transcribe.ts` — added precomputed `assetRef` field to `TranscriptionDigestAssetEntry`, populated in `buildTranscriptionDigest`
+  - `docs/llm-context/reproducing-a-website.md` (+ inlined mirror in `apps/control-app/src/llm-context.ts`) — instructs AI to pass the `assetRef` object, with worked example
+  - `packages/extractor/src/index.ts` — exports the new `TranscriptionDigestAssetRef` type
+- **Tests**: 3 new UATs (6 cases) pass; regression scope (REQ-28 mirror, REQ-30 digest + system-prompt + killer-demo) green; full suite 324/324 pass
+
+The ticket is parked at `free_coded` — promotion to `ready_to_reconcile` is the operator's call.
 
 <!-- xgd-chat-end -->
