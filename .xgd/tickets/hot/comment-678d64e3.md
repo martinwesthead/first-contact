@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-4
 created_by: xgd
 created_at: '2026-06-19T23:44:28.241594+00:00'
-updated_at: '2026-06-19T23:44:28.337585+00:00'
+updated_at: '2026-06-19T23:46:15.820149+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -40,5 +40,11 @@ Diagnosis for issue 2 (consent panel doesn't trigger response):
 REQ-28's implementation landed the component but the boot-time wiring and the listener bridge were never built. The chat-card itself works; the click handler dispatches; nothing on the other side.
 
 Fix shape: register the renderer in `bootBuilder`; add a listener that synthesizes a chat turn (e.g. "I confirm. Proceed.") which the AI sees and reacts to by calling `transcribe_site` again. Same shape for `fc:convert-cancelled`. Preserves a single chat-loop entry point. ~2 SP.
+
+<!-- xgd-turn id="5f7bf826-fc17-491c-9d81-2512de477b70-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:44:09.490Z" -->
+#### You
+Please free code a fix for this
 
 <!-- xgd-chat-end -->
