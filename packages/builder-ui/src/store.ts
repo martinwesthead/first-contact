@@ -38,7 +38,7 @@ export interface BuilderState {
 
 export type Listener = (state: BuilderState) => void;
 
-const LS_KEY = "1stcontact_builder_site_v1";
+export const DEFAULT_STORAGE_KEY = "1stcontact_builder_site_v1";
 
 export interface BuilderStoreOptions {
   storage?: Storage | null;
@@ -58,13 +58,13 @@ export class BuilderStore {
 
   constructor(initial: BuilderState, options: BuilderStoreOptions = {}) {
     const persisted = options.storage
-      ? loadPersisted(options.storage, options.storageKey ?? LS_KEY)
+      ? loadPersisted(options.storage, options.storageKey ?? DEFAULT_STORAGE_KEY)
       : null;
     this.state = persisted
       ? { siteDefinition: persisted, chatHistory: initial.chatHistory }
       : initial;
     this.storage = options.storage ?? null;
-    this.storageKey = options.storageKey ?? LS_KEY;
+    this.storageKey = options.storageKey ?? DEFAULT_STORAGE_KEY;
     this.sizeWarningBytes = options.sizeWarningBytes ?? 1_000_000;
   }
 
