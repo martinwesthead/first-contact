@@ -20,6 +20,8 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@1stcontact/framework": "workspace:*",
+    "@1stcontact/site-schema": "workspace:*",
     "linkedom": "^0.18.5",
     "zod": "^3.23.0"
   },

@@ -23,6 +23,10 @@
       "types": "./src/modules/meta.ts",
       "import": "./src/modules/meta.ts"
     },
+    "./module-validate": {
+      "types": "./src/modules/validate.ts",
+      "import": "./src/modules/validate.ts"
+    },
     "./render": {
       "types": "./src/render/index.ts",
       "import": "./src/render/index.ts"
