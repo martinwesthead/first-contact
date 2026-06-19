@@ -24,12 +24,60 @@ Call \`read_transcription_digest({ siteId })\` where \`siteId\` is the operator'
 2. **Add missing pages.** For each entry in \`digest.perPagePlan\` beyond the first (home) page, call \`add_page({ slug, title, after_slug })\`. \`slug\` is the entry's \`slug\` value with the leading slash removed (e.g. \`/menu\` → pass \`"menu"\`). \`after_slug\` is the canonical stored slug of the page you want this to follow.
 3. **Walk each page's modules.** For each \`perPagePlan\` entry, iterate its \`suggestedModuleTypes\` and call \`add_module\` to insert each one. Then \`set_module_content\` for every module:
    - Pull text content from the entry's \`extractedContent\` (headings, paragraphs, list items, form-field labels). Match by visual proximity — the page's first heading is usually the hero heading.
-   - Image fields take \`/assets/{r2Key}\` where \`r2Key\` comes from \`digest.assetInventory\`. Match assets to modules by visual proximity (largest image → hero; sequential images → gallery; small square images → service icons).
+   - Image fields take the precomputed \`assetRef\` **object** from the matching \`digest.assetInventory[]\` entry. See section 4 for the exact shape. Match assets to modules by visual proximity (largest image → hero; sequential images → gallery; small square images → service icons).
    - Skip any module whose content/assets can't be matched. Don't fabricate content.
 
 ## 4. Asset reference rules
 
-- Image content fields are always \`/assets/{r2Key}\`. Read \`r2Key\` from \`digest.assetInventory[].r2Key\`.
+Image content fields are **objects, not strings**. Every entry in \`digest.assetInventory\` carries a precomputed \`assetRef\` field with the exact shape the framework's \`asset-ref\` validator and renderer require:
+
+\`\`\`
+{ id: "<r2Key>", src: "/assets/<r2Key>", alt: "<altText or empty string>" }
+\`\`\`
+
+Pass that object straight through to \`set_module_content\`:
+
+\`\`\`
+set_module_content({
+  instance_id: "hero-1",
+  field: "image",
+  value: digest.assetInventory[i].assetRef
+})
+\`\`\`
+
+Worked example. Given:
+
+\`\`\`
+digest.assetInventory[0] = {
+  sourceUrl: "https://acme.test/hero.png",
+  r2Key: "sites/acct-123/imports/abcdef.png",
+  kind: "img",
+  altText: "Hero",
+  assetRef: {
+    id: "sites/acct-123/imports/abcdef.png",
+    src: "/assets/sites/acct-123/imports/abcdef.png",
+    alt: "Hero"
+  }
+}
+\`\`\`
+
+Call:
+
+\`\`\`
+set_module_content({
+  instance_id: "hero-1",
+  field: "image",
+  value: {
+    id: "sites/acct-123/imports/abcdef.png",
+    src: "/assets/sites/acct-123/imports/abcdef.png",
+    alt: "Hero"
+  }
+})
+\`\`\`
+
+Rules:
+
+- Always pass the object. A bare string like \`"/assets/{r2Key}"\` is rejected by the \`asset-ref\` validator and rendered as an empty \`<img>\` even when validation is lenient. Use \`assetRef\`.
 - Never use the source's external URL (e.g. \`https://acme.test/hero.png\`).
 - Never use a bundled 1stcontact asset (e.g. \`/_assets/...\`).
 - If an asset has no matching inventory entry, skip that module's image rather than fabricating one.

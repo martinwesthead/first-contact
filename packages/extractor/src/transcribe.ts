@@ -169,12 +169,26 @@ export interface TranscriptionDigestPerPage {
   readonly suggestedModuleTypes: string[];
 }
 
+export interface TranscriptionDigestAssetRef {
+  readonly id: string;
+  readonly src: string;
+  readonly alt: string;
+}
+
 export interface TranscriptionDigestAssetEntry {
   readonly sourceUrl: string;
   readonly r2Key: string;
   readonly kind: "img" | "background" | "video";
   readonly altText?: string;
   readonly dimensions?: { readonly width: number; readonly height: number };
+  /**
+   * Pre-composed AssetRef object the AI should pass directly to
+   * `set_module_content` for any image content field. Removes ambiguity about
+   * how to compose `{ id, src, alt }` from `r2Key` + `altText` and prevents the
+   * how-to doc drifting back into telling the AI to pass a bare string (which
+   * the framework's `asset-ref` validator and renderer both reject). See BUG-5.
+   */
+  readonly assetRef: TranscriptionDigestAssetRef;
 }
 
 export interface TranscriptionDigestMirrorSummary {
@@ -281,6 +295,11 @@ export function buildTranscriptionDigest(
         ...(typeof a.width === "number" && typeof a.height === "number"
           ? { dimensions: { width: a.width, height: a.height } }
           : {}),
+        assetRef: {
+          id: r2Key,
+          src: `/assets/${r2Key}`,
+          alt: a.alt ?? "",
+        },
       };
       assetInventory.push(entry);
     }
