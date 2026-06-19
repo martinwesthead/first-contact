@@ -1,4 +1,5 @@
 import { analyzePageHandler } from "./analyze-page.js";
+import { readTranscriptionDigestHandler } from "./read-transcription-digest.js";
 import {
   confirmConvertHandler,
   transcribeSiteHandler,
@@ -224,6 +225,67 @@ const STATE_EDIT_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
       },
     },
   },
+  {
+    name: "add_page",
+    category: "state_edit",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Inserts a new page into the site with the given slug and title. Empty modules.",
+    tool_spec: {
+      name: "add_page",
+      description:
+        "Add a new page. 'slug' is a bare segment ('menu', 'about-us'); the page is stored at '/{slug}'. Optionally pass 'after_slug' (the canonical stored slug of an existing page like '/' or '/menu') to control insertion order.",
+      input_schema: {
+        type: "object",
+        properties: {
+          slug: { type: "string" },
+          title: { type: "string" },
+          after_slug: { type: "string" },
+        },
+        required: ["slug", "title"],
+      },
+    },
+  },
+  {
+    name: "remove_page",
+    category: "state_edit",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Removes a page from the site. Strips nav entries pointing at the removed page. Fails on the only remaining page.",
+    tool_spec: {
+      name: "remove_page",
+      description:
+        "Remove a page by slug. The site must retain at least one page; nav entries pointing at the removed page are stripped atomically.",
+      input_schema: {
+        type: "object",
+        properties: {
+          slug: { type: "string" },
+        },
+        required: ["slug"],
+      },
+    },
+  },
+  {
+    name: "reorder_pages",
+    category: "state_edit",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects: "Reorders all pages in the site.",
+    tool_spec: {
+      name: "reorder_pages",
+      description:
+        "Reorder all pages. 'slugs' must list every page slug exactly once in the desired order (canonical form: '/', '/menu', etc.).",
+      input_schema: {
+        type: "object",
+        properties: {
+          slugs: { type: "array", items: { type: "string" } },
+        },
+        required: ["slugs"],
+      },
+    },
+  },
 ];
 
 const publishStubHandler: ActionHandler = async (input, ctx) => {
@@ -383,6 +445,30 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
       },
     },
     handler: confirmConvertHandler,
+  },
+  {
+    name: "read_transcription_digest",
+    category: "system_action",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Read-only. Fetches sites/{siteId}/transcription/digest.json from ASSETS_BUCKET and returns the parsed TranscriptionDigest. Call after transcribe_site succeeds to get the digest the AI uses to drive page-CRUD and module-content tool calls.",
+    tool_spec: {
+      name: "read_transcription_digest",
+      description:
+        "Read the transcription digest written by transcribe_site. Returns {kind: 'transcription_digest', digestKey, digest} on success, or fails with 'digest_not_found' if the convert hasn't run.",
+      input_schema: {
+        type: "object",
+        properties: {
+          siteId: {
+            type: "string",
+            description: "The site id whose digest to read (the operator's account id).",
+          },
+        },
+        required: ["siteId"],
+      },
+    },
+    handler: readTranscriptionDigestHandler,
   },
   {
     name: "report_validation_rejection",

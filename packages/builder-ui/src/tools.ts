@@ -14,7 +14,10 @@ export type ToolName =
   | "remove_module"
   | "reorder_modules"
   | "set_theme_token"
-  | "set_site_config";
+  | "set_site_config"
+  | "add_page"
+  | "remove_page"
+  | "reorder_pages";
 
 export interface ToolCall {
   readonly name: ToolName;
@@ -63,6 +66,12 @@ export function applyToolCall(
       return applySetThemeToken(site, catalog, call);
     case "set_site_config":
       return applySetSiteConfig(site, call);
+    case "add_page":
+      return applyAddPage(site, call);
+    case "remove_page":
+      return applyRemovePage(site, call);
+    case "reorder_pages":
+      return applyReorderPages(site, call);
     default:
       return failure({
         tool: call.name,
@@ -362,6 +371,147 @@ function applySetSiteConfig(site: Site, call: ToolCall): ApplyResult {
   const next = structuredClone(site) as Site;
   setNested(next.config as unknown as Record<string, unknown>, field.split("."), value);
   return runValidator(next, call.name);
+}
+
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
+function normalizeSlug(input: string): string {
+  if (input === "/") return "/";
+  return input.startsWith("/") ? input : `/${input}`;
+}
+
+function applyAddPage(site: Site, call: ToolCall): ApplyResult {
+  const { slug, title, after_slug } = call.input as {
+    slug?: unknown;
+    title?: unknown;
+    after_slug?: unknown;
+  };
+  if (typeof slug !== "string" || slug.length === 0) {
+    return failure({ tool: call.name, message: "'slug' must be a non-empty string" });
+  }
+  if (typeof title !== "string" || title.length === 0) {
+    return failure({ tool: call.name, message: "'title' must be a non-empty string" });
+  }
+  // Reject leading-slash inputs to keep the contract simple: the AI passes bare
+  // slugs like "menu" or "about-us".
+  if (slug.startsWith("/")) {
+    return failure({
+      tool: call.name,
+      message: `slug '${slug}' must be a bare segment (e.g. 'menu'), not a leading-slash path`,
+    });
+  }
+  if (!SLUG_RE.test(slug)) {
+    return failure({
+      tool: call.name,
+      message: `invalid slug '${slug}': must match ${SLUG_RE.source}`,
+    });
+  }
+  const storedSlug = `/${slug}`;
+  if (site.pages.some((p) => p.slug === storedSlug)) {
+    return failure({
+      tool: call.name,
+      message: `page with slug '${storedSlug}' already exists (duplicate)`,
+    });
+  }
+  if (site.pages.some((p) => p.id === slug)) {
+    return failure({
+      tool: call.name,
+      message: `page id '${slug}' already exists`,
+    });
+  }
+  let insertAt = site.pages.length;
+  if (after_slug !== undefined) {
+    if (typeof after_slug !== "string") {
+      return failure({
+        tool: call.name,
+        message: "'after_slug' must be a string when provided",
+      });
+    }
+    const target = normalizeSlug(after_slug);
+    const idx = site.pages.findIndex((p) => p.slug === target);
+    if (idx < 0) {
+      return failure({
+        tool: call.name,
+        message: `after_slug '${after_slug}' not found`,
+      });
+    }
+    insertAt = idx + 1;
+  }
+  const newPage: Page = {
+    id: slug,
+    slug: storedSlug,
+    title,
+    modules: [],
+  };
+  const nextPages = [...site.pages];
+  nextPages.splice(insertAt, 0, newPage);
+  return runValidator({ ...site, pages: nextPages }, call.name);
+}
+
+function applyRemovePage(site: Site, call: ToolCall): ApplyResult {
+  const { slug } = call.input as { slug?: unknown };
+  if (typeof slug !== "string" || slug.length === 0) {
+    return failure({ tool: call.name, message: "'slug' must be a non-empty string" });
+  }
+  if (site.pages.length <= 1) {
+    return failure({ tool: call.name, message: "cannot_remove_only_page" });
+  }
+  const target = normalizeSlug(slug);
+  const idx = site.pages.findIndex((p) => p.slug === target);
+  if (idx < 0) {
+    return failure({ tool: call.name, message: `no page with slug '${slug}' (not found)` });
+  }
+  const removed = site.pages[idx]!;
+  const nextPages = site.pages.filter((_, i) => i !== idx);
+  const nextNavEntries = site.nav.entries.filter((e) => {
+    if (e.target.kind === "page" && e.target.pageId === removed.id) return false;
+    if (e.target.kind === "anchor" && e.target.pageId === removed.id) return false;
+    return true;
+  });
+  return runValidator(
+    { ...site, pages: nextPages, nav: { ...site.nav, entries: nextNavEntries } },
+    call.name,
+  );
+}
+
+function applyReorderPages(site: Site, call: ToolCall): ApplyResult {
+  const { slugs } = call.input as { slugs?: unknown };
+  if (!Array.isArray(slugs)) {
+    return failure({ tool: call.name, message: "'slugs' must be an array of strings" });
+  }
+  if (slugs.length !== site.pages.length) {
+    return failure({
+      tool: call.name,
+      message: `slugs must list every page exactly once (got ${slugs.length}, expected ${site.pages.length})`,
+    });
+  }
+  const normalized: string[] = [];
+  for (const raw of slugs as unknown[]) {
+    if (typeof raw !== "string" || raw.length === 0) {
+      return failure({ tool: call.name, message: "'slugs' must be non-empty strings" });
+    }
+    normalized.push(normalizeSlug(raw));
+  }
+  const seen = new Set<string>();
+  for (const s of normalized) {
+    if (seen.has(s)) {
+      return failure({ tool: call.name, message: `slug '${s}' repeated in slugs list` });
+    }
+    seen.add(s);
+  }
+  const bySlug = new Map(site.pages.map((p) => [p.slug, p]));
+  const nextPages: Page[] = [];
+  for (const s of normalized) {
+    const page = bySlug.get(s);
+    if (!page) {
+      return failure({
+        tool: call.name,
+        message: `slug '${s}' is not an existing page`,
+      });
+    }
+    nextPages.push(page);
+  }
+  return runValidator({ ...site, pages: nextPages }, call.name);
 }
 
 function mutateModule(

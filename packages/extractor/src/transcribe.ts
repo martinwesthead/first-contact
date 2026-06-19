@@ -1,63 +1,11 @@
-import type {
-  AssetRef,
-  ModuleInstance,
-  Page,
-  Site,
-  ThemeTokens,
-} from "@1stcontact/site-schema";
-import { validateSite } from "@1stcontact/site-schema";
+import type { ThemeTokens } from "@1stcontact/site-schema";
 import { defaultThemeTokens } from "@1stcontact/framework/tokens";
-import {
-  headerMeta,
-  heroMeta,
-  footerMeta,
-  textBlockMeta,
-  servicesGridMeta,
-  contactFormMeta,
-  type ModuleMeta,
-} from "@1stcontact/framework/meta";
-import { validateModuleContent } from "@1stcontact/framework/module-validate";
 import {
   NOT_DETECTED,
   type ReferenceDigest,
-  type Signals,
 } from "./schema.js";
 
-/**
- * Module catalog the LLM transcription prompt is allowed to draw from.
- * Mirrors packages/framework/src/modules/registry.ts — we list metas here
- * (not Components) so this module stays browser-safe and Astro-free.
- */
-export const TRANSCRIPTION_CATALOG: ReadonlyArray<ModuleMeta> = [
-  headerMeta,
-  heroMeta,
-  textBlockMeta,
-  servicesGridMeta,
-  contactFormMeta,
-  footerMeta,
-];
-
-const CATALOG_BY_ID = new Map<string, ModuleMeta>(
-  TRANSCRIPTION_CATALOG.map((m) => [m.id, m]),
-);
-
 export type Confidence = "high" | "medium" | "low";
-
-/**
- * The LLM output shape we expect for a single module. The LLM is responsible
- * for keeping content shape compatible with the framework catalog; the
- * validator catches drift and feeds it back for retry.
- */
-export interface TranscribedModule {
-  readonly id: string;
-  readonly type: string;
-  readonly version: number;
-  readonly variant?: string;
-  readonly dials?: Record<string, string>;
-  readonly content?: Record<string, unknown>;
-  readonly confidence: Confidence;
-  readonly source_section?: string;
-}
 
 export interface TranscribedThemeTokens {
   readonly palette: Partial<ThemeTokens["palette"]>;
@@ -69,31 +17,10 @@ export interface TranscribedThemeTokens {
   };
 }
 
-export interface Transcription {
-  readonly themeTokens: TranscribedThemeTokens;
-  readonly modules: ReadonlyArray<TranscribedModule>;
-  readonly narrative: string;
-}
-
 /**
  * Map digest palette + typography signals deterministically to a theme-token
  * patch. Pure function — no LLM. Returns only the fields the digest actually
  * detected; callers merge with `defaultThemeTokens` for unset slots.
- *
- * Mapping (per REQ-28 §Decisions, "Theme token derivation"):
- *   background → palette.bg
- *   body       → palette.text
- *   accent     → palette.accent
- *   cta        → palette.primary
- *   primaryPair.body    → typography.family.body
- *   primaryPair.heading → typography.family.heading
- *
- * Confidence rules:
- *   palette:    high when 3+ roles detected, medium for 1–2, low for 0.
- *   typography: high when primaryPair detected, medium when only body family
- *               detected, low otherwise.
- *   layout:     always medium (we don't yet map layout signals to tokens;
- *               kept for forward compat with the LLM narrative).
  */
 export function deriveThemeTokens(digest: ReferenceDigest): TranscribedThemeTokens {
   const { palette: pal, typography: typ } = digest.signals;
@@ -153,9 +80,9 @@ export function deriveThemeTokens(digest: ReferenceDigest): TranscribedThemeToke
 }
 
 /**
- * Merge a partial theme-token patch onto `defaultThemeTokens`. Used by the
- * `transcribe_site` action to produce a complete `ThemeTokens` object that
- * passes the site-schema validator at all four layers.
+ * Merge a partial theme-token patch onto `defaultThemeTokens`. Returns a full
+ * ThemeTokens object — used by callers (e.g. the digest builder) that need a
+ * complete shape for the digest payload.
  */
 export function applyTokenPatch(patch: TranscribedThemeTokens): ThemeTokens {
   const out: ThemeTokens = JSON.parse(JSON.stringify(defaultThemeTokens));
@@ -171,478 +98,252 @@ export function applyTokenPatch(patch: TranscribedThemeTokens): ThemeTokens {
   return out;
 }
 
-/**
- * Build the multimodal prompt for the LLM transcription pass. Returns plain
- * objects (not API-bound) so it can be consumed by tests and by the worker
- * with identical inputs. The image content is attached separately by the
- * caller (with bytes resolved from R2 by the worker).
- */
-export interface ComposedPrompt {
-  readonly system: string;
-  readonly user: string;
-}
+export type ExtractedBlockKind =
+  | "heading"
+  | "paragraph"
+  | "list-item"
+  | "form-field"
+  | "nav-link";
 
-export function composePromptForTranscription(
-  digest: ReferenceDigest,
-  catalog: ReadonlyArray<ModuleMeta> = TRANSCRIPTION_CATALOG,
-): ComposedPrompt {
-  const catalogJson = JSON.stringify(
-    catalog.map((m) => ({
-      id: m.id,
-      version: m.version,
-      variants: m.variants,
-      dials: m.dials,
-      contentSchema: m.contentSchema,
-    })),
-    null,
-    2,
-  );
-  const assetsJson = JSON.stringify(
-    digest.signals.assetInventory.map((a) => ({
-      url: a.url,
-      kind: a.kind,
-      alt: a.alt ?? "",
-      classification: a.classification,
-    })),
-    null,
-    2,
-  );
-
-  const system = [
-    "You are the 1st Contact site-transcription agent.",
-    "Your job: given a Reference Digest, the rendered DOM signals, and a desktop screenshot of an external site, produce a draft set of MODULE INSTANCES in the 1st Contact framework that reproduces the site's structure, content, and visual feel — within the constraints of the catalog.",
-    "Output a SINGLE JSON object only — no preamble, no markdown fences.",
-    "Schema:",
-    '  { "modules": ModuleInstance[], "narrative": string }',
-    "Where each ModuleInstance is:",
-    '  { "id": string, "type": string, "version": number, "variant"?: string, "dials"?: Record<string,string>, "content"?: Record<string,unknown>, "confidence": "high"|"medium"|"low", "source_section"?: string }',
-    "Rules:",
-    "- Every module type+version+variant+dial values MUST come from the catalog (provided below). Any value outside the catalog will fail validation.",
-    "- Content fields MUST satisfy the catalog's contentSchema for the module type.",
-    "- AssetRefs in content fields use the shape { id, src, alt } where src is the EXTERNAL URL from the digest's asset inventory (do not invent URLs). Use one of the URLs listed in the inventory section.",
-    "- confidence per module: 'high' when the source section maps cleanly to one of our modules; 'medium' when it required interpretation; 'low' when the section is unusual and you fell back to text-block.",
-    "- Order modules in the order they appear on the source page.",
-    "- If no module in the catalog fits a section, emit a `text-block` carrying the section's text content with confidence='low'.",
-    "- narrative is one paragraph (≤ 500 chars) summarising what you transcribed and naming any low-confidence sections so the operator knows where to verify.",
-  ].join("\n");
-
-  const user = [
-    `Reference URL: ${digest.sourceUrl}`,
-    "",
-    "Summary:",
-    digest.summary,
-    "",
-    "Signals (palette / typography / layout / imagery / content tree):",
-    "```json",
-    JSON.stringify(digest.signals, null, 2),
-    "```",
-    "",
-    "Asset inventory (these are the only URLs you may reference in content fields):",
-    "```json",
-    assetsJson,
-    "```",
-    "",
-    "Module catalog (id, version, variants, dials, contentSchema):",
-    "```json",
-    catalogJson,
-    "```",
-    "",
-    "Produce the JSON transcription now.",
-  ].join("\n");
-
-  return { system, user };
-}
-
-export interface TranscriptionValidationIssue {
-  readonly path: string;
-  readonly message: string;
-}
-
-export interface TranscriptionValidationResult {
-  readonly ok: boolean;
-  readonly issues: ReadonlyArray<TranscriptionValidationIssue>;
+export interface ExtractedBlock {
+  readonly kind: ExtractedBlockKind;
+  readonly text: string;
+  readonly level?: number;
+  readonly href?: string;
+  readonly fieldKind?: string;
 }
 
 /**
- * Validate a transcription against the framework catalog AND the site-schema.
- * Returns the union of issues from:
- *   - per-module catalog membership (type+version exists, variant in module's
- *     declared variants, every dial value in module.dials[dialName])
- *   - per-module content shape (delegates to validateModuleContent)
- *   - whole-site validation (delegates to validateSite once we synthesise a
- *     full Site object — this catches AssetRef shape, theme token shape, etc.)
+ * Project a ReferenceDigest's content tree into a flat ExtractedBlock list the
+ * digest carries on each `perPagePlan` entry. Deterministic — no LLM.
  */
-export function validateTranscription(
-  transcription: Transcription,
-  catalog: ReadonlyArray<ModuleMeta> = TRANSCRIPTION_CATALOG,
-): TranscriptionValidationResult {
-  const issues: TranscriptionValidationIssue[] = [];
-  const byId = new Map<string, ModuleMeta>(catalog.map((m) => [m.id, m]));
-
-  const seenIds = new Set<string>();
-  transcription.modules.forEach((mod, idx) => {
-    const at = `/modules/${idx}`;
-    if (seenIds.has(mod.id)) {
-      issues.push({
-        path: `${at}/id`,
-        message: `duplicate module id '${mod.id}'`,
-      });
+export function extractPageContent(digest: ReferenceDigest): ExtractedBlock[] {
+  const blocks: ExtractedBlock[] = [];
+  for (const h of digest.signals.content.headings) {
+    if (h.text.trim()) {
+      blocks.push({ kind: "heading", text: h.text.trim(), level: h.level });
     }
-    seenIds.add(mod.id);
-
-    const meta = byId.get(mod.type);
-    if (!meta) {
-      issues.push({
-        path: `${at}/type`,
-        message: `unknown module type '${mod.type}'. Allowed: [${[...byId.keys()].join(", ")}]`,
-      });
-      return;
+  }
+  for (const link of digest.signals.content.navLinks) {
+    if (link.text.trim()) {
+      blocks.push({ kind: "nav-link", text: link.text.trim(), href: link.href });
     }
-    if (mod.version !== meta.version) {
-      issues.push({
-        path: `${at}/version`,
-        message: `module '${mod.type}' has version ${meta.version}, got ${mod.version}`,
-      });
-    }
-    if (mod.variant !== undefined && !meta.variants.includes(mod.variant)) {
-      issues.push({
-        path: `${at}/variant`,
-        message: `expected one of [${meta.variants.join(", ")}], got '${mod.variant}'`,
-      });
-    }
-    if (mod.dials) {
-      for (const [name, value] of Object.entries(mod.dials)) {
-        const allowed = meta.dials[name as keyof typeof meta.dials];
-        if (!allowed) {
-          issues.push({
-            path: `${at}/dials/${name}`,
-            message: `unknown dial '${name}' for module '${mod.type}'. Allowed dials: [${Object.keys(meta.dials).join(", ")}]`,
-          });
-          continue;
-        }
-        if (!allowed.includes(value)) {
-          issues.push({
-            path: `${at}/dials/${name}`,
-            message: `expected one of [${allowed.join(", ")}], got '${value}'`,
-          });
-        }
-      }
-    }
-    if (mod.content) {
-      const contentResult = validateModuleContent(meta, mod.content);
-      if (!contentResult.ok) {
-        for (const issue of contentResult.issues) {
-          issues.push({
-            path: `${at}/content/${issue.path.join("/")}`,
-            message: issue.message,
-          });
-        }
-      }
-    } else {
-      // Check that no required content fields are missing.
-      const contentResult = validateModuleContent(meta, {});
-      if (!contentResult.ok) {
-        for (const issue of contentResult.issues) {
-          if (issue.message.includes("required field is missing")) {
-            issues.push({
-              path: `${at}/content/${issue.path.join("/")}`,
-              message: issue.message,
-            });
-          }
-        }
-      }
-    }
-  });
-
-  return { ok: issues.length === 0, issues };
+  }
+  for (const field of digest.signals.content.formFields) {
+    blocks.push({ kind: "form-field", text: field.name, fieldKind: field.kind });
+  }
+  return blocks;
 }
 
 /**
- * Synthesise a complete Site object from a validated transcription, a
- * derived theme-token patch, and the source URL. Useful for the
- * `transcribe_site` action which needs a full site-shaped object before
- * shipping module instances + theme tokens to the client.
+ * Suggest a top-down ordered list of module types for a page given its content
+ * signals. Pure heuristic, no LLM. The AI uses this as a hint when walking the
+ * digest's `perPagePlan` — it may follow or deviate.
+ *
+ * Heuristic rules (top-down):
+ *   - multiple nav links → `header` first
+ *   - heroDetected → `hero` second (or first if no header)
+ *   - list groups present → `services-grid` mid-page
+ *   - form fields present → `contactForm` near bottom
+ *   - any page → `text-block` between content sections
+ *   - footer always last
  */
-export function buildSiteFromTranscription(args: {
-  transcription: Transcription;
-  themeTokens: ThemeTokens;
-  sourceUrl: string;
-  businessName: string;
-}): { ok: true; value: Site } | { ok: false; errors: ReadonlyArray<TranscriptionValidationIssue> } {
-  const modules: ModuleInstance[] = args.transcription.modules.map((m) => ({
-    id: m.id,
-    type: m.type,
-    version: m.version,
-    variant: m.variant,
-    dials: m.dials,
-    content: m.content as ModuleInstance["content"],
+export function inferSuggestedModuleTypes(digest: ReferenceDigest): string[] {
+  const out: string[] = [];
+  const content = digest.signals.content;
+  if (content.navLinks.length >= 2) out.push("header");
+  if (digest.signals.imagery.heroDetected) out.push("hero");
+  if (content.headings.some((h) => h.level === 2)) out.push("text-block");
+  if (content.listGroupCount >= 1) out.push("services-grid");
+  if (content.formFields.length >= 1) out.push("contactForm");
+  out.push("footer");
+  return out;
+}
+
+export interface TranscriptionDigestPerPage {
+  readonly url: string;
+  readonly slug: string;
+  readonly title: string;
+  readonly screenshotKey: string;
+  readonly extractedContent: ExtractedBlock[];
+  readonly suggestedModuleTypes: string[];
+}
+
+export interface TranscriptionDigestAssetEntry {
+  readonly sourceUrl: string;
+  readonly r2Key: string;
+  readonly kind: "img" | "background" | "video";
+  readonly altText?: string;
+  readonly dimensions?: { readonly width: number; readonly height: number };
+}
+
+export interface TranscriptionDigestMirrorSummary {
+  readonly mirrored: number;
+  readonly failed: number;
+  readonly failures: ReadonlyArray<{ readonly url: string; readonly reason: string }>;
+}
+
+export interface TranscriptionDigest {
+  readonly siteId: string;
+  readonly sourceUrl: string;
+  readonly capturedAt: string;
+  readonly themeTokens: ThemeTokens;
+  readonly perPagePlan: ReadonlyArray<TranscriptionDigestPerPage>;
+  readonly assetInventory: ReadonlyArray<TranscriptionDigestAssetEntry>;
+  readonly mirrorSummary: TranscriptionDigestMirrorSummary;
+}
+
+/**
+ * Derive a 1stcontact-valid slug from a URL path. Returns `/` for root, or a
+ * leading-slash kebab-case path segment (e.g. `/menu`, `/about-us`).
+ */
+export function slugFromUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/$/, "");
+    if (!path) return "/";
+    const last = path.split("/").filter(Boolean).pop();
+    if (!last) return "/";
+    const cleaned = last
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return cleaned ? `/${cleaned}` : "/";
+  } catch {
+    return "/";
+  }
+}
+
+/**
+ * Derive a human-readable page title from a digest. Prefers H1; falls back to
+ * a slug-derived title; finally the hostname.
+ */
+export function titleFromDigest(digest: ReferenceDigest): string {
+  const h1 = digest.signals.content.headings.find((h) => h.level === 1);
+  if (h1 && h1.text.trim()) return h1.text.trim();
+  try {
+    const u = new URL(digest.sourceUrl);
+    const last = u.pathname.replace(/\/$/, "").split("/").filter(Boolean).pop();
+    if (last) {
+      return last
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+    return u.hostname;
+  } catch {
+    return "Untitled";
+  }
+}
+
+export interface BuildTranscriptionDigestArgs {
+  readonly siteId: string;
+  readonly homeDigest: ReferenceDigest;
+  readonly additionalPageDigests: ReadonlyArray<ReferenceDigest>;
+  readonly urlToR2Key: ReadonlyMap<string, string>;
+  readonly mirrorSummary: TranscriptionDigestMirrorSummary;
+  readonly capturedAt: string;
+}
+
+/**
+ * Build a TranscriptionDigest from the home page's ReferenceDigest, any
+ * additional cached per-page digests, and the asset-mirror result. Pure
+ * function — no IO, no LLM.
+ */
+export function buildTranscriptionDigest(
+  args: BuildTranscriptionDigestArgs,
+): TranscriptionDigest {
+  const homePatch = deriveThemeTokens(args.homeDigest);
+  const themeTokens = applyTokenPatch(homePatch);
+
+  const pageDigests = [args.homeDigest, ...args.additionalPageDigests];
+  const perPagePlan: TranscriptionDigestPerPage[] = pageDigests.map((d) => ({
+    url: d.sourceUrl,
+    slug: slugFromUrl(d.sourceUrl),
+    title: titleFromDigest(d),
+    screenshotKey: d.screenshotKeys.desktop ?? "",
+    extractedContent: extractPageContent(d),
+    suggestedModuleTypes: inferSuggestedModuleTypes(d),
   }));
 
-  const page: Page = {
-    id: "home",
-    slug: "/",
-    title: args.businessName,
-    modules,
-  };
+  const assetInventory: TranscriptionDigestAssetEntry[] = [];
+  const seen = new Set<string>();
+  for (const d of pageDigests) {
+    for (const a of d.signals.assetInventory) {
+      if (seen.has(a.url)) continue;
+      const r2Key = args.urlToR2Key.get(a.url);
+      if (!r2Key) continue;
+      seen.add(a.url);
+      const entry: TranscriptionDigestAssetEntry = {
+        sourceUrl: a.url,
+        r2Key,
+        kind: a.kind,
+        ...(a.alt ? { altText: a.alt } : {}),
+        ...(typeof a.width === "number" && typeof a.height === "number"
+          ? { dimensions: { width: a.width, height: a.height } }
+          : {}),
+      };
+      assetInventory.push(entry);
+    }
+  }
 
-  const site: Site = {
-    config: { businessName: args.businessName },
-    theme: args.themeTokens,
-    nav: { pattern: "in-page-anchors", entries: [] },
-    pages: [page],
-  };
-
-  const result = validateSite(site);
-  if (result.ok) return { ok: true, value: result.value };
   return {
-    ok: false,
-    errors: result.errors.map((e) => ({ path: e.path, message: e.message })),
+    siteId: args.siteId,
+    sourceUrl: args.homeDigest.sourceUrl,
+    capturedAt: args.capturedAt,
+    themeTokens,
+    perPagePlan,
+    assetInventory,
+    mirrorSummary: args.mirrorSummary,
   };
 }
 
 /**
- * Walk a transcription's module instances and return the deduplicated set of
- * external asset URLs they reference. Inputs to Stage 4 (asset mirror).
+ * Walk a per-page digest's `assetInventory` and return the deduplicated set of
+ * external asset URLs that should be mirrored to R2.
  *
- * An "asset URL" is any string value found inside an AssetRef-shaped object
- * (`{ id, src, alt }`) at any depth inside `content`. We also pick up bare
- * string fields when the catalog declares them as `asset-ref-or-string` and
- * the value looks like an absolute URL.
+ * This is the input to `mirrorAssetBatchToR2`. For multi-page convert, the
+ * union across all per-page digests is mirrored once.
  */
 export function collectReferencedAssetUrls(
-  transcription: Transcription,
+  digests: ReadonlyArray<ReferenceDigest>,
 ): ReadonlyArray<string> {
   const seen = new Set<string>();
-  for (const mod of transcription.modules) {
-    if (!mod.content) continue;
-    const meta = CATALOG_BY_ID.get(mod.type);
-    walkContent(mod.content, meta, seen);
+  for (const d of digests) {
+    for (const a of d.signals.assetInventory) {
+      if (a.url) seen.add(a.url);
+    }
   }
   return [...seen];
 }
 
-function walkContent(
-  value: unknown,
-  meta: ModuleMeta | undefined,
-  out: Set<string>,
-): void {
-  if (value === null || value === undefined) return;
-  if (Array.isArray(value)) {
-    for (const item of value) walkContent(item, meta, out);
-    return;
-  }
-  if (typeof value !== "object") return;
-  const obj = value as Record<string, unknown>;
-  // Asset-ref shape: { id, src, alt } with src as string URL.
-  if (
-    typeof obj.src === "string" &&
-    typeof obj.alt === "string" &&
-    typeof obj.id === "string"
-  ) {
-    if (looksLikeUrl(obj.src)) out.add(obj.src);
-  }
-  for (const [, v] of Object.entries(obj)) {
-    walkContent(v, meta, out);
-  }
-}
-
-function looksLikeUrl(s: string): boolean {
-  return /^https?:\/\//i.test(s);
+/**
+ * Map mirror failures from the batch result into a TranscriptionDigest's
+ * `mirrorSummary.failures` shape (drops detail field). Convenience helper.
+ */
+export function summariseMirrorFailures(
+  failures: ReadonlyArray<{ readonly url: string; readonly reason: string }>,
+): ReadonlyArray<{ readonly url: string; readonly reason: string }> {
+  return failures.map((f) => ({ url: f.url, reason: f.reason }));
 }
 
 /**
- * Rewrite every AssetRef whose `src` matches a key in `urlToR2Key` to point at
- * the mapped R2 key (as a leading-slash path: `/assets/{r2Key}`). Returns a
- * new transcription; the input is unchanged.
+ * Rewrite a single string URL to its R2-keyed equivalent when present in the
+ * mapping. Used by chat-side code when previewing the digest's assets. Kept
+ * exported because tests in [[REQ-28]] (collect_and_rewrite_asset_refs) cover
+ * it as a pure helper.
  */
 export function rewriteAssetRefs(
-  transcription: Transcription,
+  urls: ReadonlyArray<string>,
   urlToR2Key: ReadonlyMap<string, string>,
   assetUrlPrefix = "/assets/",
-): Transcription {
-  if (urlToR2Key.size === 0) return transcription;
-  const rewriteValue = (v: unknown): unknown => {
-    if (v === null || v === undefined) return v;
-    if (Array.isArray(v)) return v.map(rewriteValue);
-    if (typeof v !== "object") return v;
-    const obj = v as Record<string, unknown>;
-    if (
-      typeof obj.src === "string" &&
-      typeof obj.alt === "string" &&
-      typeof obj.id === "string"
-    ) {
-      const mapped = urlToR2Key.get(obj.src);
-      if (mapped) {
-        return { ...obj, src: `${assetUrlPrefix}${mapped}` };
-      }
-    }
-    const out: Record<string, unknown> = {};
-    for (const [k, val] of Object.entries(obj)) {
-      out[k] = rewriteValue(val);
-    }
-    return out;
-  };
-
-  const modules: TranscribedModule[] = transcription.modules.map((m) => ({
-    ...m,
-    content: m.content ? (rewriteValue(m.content) as Record<string, unknown>) : m.content,
-  }));
-  return { ...transcription, modules };
-}
-
-/**
- * Build a fallback hero-only draft when LLM transcription fails twice. Reused
- * by the `transcribe_site` orchestration; pure-function so tests can exercise
- * it without spinning up the worker.
- */
-export function buildHeroOnlyFallback(args: {
-  digest: ReferenceDigest;
-  businessName?: string;
-}): Transcription {
-  const heading =
-    args.businessName ??
-    deriveBusinessName(args.digest) ??
-    "Your Site";
-  return {
-    themeTokens: deriveThemeTokens(args.digest),
-    modules: [
-      {
-        id: "hero-1",
-        type: "hero",
-        version: 1,
-        variant: "bg-color",
-        confidence: "low",
-        content: {
-          heading,
-          subhead:
-            "We couldn't automatically transcribe this site — here's a hero-only starting point. Ask me to add sections.",
-        },
-        source_section: "fallback",
-      },
-    ],
-    narrative:
-      "I couldn't transcribe this site automatically; here's a hero-only draft as a starting point. Tell me which sections you'd like next.",
-  };
-}
-
-function deriveBusinessName(digest: ReferenceDigest): string | null {
-  const heading = digest.signals.content.headings.find((h) => h.level === 1);
-  if (heading && heading.text.trim()) return heading.text.trim();
-  try {
-    const u = new URL(digest.sourceUrl);
-    return u.hostname;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Parse the raw LLM text into a Transcription, tolerantly. Strips any
- * markdown fences, then JSON.parses, then coerces shape. Returns null on
- * malformed input so the caller can retry or fall back.
- */
-export function parseTranscriptionFromLlm(
-  raw: string,
-  themeTokens: TranscribedThemeTokens,
-): Transcription | null {
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw.slice(start, end + 1));
-  } catch {
-    return null;
-  }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-  const obj = parsed as Record<string, unknown>;
-  if (!Array.isArray(obj.modules)) return null;
-  const modules: TranscribedModule[] = [];
-  for (const m of obj.modules) {
-    if (!m || typeof m !== "object") return null;
-    const mod = m as Record<string, unknown>;
-    if (
-      typeof mod.id !== "string" ||
-      typeof mod.type !== "string" ||
-      typeof mod.version !== "number" ||
-      (mod.confidence !== "high" && mod.confidence !== "medium" && mod.confidence !== "low")
-    ) {
-      return null;
-    }
-    modules.push({
-      id: mod.id,
-      type: mod.type,
-      version: mod.version,
-      variant: typeof mod.variant === "string" ? mod.variant : undefined,
-      dials: isStringRecord(mod.dials) ? mod.dials : undefined,
-      content: isPlainObject(mod.content) ? mod.content : undefined,
-      confidence: mod.confidence,
-      source_section:
-        typeof mod.source_section === "string" ? mod.source_section : undefined,
-    });
-  }
-  return {
-    themeTokens,
-    modules,
-    narrative: typeof obj.narrative === "string" ? obj.narrative : "",
-  };
-}
-
-function isPlainObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function isStringRecord(v: unknown): v is Record<string, string> {
-  if (!isPlainObject(v)) return false;
-  for (const value of Object.values(v)) {
-    if (typeof value !== "string") return false;
-  }
-  return true;
+): ReadonlyArray<string> {
+  return urls.map((u) => {
+    const k = urlToR2Key.get(u);
+    return k ? `${assetUrlPrefix}${k}` : u;
+  });
 }
 
 function normalizeHex(s: string): string {
   const trimmed = s.trim();
   return trimmed.startsWith("#") ? trimmed.toLowerCase() : `#${trimmed.toLowerCase()}`;
-}
-
-/**
- * Convenience: enumerate the AssetRefs in a transcription with their
- * containing module id, for diagnostics / progress UIs. Not used by the
- * orchestration itself.
- */
-export interface AssetRefRef {
-  readonly moduleId: string;
-  readonly ref: AssetRef;
-}
-
-export function enumerateAssetRefs(transcription: Transcription): AssetRefRef[] {
-  const out: AssetRefRef[] = [];
-  for (const mod of transcription.modules) {
-    if (!mod.content) continue;
-    walk(mod.content, (ref) => out.push({ moduleId: mod.id, ref }));
-  }
-  return out;
-}
-
-function walk(value: unknown, visit: (ref: AssetRef) => void): void {
-  if (value === null || value === undefined) return;
-  if (Array.isArray(value)) {
-    for (const item of value) walk(item, visit);
-    return;
-  }
-  if (typeof value !== "object") return;
-  const obj = value as Record<string, unknown>;
-  if (
-    typeof obj.src === "string" &&
-    typeof obj.alt === "string" &&
-    typeof obj.id === "string"
-  ) {
-    visit({
-      id: obj.id,
-      src: obj.src,
-      alt: obj.alt,
-      ...(isPlainObject(obj.focalPoint) ? { focalPoint: obj.focalPoint as AssetRef["focalPoint"] } : {}),
-    });
-  }
-  for (const v of Object.values(obj)) walk(v, visit);
 }

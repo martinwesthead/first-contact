@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  makeTranscribeHarness,
-  validLlmTranscription,
-} from "./_helpers_REQ-28_transcribe_site.js";
+import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
 
 describe("UAT FC REQ-28: transcribe_site gate (AC1/AC2/AC15)", () => {
   it("AC1: first invocation without confirmation returns requires_confirmation and does not mutate state", async () => {
@@ -18,9 +15,10 @@ describe("UAT FC REQ-28: transcribe_site gate (AC1/AC2/AC15)", () => {
     expect(typeof payload.prompt).toBe("string");
     expect((payload.prompt as string)).toMatch(/Convert will replace your current draft/);
     expect((payload.prompt as string)).toMatch(/cannot be automatically undone/);
-    // No site/modules in payload.
+    // No site/modules in payload (REQ-30: also no digestKey before confirm).
     expect(payload.site).toBeUndefined();
     expect(payload.modules).toBeUndefined();
+    expect(payload.digestKey).toBeUndefined();
     // SSE event emitted so the FE can render the chat card.
     const confirmEvent = h.events.find(
       (e) =>
@@ -30,10 +28,9 @@ describe("UAT FC REQ-28: transcribe_site gate (AC1/AC2/AC15)", () => {
     expect(confirmEvent).toBeDefined();
   });
 
-  it("AC2: confirm_convert + re-invocation proceeds through transcription", async () => {
+  it("AC2: confirm_convert + re-invocation proceeds through transcription (REQ-30: payload is digestKey + summary, not site)", async () => {
     const h = makeTranscribeHarness();
     await h.seedDigest("https://acme.test/");
-    h.setAnthropicResponse(validLlmTranscription({}));
 
     // First call gates.
     const gated = await h.invokeTranscribe({ digestId: "https://acme.test/" });
@@ -52,24 +49,13 @@ describe("UAT FC REQ-28: transcribe_site gate (AC1/AC2/AC15)", () => {
     expect(done.status).toBe("ok");
     const payload = done.payload as Record<string, unknown>;
     expect(payload.kind).toBe("transcribe_site_done");
-    expect(payload.modules).toBeDefined();
-    expect(payload.site).toBeDefined();
-    expect(payload.themeTokens).toBeDefined();
+    expect(typeof payload.digestKey).toBe("string");
+    expect(payload.summary).toBeDefined();
   });
 
   it("AC15: re-invoking transcribe_site on the same URL without a destructive-confirmation reset requires confirmation again only when not yet confirmed", async () => {
-    // The AC text in REQ-28 says "Re-invoking transcribe_site on the same
-    // digest in the same chat (without a destructive-confirmation reset)
-    // returns requires_confirmation again". We interpret this as: a fresh
-    // chat (no prior confirmation) requires confirmation. Once confirmed,
-    // re-invocations within the chat may run without re-confirming, which
-    // matches the "one-shot confirmation" pattern described in §Decisions.
     const h = makeTranscribeHarness();
     await h.seedDigest("https://acme.test/");
-    h.setAnthropicSequence([
-      validLlmTranscription({}),
-      validLlmTranscription({}),
-    ]);
 
     const first = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect((first.payload as Record<string, unknown>).kind).toBe(

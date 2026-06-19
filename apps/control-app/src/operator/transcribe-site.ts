@@ -1,36 +1,23 @@
 import {
   applyTokenPatch,
-  buildHeroOnlyFallback,
-  buildSiteFromTranscription,
+  buildTranscriptionDigest,
   collectReferencedAssetUrls,
-  composePromptForTranscription,
   deriveThemeTokens,
   mirrorAssetBatchToR2,
-  parseTranscriptionFromLlm,
-  rewriteAssetRefs,
-  TRANSCRIPTION_CATALOG,
-  validateTranscription,
   type MirrorAssetResult,
   type ReferenceDigest,
-  type Transcription,
-  type TranscriptionValidationIssue,
 } from "@1stcontact/extractor";
-import type { Site, ThemeTokens } from "@1stcontact/site-schema";
-import type { ActionContext, ActionHandler, ActionResult } from "./registry.js";
+import type { ActionHandler, ActionResult } from "./registry.js";
 import {
   isConvertConfirmed,
   markConvertConfirmed,
 } from "./chat-metadata.js";
-
-const OPUS_MODEL = "claude-opus-4-7";
 
 export interface TranscribeSiteEnv {
   readonly FETCH_CACHE_KV?: KVNamespace;
   readonly FETCH_ROBOTS_KV?: KVNamespace;
   readonly FETCH_RATE_KV?: KVNamespace;
   readonly ASSETS_BUCKET?: R2Bucket;
-  readonly CLAUDE_API_KEY?: string;
-  readonly ANTHROPIC_API_URL?: string;
 }
 
 interface CacheLookup {
@@ -38,19 +25,14 @@ interface CacheLookup {
   readonly digest: ReferenceDigest;
 }
 
-/**
- * Resolve a digest record from the FETCH_CACHE_KV. analyze_page writes digests
- * under `digest:{sha256(url|SCHEMA)}`; transcribe_site looks them up by URL.
- * If the URL hasn't been analyzed yet, returns null and the AI is expected
- * to call analyze_page first.
- */
+const SCHEMA_VERSION_FOR_KEY = 1 as const;
+
 async function loadDigest(
   env: TranscribeSiteEnv,
   url: string,
-  schemaVersion: 1,
 ): Promise<CacheLookup | null> {
   if (!env.FETCH_CACHE_KV) return null;
-  const data = new TextEncoder().encode(`${url}|${schemaVersion}`);
+  const data = new TextEncoder().encode(`${url}|${SCHEMA_VERSION_FOR_KEY}`);
   const hash = await crypto.subtle.digest("SHA-256", data);
   const hex = hexOf(hash);
   const digestKey = `digest:${hex}`;
@@ -69,244 +51,39 @@ function hexOf(buf: ArrayBuffer): string {
 }
 
 /**
- * Deterministic business name guess from the digest content tree.
+ * Resolve any same-origin nav-link URLs that already have cached digests and
+ * return their ReferenceDigests. Cross-origin links and unanalyzed pages are
+ * silently skipped — the AI can call analyze_page for them and re-invoke if
+ * it wants them included.
  */
-function deriveBusinessName(digest: ReferenceDigest): string {
-  const h1 = digest.signals.content.headings.find((h) => h.level === 1);
-  if (h1 && h1.text.trim()) return h1.text.trim();
+async function discoverAdditionalPageDigests(
+  env: TranscribeSiteEnv,
+  home: ReferenceDigest,
+): Promise<ReadonlyArray<ReferenceDigest>> {
+  const out: ReferenceDigest[] = [];
+  const seen = new Set<string>([home.sourceUrl]);
+  let homeOrigin: string;
   try {
-    return new URL(digest.sourceUrl).hostname;
+    homeOrigin = new URL(home.sourceUrl).origin;
   } catch {
-    return "Your Site";
+    return out;
   }
-}
-
-export interface TranscribeOptions {
-  readonly llmFetch?: typeof fetch;
-  readonly mirrorBucketOverride?: R2Bucket;
-}
-
-interface OpusResponse {
-  readonly raw: string;
-}
-
-/**
- * Call Opus with the multimodal transcription prompt. Returns the raw text
- * (caller parses + validates). Throws so the caller can map exceptions to
- * "retry then fallback" semantics.
- */
-async function callOpusForTranscription(args: {
-  env: TranscribeSiteEnv;
-  digest: ReferenceDigest;
-  validatorFeedback?: ReadonlyArray<TranscriptionValidationIssue>;
-  llmFetch?: typeof fetch;
-}): Promise<OpusResponse> {
-  const prompt = composePromptForTranscription(args.digest, TRANSCRIPTION_CATALOG);
-  const url = args.env.ANTHROPIC_API_URL ?? "https://api.anthropic.com/v1/messages";
-
-  const userBlocks: unknown[] = [];
-  if (args.digest.screenshotKeys.desktop && args.env.ASSETS_BUCKET) {
+  for (const link of home.signals.content.navLinks) {
+    let resolved: URL;
     try {
-      const obj = await args.env.ASSETS_BUCKET.get(args.digest.screenshotKeys.desktop);
-      if (obj) {
-        const buf = await obj.arrayBuffer();
-        userBlocks.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: "image/png",
-            data: base64FromBytes(new Uint8Array(buf)),
-          },
-        });
-      }
+      resolved = new URL(link.href, home.sourceUrl);
     } catch {
-      // Continue without the screenshot — the prompt still has all signals.
+      continue;
     }
+    if (resolved.origin !== homeOrigin) continue;
+    const normalized = resolved.toString();
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    const lookup = await loadDigest(env, normalized);
+    if (!lookup) continue;
+    out.push(lookup.digest);
   }
-  let userText = prompt.user;
-  if (args.validatorFeedback && args.validatorFeedback.length > 0) {
-    const feedback = args.validatorFeedback
-      .map((i) => `- at ${i.path}: ${i.message}`)
-      .join("\n");
-    userText += `\n\nYour previous attempt failed validation against the catalog. Fix and try again. Issues:\n${feedback}`;
-  }
-  userBlocks.push({ type: "text", text: userText });
-
-  const fetchImpl = args.llmFetch ?? globalThis.fetch;
-  const resp = await fetchImpl(url, {
-    method: "POST",
-    headers: {
-      "x-api-key": args.env.CLAUDE_API_KEY ?? "",
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPUS_MODEL,
-      max_tokens: 4096,
-      system: prompt.system,
-      messages: [{ role: "user", content: userBlocks }],
-    }),
-  });
-  if (!resp.ok) {
-    throw new Error(`anthropic_${resp.status}`);
-  }
-  const json = (await resp.json()) as {
-    content?: Array<{ type: string; text?: string }>;
-  };
-  const text = json.content?.find((b) => b.type === "text")?.text ?? "";
-  return { raw: text };
-}
-
-function base64FromBytes(bytes: Uint8Array): string {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
-
-/**
- * The two-attempt LLM + fallback contract (AC10, AC11):
- *   - call Opus → parse → validate. If valid: use it.
- *   - if validation fails: call Opus again with the issues fed back.
- *   - if the second attempt fails (or anything throws): return the
- *     hero-only fallback transcription.
- */
-async function attemptTranscription(args: {
-  env: TranscribeSiteEnv;
-  digest: ReferenceDigest;
-  llmFetch?: typeof fetch;
-}): Promise<{
-  readonly transcription: Transcription;
-  readonly attempts: number;
-  readonly fellBackToHero: boolean;
-}> {
-  const themeTokens = deriveThemeTokens(args.digest);
-
-  // No LLM key → straight to fallback. Useful in tests / offline.
-  if (!args.env.CLAUDE_API_KEY) {
-    return {
-      transcription: buildHeroOnlyFallback({ digest: args.digest }),
-      attempts: 0,
-      fellBackToHero: true,
-    };
-  }
-
-  let firstIssues: ReadonlyArray<TranscriptionValidationIssue> | undefined;
-  for (let i = 0; i < 2; i++) {
-    try {
-      const opus = await callOpusForTranscription({
-        env: args.env,
-        digest: args.digest,
-        validatorFeedback: firstIssues,
-        llmFetch: args.llmFetch,
-      });
-      const parsed = parseTranscriptionFromLlm(opus.raw, themeTokens);
-      if (parsed) {
-        const result = validateTranscription(parsed);
-        if (result.ok) {
-          return { transcription: parsed, attempts: i + 1, fellBackToHero: false };
-        }
-        firstIssues = result.issues;
-      } else {
-        firstIssues = [{ path: "/", message: "could not parse a JSON object" }];
-      }
-    } catch {
-      // Move on to next attempt or fallback.
-      firstIssues = [{ path: "/", message: "anthropic call failed" }];
-    }
-  }
-  return {
-    transcription: buildHeroOnlyFallback({ digest: args.digest }),
-    attempts: 2,
-    fellBackToHero: true,
-  };
-}
-
-export interface MirrorSummary {
-  readonly mirrored: number;
-  readonly failed: number;
-  readonly failures: ReadonlyArray<{ readonly url: string; readonly reason: string }>;
-}
-
-/**
- * Run Stage 4 — the async asset-mirror loop. Emits per-asset SSE events.
- * Returns the summary so the caller can append a final chat note.
- */
-async function runStage4(args: {
-  ctx: ActionContext;
-  env: TranscribeSiteEnv;
-  transcription: Transcription;
-  siteId: string;
-}): Promise<{
-  readonly summary: MirrorSummary;
-  readonly rewritten: Transcription;
-}> {
-  const urls = collectReferencedAssetUrls(args.transcription);
-  if (urls.length === 0 || !args.env.ASSETS_BUCKET || !args.env.FETCH_CACHE_KV || !args.env.FETCH_ROBOTS_KV) {
-    return {
-      summary: { mirrored: 0, failed: 0, failures: [] },
-      rewritten: args.transcription,
-    };
-  }
-  args.ctx.emit({
-    event: "action:notify",
-    data: { tool: "transcribe_site", stage: 4, status: "started", total: urls.length },
-  });
-  const result = await mirrorAssetBatchToR2({
-    urls,
-    siteId: args.siteId,
-    bucket: args.env.ASSETS_BUCKET,
-    safetyEnv: {
-      FETCH_CACHE_KV: args.env.FETCH_CACHE_KV,
-      FETCH_ROBOTS_KV: args.env.FETCH_ROBOTS_KV,
-    },
-    onResult: (r: MirrorAssetResult) => {
-      args.ctx.emit({
-        event: "action:notify",
-        data: r.ok
-          ? {
-              tool: "transcribe_site",
-              stage: 4,
-              status: "asset_mirrored",
-              url: r.url,
-              r2Key: r.r2Key,
-              bytes: r.bytes,
-            }
-          : {
-              tool: "transcribe_site",
-              stage: 4,
-              status: "asset_failed",
-              url: r.url,
-              reason: r.reason,
-              detail: r.detail,
-            },
-      });
-    },
-  });
-  const rewritten = rewriteAssetRefs(args.transcription, result.urlToR2Key);
-  return {
-    summary: {
-      mirrored: result.successes.length,
-      failed: result.failures.length,
-      failures: result.failures.map((f) => ({ url: f.url, reason: f.reason })),
-    },
-    rewritten,
-  };
-}
-
-export interface TranscribeSiteOk {
-  readonly kind: "transcribe_site_done";
-  readonly modules: ReadonlyArray<Transcription["modules"][number]>;
-  readonly themeTokens: ThemeTokens;
-  readonly site: Site;
-  readonly narrative: string;
-  readonly assetMirrorSummary: MirrorSummary;
-  readonly fellBackToHero: boolean;
-}
-
-export interface TranscribeSiteRequiresConfirmation {
-  readonly kind: "requires_confirmation";
-  readonly url: string;
-  readonly confirmationPrompt: string;
+  return out;
 }
 
 export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
@@ -320,43 +97,42 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
     return fail("session_id required to track convert confirmation");
   }
 
-  const lookup = await loadDigest(env, digestId, 1);
+  const lookup = await loadDigest(env, digestId);
   if (!lookup) {
     return fail(
       `digest_not_found: no digest record for ${digestId} — run analyze_page first`,
     );
   }
-  const digest = lookup.digest;
+  const homeDigest = lookup.digest;
 
-  const sessionId = ctx.session.session_id;
   const accountId = ctx.session.account_id;
   const confirmed = isConvertConfirmed({
-    sessionId,
+    sessionId: ctx.session.session_id,
     accountId,
-    url: digest.sourceUrl,
+    url: homeDigest.sourceUrl,
   });
 
   if (!confirmed) {
-    const confirmationPrompt = `Convert will replace your current draft with a transcription of ${digest.sourceUrl}. This cannot be automatically undone. Continue?`;
+    const confirmationPrompt = `Convert will replace your current draft with a transcription of ${homeDigest.sourceUrl}. This cannot be automatically undone. Continue?`;
     ctx.emit({
       event: "action:notify",
       data: {
         tool: "transcribe_site",
         kind: "convert_confirmation_required",
-        url: digest.sourceUrl,
+        url: homeDigest.sourceUrl,
         prompt: confirmationPrompt,
       },
     });
     return ok({
       kind: "convert_confirmation",
-      url: digest.sourceUrl,
+      url: homeDigest.sourceUrl,
       prompt: confirmationPrompt,
     });
   }
 
   // ── Stage 1: screenshot preview ─────────────────────────────────────────
-  const screenshotUrl = digest.screenshotKeys.desktop
-    ? `/assets/${digest.screenshotKeys.desktop}`
+  const screenshotUrl = homeDigest.screenshotKeys.desktop
+    ? `/assets/${homeDigest.screenshotKeys.desktop}`
     : null;
   ctx.emit({
     event: "action:notify",
@@ -369,71 +145,92 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
   });
 
   // ── Stage 2: theme-token derivation ─────────────────────────────────────
-  const tokenPatch = deriveThemeTokens(digest);
-  const themeTokens = applyTokenPatch(tokenPatch);
+  const tokenPatch = deriveThemeTokens(homeDigest);
   ctx.emit({
     event: "action:notify",
     data: {
       tool: "transcribe_site",
       stage: 2,
       status: "completed",
-      themeTokens,
+      themeTokens: applyTokenPatch(tokenPatch),
       confidence: tokenPatch.confidence,
     },
   });
 
-  // ── Stage 3: LLM module transcription ───────────────────────────────────
-  const businessName = deriveBusinessName(digest);
-  const attempt = await attemptTranscription({ env, digest });
-  const siteShape = buildSiteFromTranscription({
-    transcription: attempt.transcription,
-    themeTokens,
-    sourceUrl: digest.sourceUrl,
-    businessName,
-  });
-  if (!siteShape.ok) {
-    // The validated transcription failed the full-site gate. This should
-    // never happen (validateTranscription is a superset), but if it does we
-    // fall back rather than ship invalid state to the client.
-    const fallback = buildHeroOnlyFallback({ digest });
-    const fbSite = buildSiteFromTranscription({
-      transcription: fallback,
-      themeTokens,
-      sourceUrl: digest.sourceUrl,
-      businessName,
-    });
-    if (!fbSite.ok) {
-      return fail(
-        `site_validation_failed: even the hero-only fallback failed: ${fbSite.errors.map((e) => `${e.path}:${e.message}`).join("; ")}`,
-      );
-    }
+  // Discover same-origin nav-linked pages that are already cached.
+  const additionalDigests = await discoverAdditionalPageDigests(env, homeDigest);
+  const pageDigests = [homeDigest, ...additionalDigests];
+
+  // ── Mirror referenced assets (inline; the digest carries r2Keys) ────────
+  const urls = collectReferencedAssetUrls(pageDigests);
+  let urlToR2Key = new Map<string, string>();
+  let mirrorSummary = { mirrored: 0, failed: 0, failures: [] as Array<{ url: string; reason: string }> };
+  if (urls.length > 0 && env.ASSETS_BUCKET && env.FETCH_CACHE_KV && env.FETCH_ROBOTS_KV) {
     ctx.emit({
       event: "action:notify",
       data: {
         tool: "transcribe_site",
-        stage: 3,
-        status: "completed",
-        fellBackToHero: true,
-        modules: fallback.modules.length,
-        narrative: fallback.narrative,
+        stage: 4,
+        status: "started",
+        total: urls.length,
       },
     });
-    const stage4 = await runStage4({
-      ctx,
-      env,
-      transcription: fallback,
+    const batch = await mirrorAssetBatchToR2({
+      urls,
       siteId: accountId,
+      bucket: env.ASSETS_BUCKET,
+      safetyEnv: {
+        FETCH_CACHE_KV: env.FETCH_CACHE_KV,
+        FETCH_ROBOTS_KV: env.FETCH_ROBOTS_KV,
+      },
+      onResult: (r: MirrorAssetResult) => {
+        ctx.emit({
+          event: "action:notify",
+          data: r.ok
+            ? {
+                tool: "transcribe_site",
+                stage: 4,
+                status: "asset_mirrored",
+                url: r.url,
+                r2Key: r.r2Key,
+                bytes: r.bytes,
+              }
+            : {
+                tool: "transcribe_site",
+                stage: 4,
+                status: "asset_failed",
+                url: r.url,
+                reason: r.reason,
+                detail: r.detail,
+              },
+        });
+      },
     });
-    return ok({
-      kind: "transcribe_site_done",
-      site: fbSite.value,
-      themeTokens,
-      modules: fallback.modules,
-      narrative: fallback.narrative,
-      assetMirrorSummary: stage4.summary,
-      fellBackToHero: true,
-    });
+    urlToR2Key = new Map(batch.urlToR2Key);
+    mirrorSummary = {
+      mirrored: batch.successes.length,
+      failed: batch.failures.length,
+      failures: batch.failures.map((f) => ({ url: f.url, reason: f.reason })),
+    };
   }
+
+  // ── Stage 3: build and write the TranscriptionDigest ────────────────────
+  const capturedAt = new Date().toISOString();
+  const digest = buildTranscriptionDigest({
+    siteId: accountId,
+    homeDigest,
+    additionalPageDigests: additionalDigests,
+    urlToR2Key,
+    mirrorSummary,
+    capturedAt,
+  });
+  const digestKey = `sites/${accountId}/transcription/digest.json`;
+  if (!env.ASSETS_BUCKET) {
+    return fail("ASSETS_BUCKET binding required to write transcription digest");
+  }
+  await env.ASSETS_BUCKET.put(digestKey, JSON.stringify(digest), {
+    httpMetadata: { contentType: "application/json" },
+  });
 
   ctx.emit({
     event: "action:notify",
@@ -441,57 +238,28 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
       tool: "transcribe_site",
       stage: 3,
       status: "completed",
-      fellBackToHero: attempt.fellBackToHero,
-      modules: attempt.transcription.modules.length,
-      narrative: attempt.transcription.narrative,
-      lowConfidenceItems: attempt.transcription.modules
-        .filter((m) => m.confidence === "low")
-        .map((m) => ({
-          moduleId: m.id,
-          section: m.source_section ?? "",
-          reason: "low-confidence module",
-        })),
+      digestKey,
+      pageCount: digest.perPagePlan.length,
+      assetCount: digest.assetInventory.length,
     },
   });
 
-  // ── Stage 4: async asset-mirror ────────────────────────────────────────
-  const stage4 = await runStage4({
-    ctx,
-    env,
-    transcription: attempt.transcription,
-    siteId: accountId,
-  });
-
-  const finalSite: Site = {
-    ...siteShape.value,
-    pages: siteShape.value.pages.map((p) => ({
-      ...p,
-      modules: stage4.rewritten.modules.map((m) => ({
-        id: m.id,
-        type: m.type,
-        version: m.version,
-        variant: m.variant,
-        dials: m.dials,
-        content: m.content as Site["pages"][number]["modules"][number]["content"],
-      })),
-    })),
-  };
-
   return ok({
     kind: "transcribe_site_done",
-    site: finalSite,
-    themeTokens,
-    modules: stage4.rewritten.modules,
-    narrative: attempt.transcription.narrative,
-    assetMirrorSummary: stage4.summary,
-    fellBackToHero: attempt.fellBackToHero,
+    digestKey,
+    summary: {
+      pageCount: digest.perPagePlan.length,
+      assetCount: digest.assetInventory.length,
+      mirrored: mirrorSummary.mirrored,
+      mirrorFailures: mirrorSummary.failed,
+    },
   });
 };
 
 /**
  * Companion handler the FE invokes when the operator clicks Confirm on the
  * ConvertConfirmation card. Records consent in the chat-metadata store and
- * optionally registers a robots.txt override for the origin (per AC14).
+ * optionally registers a robots.txt override for the origin.
  */
 export const confirmConvertHandler: ActionHandler = async (input, ctx) => {
   const url = typeof input.url === "string" ? input.url : null;
