@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-1
 created_by: xgd
 created_at: '2026-06-19T20:57:31.300229+00:00'
-updated_at: '2026-06-19T21:02:46.125441+00:00'
+updated_at: '2026-06-19T21:06:56.913046+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -53,5 +53,39 @@ Shall I proceed with the implementation? Also — do you want me to keep the exi
 <!-- xgd-chat role="user" ts="2026-06-19T21:01:26.936Z" -->
 #### You
 please fix it
+
+<!-- xgd-turn id="4202cc11-3bdd-48e6-a20b-7a7ea995e378-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T21:06:56.884Z" -->
+#### Claude
+Writing the RED UAT first. Since the bug is purely in static CSS in `builder.html` (jsdom doesn't lay out flexbox so geometric assertions are meaningless), the UAT parses the CSS in the served shell and asserts the new rules exist while the dead rule is gone.
+
+Now run the test to confirm RED.
+
+Three failing as expected (RED). Now applying the GREEN CSS fix.
+
+Now verify GREEN and run nearby tests for regression.
+
+GREEN. Run the broader chat & builder tests to confirm no regression.
+
+All 37 chat/builder tests pass. Now commit and update the ticket.
+
+I need to bump the version manually as part of this free-coding cycle. Let me bump the patch version and create an additional commit.
+
+Ticket is now `free_coded` with both commit SHAs. Let me verify and wrap up.
+
+Fix complete.
+
+**Root cause**: REQ-13 swapped the chat input from `<textarea class="fc-chat__textarea">` to a TipTap editor (`.fc-chat__editor` + `.fc-chat__editor-content`), but `apps/control-app/public/builder.html` still styled only the dead `.fc-chat__textarea` selector — so the new editor wrapper collapsed to zero size and the Send button visually dominated the row.
+
+**Fix**: CSS-only change in `apps/control-app/public/builder.html` — dropped the orphan rule, added `.fc-chat__editor` (flex: 1 1 auto, dark background, border, focus-within highlight) and `.fc-chat__editor-content` (min-height 60px, max-height 200px, padding, light text colour, no outline). Pinned `.fc-chat__send` to `align-self: flex-end` so it sits cleanly to the right of a multi-line editor.
+
+**Verification**: New UAT `test_UAT_FC_BUG-1_chat_input_visible_and_positioned` (4 tests) passes. All 37 surrounding REQ-8 + REQ-13 chat/builder tests still pass.
+
+**Commits**:
+- `828caf2` fix(builder-ui): restore chat input visibility — CSS for TipTap editor (BUG-1) [FREE-CODED]
+- `e76cfbb` chore: bump version 0.0.2 → 0.0.3 [FREE-CODED]
+
+BUG-1 is now `status: free_coded` with both SHAs and `version: 0.14.1235` recorded.
 
 <!-- xgd-chat-end -->
