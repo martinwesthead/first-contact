@@ -5,9 +5,9 @@ type: comment
 title: Comment on bug BUG-6
 created_by: xgd
 created_at: '2026-06-19T23:51:24.086361+00:00'
-updated_at: '2026-06-19T23:51:24.086361+00:00'
+updated_at: '2026-06-19T23:51:31.686946+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: null
 fields:
   subject_uid: bug-bf15661c
@@ -90,5 +90,28 @@ Error: ENOENT: no such file or directory, utime '/Users/martin/Library/Preferenc
 ((.venv-working) ) martin@nyx control-app %
 
 ```
+
+<!-- xgd-turn id="edcee64f-ae06-4ec4-8e80-fac47f878ec3-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:51:31.661Z" -->
+#### Claude
+This is a known wrangler 3.x bug, not a code issue. The dev server actually started fine (you can see `Ready on http://localhost:8788` and successful requests), then reloaded several times (likely on file save), and on one of those reloads the registry housekeeping tried to `utime` a file that had been cleaned up under it.
+
+The relevant error:
+```
+ENOENT: no such file or directory, utime '/Users/martin/Library/Preferences/.wrangler/registry/1stcontact-control-app'
+```
+
+This is the wrangler dev-registry stale-state bug — wrangler tracks running workers in `~/Library/Preferences/.wrangler/registry/` so multiple workers can discover each other, and it periodically touches those files to keep them alive. If the file gets deleted (e.g. another wrangler process exits, or registry cleanup races), the periodic touch crashes the whole dev server.
+
+**Three fixes, in order of effort:**
+
+1. **Just restart `pnpm dev`** — the registry file gets recreated on startup, and unless something else is racing, it'll stay healthy.
+2. **Clear the registry once**: `rm -rf ~/Library/Preferences/.wrangler/registry/` then restart. Useful if it keeps recurring.
+3. **Upgrade to wrangler 4** — wrangler is also nagging you about being out of date (3.114.17 vs 4.103.0). The registry bug is fixed in v4. This is the durable fix but a bigger change (potential breaking-config migration).
+
+None of this is a code change in our repo — it's an environment / tooling issue with wrangler itself.
+
+Which would you like to do? If you want option 3 (the wrangler 4 upgrade), that *would* be a free-coded change (touches `package.json` and possibly `wrangler.toml`), and we should populate BUG-6 with that scope before I touch anything. Options 1 and 2 are just shell commands you can run directly.
 
 <!-- xgd-chat-end -->
