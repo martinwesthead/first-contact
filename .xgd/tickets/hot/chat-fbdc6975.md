@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:44:44.010174+00:00'
+updated_at: '2026-06-19T23:47:58.324091+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -796,6 +796,51 @@ Three bug tickets scoped, each parked at `draft` with a diagnosis transcript:
 Each has a `chat_transcript` comment with your original report plus my diagnosis section for that specific bug — so each ticket reads as a self-contained design thread.
 
 Ready for the next issue.
+
+
+<!-- xgd-turn id="bcefc192-fe0f-4999-89d5-12bcd463af06" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:47:57.281Z" -->
+#### You
+The next problem is that the LLM is rewriting the copy - the copy should be loaded into text files (one per model) in R2 and referenced by the site. Things like module titles should be set in JSON configuration. The LLM CAN edit all this when directed by the User to do so but when copying a site it should not provide its own interpretation of the words it should reference the exact copy
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:47:57.281Z" -->
+#### Claude
+That's a real architectural shift — and I think the principle ("no paraphrasing during convert, verbatim source copy preserved") is right. The R2-file mechanism is a means to make it structural, not just policy-on-the-doc. Let me lay out what I think you want and check the boundaries before scoping.
+
+## Proposed shape
+
+**Two-tier content split** built into the framework:
+
+- **Configuration (inline JSON in Site)**: module variant/dial, titles, headings, button labels, link text, form field labels, alt text, anything short and structural.
+- **Copy (R2-backed text file, referenced by the Site)**: paragraph body text, descriptions, multi-line content — anything that's "body copy" rather than "structure."
+
+**Mechanics:**
+- New schema type `CopyRef = { key: string }`, analogous to `AssetRef`. Module schemas declare per-field whether the field is copy-capable.
+- R2 layout: `sites/{siteId}/copy/{moduleId}/{field}.md` (Markdown). One file per copy field per module instance.
+- Render path takes a resolver: `renderSiteToHtml(site, { resolveCopy })`. Builder preview resolver fetches via `/api/copy/get/<key>` (same shape as the asset route). Production `tools/generate` fetches and bakes into static output at build time — production has no R2 runtime dependency.
+- **Convert flow**: `transcribe_site` writes one copy file per source-section's body text into R2 during its mechanical phase (verbatim, no LLM involvement). The digest's `perPagePlan[].extractedContent` entries now carry `copyKey` instead of (or in addition to) raw text. AI's job becomes "point the body-copy field at the R2 key" — it cannot paraphrase because it never authors the text.
+- **New tool `set_copy_content(moduleId, field, text)`** for user-directed edits: writes Markdown to R2, returns the `CopyRef`. The AI uses this only when the operator explicitly asks to change wording.
+
+## Boundary I'd default to (please redirect if any of these is wrong)
+
+| Module | Inline (config) | R2 (copy) |
+|---|---|---|
+| `hero` | headline, subhead, CTA label | (none — hero text is structural) |
+| `text-block` | section title, optional heading | body Markdown |
+| `services-grid` | item titles, CTA labels | per-item description |
+| `contact-form` | field labels, submit text | intro paragraph |
+| `footer` | copyright text, link labels | (none) |
+
+Rule of thumb: if the field is one phrase that the AI would reasonably set as part of structure, it's config. If it's a paragraph of source-page prose, it's R2.
+
+## Open questions before scoping
+
+1. **Format inside the R2 copy files** — Markdown (lets AI preserve headings/lists/links/images from the source) or plain text? I lean Markdown.
+2. **Does Bug-3's `text-block` body** (which is already Markdown in the schema) become a `CopyRef` field as part of this REQ, or stay inline for now? I lean "becomes CopyRef" — text-block body is the canonical longform field.
+3. **Migration**: the bundled 1stcontact site has inline text-block body content today. Convert it to R2-backed copy as part of this REQ, or grandfather inline values (CopyRef OR inline-string union)? I lean union — small mercy that keeps existing tests intact and lets convert-flow output be CopyRef-only without forcing a baseline migration in the same ticket.
+
+Tell me how you want any of those answered (or say "go with your defaults") and I'll scope it as a single request ticket. Story-points estimate ~6 — touches schema, renderer, builder-ui resolver, tools/generate fetch, transcribe-site mechanical write, how-to doc.
 
 
 <!-- xgd-chat-end -->
