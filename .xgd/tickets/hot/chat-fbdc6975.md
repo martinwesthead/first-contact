@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T19:03:38.253990+00:00'
+updated_at: '2026-06-19T19:58:55.592640+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -329,6 +329,53 @@ In the builder chat, ask the AI to convert an external site (e.g. "convert https
 - Persistent confirmation across reloads
 
 REQ-28 is sitting at `free_coded`. When you've validated the demo flow and want the matrix updated, promote it to `ready_to_reconcile` — that's the operator call, not mine.
+
+
+<!-- xgd-turn id="41e18e8f-73e5-4207-9bb2-a474f91b980e" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T19:58:55.534Z" -->
+#### You
+Will the demo overwrite the existing site content - or does it all live in a test R2 db?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T19:58:55.534Z" -->
+#### Claude
+Good question — let me check the actual wiring rather than guess.
+
+Short answer: **the demo currently doesn't overwrite a persisted site** — but R2 writes depend on how you run it.
+
+## Site overwrite — actually no D1 write happens
+
+Despite the ticket spec saying "writes directly into the operator's current draft", the `transcribe_site` handler at `apps/control-app/src/operator/transcribe-site.ts` does NOT call any persistence:
+
+- It builds a `Site` object in memory (`finalSite` at line 465).
+- Returns it as the action payload (line 480–488).
+- There's no D1 write, no `update_site_definition` call, no `sites` table touch.
+
+The FE receives the Site shape and renders it. Any actual draft persistence would have to happen via separate tool calls (which aren't wired up here). So in its current form **your existing draft in D1 is safe** — the "destructive" confirmation is preventing the FE from blowing away its in-memory state, not a server-side overwrite.
+
+This is a gap vs. the AC spec — the "deviations from spec" section in the ticket body doesn't call it out, but it's there. Worth flagging if you intended the convert flow to actually persist.
+
+## R2 assets — depends on how you run wrangler
+
+`wrangler.toml` binds `ASSETS_BUCKET` to bucket name **`1stcontact-assets`** in BOTH `[r2_buckets]` (dev) and `[env.production.r2_buckets]` — same name in both environments.
+
+| How you run | R2 destination |
+|-------------|---------------|
+| `wrangler dev` (no `--remote`) | Miniflare's local R2 emulator — writes are in-process, gone on restart |
+| `wrangler dev --remote` | **Real `1stcontact-assets` bucket** — mixed with production |
+| Deploy to production | Real `1stcontact-assets` bucket |
+
+Note Browser Rendering (REQ-22) requires `--remote` because Miniflare doesn't emulate it — so if you want the full Stage 1 screenshot path AND want isolated assets, you'd need a separate dev bucket. Right now there isn't one.
+
+Asset keys are scoped under `sites/{accountId}/imports/{sha256(url):16}.{ext}` so they're at least namespaced by account.
+
+## Practical implications for demoing
+
+- **Plain `wrangler dev`** — safe, fully local, but no Browser Rendering (no real screenshot). Falls back to non-rendered digest path.
+- **`wrangler dev --remote`** — full flow works, but mirrored assets land in the production bucket. Cosmetic issue (they're under a test accountId), not a correctness one, but worth knowing.
+- **The "destructive overwrite" warning in the UI is currently aspirational** — there's no save call to overwrite anything in storage.
+
+If you want me to either (a) wire up the actual draft persistence or (b) split out a `1stcontact-assets-dev` bucket for `--remote` use, that'd be a scoped ticket each.
 
 
 <!-- xgd-chat-end -->
