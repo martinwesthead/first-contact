@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T22:27:53.780084+00:00'
+updated_at: '2026-06-19T22:31:08.398893+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -551,6 +551,27 @@ Done. REQ-30 now carries the design conversation as a `chat_transcript` comment.
 **What's parked:** the ticket sits at `draft`. Promotion to `ready_to_implement` (for `xgd develop` autonomous pipeline) is your call. Nothing auto-fires from `draft`.
 
 **Open items I left in the ticket flagged for sign-off:** dropping the internal Opus synthesis is non-reversible without another ticket; AC9's killer-demo properties are loose (≥1 page / tokens differ / ≥1 R2 image / ≥1 source text) and can be tightened.
+
+
+<!-- xgd-turn id="0877adf8-9401-41c7-bf58-2dfe27799a4f" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T22:31:07.275Z" -->
+#### You
+I thought you werre going to create multiple tickets - I will get started on this one - can you create the rest?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T22:31:07.275Z" -->
+#### Claude
+I misread "remove the two destinations" as drop-tickets-2-and-3 when it most plausibly meant the two outputs in ticket 3 (nav + race) — i.e. drop ticket 3 only, keep ticket 2 separate. Sorry about that.
+
+Where that leaves things: **REQ-30 currently folds in the multi-page work (page-CRUD tools `add_page`/`remove_page`/`reorder_pages` + multi-page killer-demo AC).** That was my unilateral fold-in when I collapsed to one ticket. Before I create more tickets I want to be sure about the right shape, because the answer affects whether REQ-30 needs to be narrowed.
+
+Two plausible reads of what you want:
+
+**(a) Leave REQ-30 as-is (page CRUD stays folded in), create just one follow-up.** Follow-up covers nav-pattern tool (`set_nav_pattern`, `set_nav_entries`) plus anything else we deferred (asset-mirror race fix if you still want it scoped). Cleanest — no churn on the ticket you're starting.
+
+**(b) Narrow REQ-30 back to digest-only, create two follow-ups.** REQ-30 drops to: mechanical `transcribe_site` + R2 digest + `read_transcription_digest` + `docs/llm-context/reproducing-a-website.md`. Two new tickets: one for multi-page (page CRUD + per-page plan + multi-page demo UAT), one for nav patterns. Closer to my original 3-ticket proposal but means REQ-30's body and ACs change while you're starting on it.
+
+Which? If you tell me (a) I'll create one ticket (nav + anything else); if (b) I'll narrow REQ-30 and create two. Or tell me a specific list of tickets you want and I'll work to that.
 
 
 <!-- xgd-chat-end -->
