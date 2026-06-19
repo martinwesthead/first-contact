@@ -18,6 +18,8 @@ export interface ChatHandlerEnv {
   CLAUDE_MODEL?: string;
   ANTHROPIC_API_URL?: string;
   FETCH_RATE_KV?: KVNamespace;
+  FETCH_CACHE_KV?: KVNamespace;
+  FETCH_ROBOTS_KV?: KVNamespace;
 }
 
 export interface ChatHandlerDeps {
@@ -117,6 +119,8 @@ export async function handleChatRequest(
   const session = extractSession(request);
   const tools = visibleToolSpecs(session.plan_tier);
   const intentToken = await maybeMintIntentToken(env, session, body.history);
+  const operatorLastMessage =
+    [...body.history].reverse().find((m) => m.role === "user")?.content ?? null;
 
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const url = env.ANTHROPIC_API_URL ?? ANTHROPIC_DEFAULT_URL;
@@ -262,6 +266,7 @@ export async function handleChatRequest(
               env,
               emit: sessionEmitter(session),
               siteDefinition: workingSite,
+              operatorLastMessage,
             });
           } catch (err) {
             actionResult = {
@@ -276,15 +281,22 @@ export async function handleChatRequest(
           });
           if (actionResult.status === "ok") {
             const payload = actionResult.payload ?? {};
-            const isReadTool = callName === "get_site_definition";
+            const hasKindPayload = typeof payload.kind === "string";
+            // get_site_definition is the legacy read tool that pre-dates the
+            // kind-tagged tool_result model; every NEW system action that
+            // produces structured data does so via `payload.kind`. Both
+            // routes surface the payload to the AI (as `applied.data`) so
+            // the next turn can reason about the returned data.
+            const surfacesData =
+              callName === "get_site_definition" || hasKindPayload;
             result = {
               ok: true,
               applied: {
                 tool: callName,
                 args: callInput,
                 summary: summarizeSystemAction(callName, payload),
-                ...(isReadTool ? { data: payload } : {}),
-                ...(typeof payload.kind === "string"
+                ...(surfacesData ? { data: payload } : {}),
+                ...(hasKindPayload
                   ? { kind: payload.kind as string }
                   : {}),
               },
@@ -298,6 +310,17 @@ export async function handleChatRequest(
               },
             };
           }
+        }
+        // System actions that produce a kind-tagged structured payload (or
+        // fail) also surface in body.toolCalls so the chat-driver can route
+        // them through the tool_result_renderers dispatcher. The legacy
+        // get_site_definition stays out — it has no `kind` and existing FE
+        // code reads it from body.systemActions.
+        const surfacesAsToolCall =
+          !result.ok ||
+          (result.ok && typeof result.applied.kind === "string");
+        if (surfacesAsToolCall) {
+          allToolCalls.push({ name: callName, input: callInput, result });
         }
       }
 
@@ -399,6 +422,17 @@ function summarizeSystemAction(
     case "publish_stub": {
       const url = typeof payload.site_url === "string" ? payload.site_url : "";
       return url ? `published to ${url}` : "published";
+    }
+    case "analyze_page": {
+      const digest = payload.digest as
+        | { sourceUrl?: unknown; signals?: unknown }
+        | undefined;
+      const src =
+        digest && typeof digest.sourceUrl === "string"
+          ? digest.sourceUrl
+          : "reference";
+      const cache = typeof payload.cache === "string" ? payload.cache : "MISS";
+      return `produced reference digest for ${src} (cache ${cache})`;
     }
     case "report_validation_rejection":
       return `logged validation rejection`;

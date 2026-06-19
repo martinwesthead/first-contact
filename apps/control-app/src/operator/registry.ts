@@ -1,3 +1,4 @@
+import { analyzePageHandler } from "./analyze-page.js";
 import type { ChatHandlerEnv } from "../chat.js";
 import type { SseEvent } from "./events.js";
 import { type ActionCategory, type PlanTier, type Session, tierPermits } from "./types.js";
@@ -26,6 +27,15 @@ export interface ActionContext {
    * state).
    */
   readonly siteDefinition: unknown;
+  /**
+   * The operator's most recent user-role message in this turn. Populated by
+   * the chat handler from request.history; `null` for the direct
+   * /api/operator/<action> POST route. Used by safety-gated tools
+   * (e.g. analyze_page) to verify operator intent without a KV round-trip:
+   * `operatorMessageImpliesIntent(ctx.operatorLastMessage)` is sufficient
+   * proof when the URL was pasted in the same turn (REQ-20 §intent token).
+   */
+  readonly operatorLastMessage: string | null;
 }
 
 export type ActionHandler = (
@@ -287,6 +297,36 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
       },
     },
     handler: publishStubHandler,
+  },
+  {
+    name: "analyze_page",
+    category: "system_action",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Fetches the given URL via the REQ-20 safety layer, runs Layer A signal extractors (palette/typography/layout/imagery/content), runs an AI commentary pass, and returns a Reference Digest record. Result is cached in KV for 24h. The digest is attached to the chat history as a structured tool_result of kind 'reference_digest' so the builder UI can render it via the REQ-13 dispatcher.",
+    tool_spec: {
+      name: "analyze_page",
+      description:
+        "Analyze an external reference URL the operator wants to draw inspiration from (or reproduce). Returns a Reference Digest: palette, typography, layout, imagery, content tree, asset inventory, and AI commentary. Call this when the operator pastes a URL and asks for analysis or wants to base their site on a reference. Requires operator intent (URL in chat or intentToken).",
+      input_schema: {
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description:
+              "Absolute http(s) URL of the page to analyze. Operator must have already expressed intent in this turn (pasted the URL or used fetch keywords) or supplied a fresh intentToken.",
+          },
+          intentToken: {
+            type: "string",
+            description:
+              "Optional. A token minted by /api/chat when the operator's message implied fetch intent. Pass this through verbatim when re-invoking via the direct /api/operator endpoint.",
+          },
+        },
+        required: ["url"],
+      },
+    },
+    handler: analyzePageHandler,
   },
   {
     name: "report_validation_rejection",
