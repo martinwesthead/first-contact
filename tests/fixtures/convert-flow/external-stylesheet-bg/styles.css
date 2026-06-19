@@ -1,0 +1,25 @@
+/* External stylesheet — the static-fetch path does not load <link rel="stylesheet">
+   files, so the `.hero` background-image URL declared here is invisible to
+   parseImagery. The rendered-fetch path's getComputedStyle script reads it. */
+
+body {
+  background: #ffffff;
+  color: #1f2937;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.hero {
+  background-image: url('/hero-bg.jpg');
+  background-size: cover;
+  padding: 80px 24px;
+}
+
+h1 {
+  color: #16a34a;
+  font-family: "Source Serif Pro", serif;
+}
+
+.cta {
+  background-color: #2563eb;
+  color: #ffffff;
+}

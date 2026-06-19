@@ -35,6 +35,12 @@ interface DigestAssetRecord {
   readonly references: number;
 }
 
+interface DigestScreenshotKeys {
+  readonly mobile?: string;
+  readonly tablet?: string;
+  readonly desktop?: string;
+}
+
 interface DigestRecord {
   readonly schemaVersion: number;
   readonly sourceUrl: string;
@@ -44,6 +50,7 @@ interface DigestRecord {
   readonly signals: {
     readonly assetInventory: ReadonlyArray<DigestAssetRecord>;
   };
+  readonly screenshotKeys?: DigestScreenshotKeys;
 }
 
 interface DigestPayload {
@@ -84,6 +91,8 @@ export const createDigestReportRenderer: ToolResultRenderer = (
   body.setAttribute("data-fc-digest-source-url", digest.sourceUrl);
   if (data.cache) body.setAttribute("data-fc-digest-cache", data.cache);
 
+  const screenshotStrip = renderScreenshotStrip(doc, digest.screenshotKeys);
+  if (screenshotStrip) body.appendChild(screenshotStrip);
   body.appendChild(renderMarkdown(data.digestMarkdown));
   body.appendChild(renderAssetStrip(doc, digest.signals.assetInventory));
 
@@ -117,6 +126,40 @@ export const createDigestReportRenderer: ToolResultRenderer = (
   });
   return card.root;
 };
+
+function renderScreenshotStrip(
+  doc: Document,
+  keys: DigestScreenshotKeys | undefined,
+): HTMLElement | null {
+  if (!keys) return null;
+  const viewports: Array<{ name: "mobile" | "tablet" | "desktop"; key?: string }> = [
+    { name: "mobile", key: keys.mobile },
+    { name: "tablet", key: keys.tablet },
+    { name: "desktop", key: keys.desktop },
+  ];
+  const present = viewports.filter((v) => typeof v.key === "string" && v.key.length > 0);
+  if (present.length === 0) return null;
+
+  const strip = doc.createElement("section");
+  strip.className = "fc-digest-report__screenshots";
+  strip.setAttribute("data-fc-digest-screenshots", "");
+  for (const vp of present) {
+    const figure = doc.createElement("figure");
+    figure.className = `fc-digest-report__screenshot fc-digest-report__screenshot--${vp.name}`;
+    figure.setAttribute("data-fc-digest-screenshot", vp.name);
+    figure.setAttribute("data-fc-digest-screenshot-key", vp.key as string);
+    const img = doc.createElement("img");
+    img.setAttribute("src", `/assets/${vp.key as string}`);
+    img.setAttribute("alt", `${vp.name} viewport screenshot`);
+    img.setAttribute("loading", "lazy");
+    figure.appendChild(img);
+    const caption = doc.createElement("figcaption");
+    caption.textContent = vp.name;
+    figure.appendChild(caption);
+    strip.appendChild(figure);
+  }
+  return strip;
+}
 
 function renderAssetStrip(
   doc: Document,

@@ -7,6 +7,8 @@ import { handleSafetyHealth, type SafetyHealthEnv } from "./safety/health.js";
 export interface Env extends ChatHandlerEnv, AssetsEnv, SafetyHealthEnv {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
   FETCH_RATE_KV: KVNamespace;
+  BROWSER_BUDGET_KV?: KVNamespace;
+  BROWSER?: unknown;
 }
 
 const OPERATOR_ACTION_PREFIX = "/api/operator/";
