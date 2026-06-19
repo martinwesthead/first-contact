@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-21
 created_by: xgd
 created_at: '2026-06-18T23:39:43.741698+00:00'
-updated_at: '2026-06-18T23:57:55.429612+00:00'
+updated_at: '2026-06-19T00:19:07.016262+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -53,5 +53,33 @@ Let me know on REQ-13 and I'll start.
 <!-- xgd-chat role="user" ts="2026-06-18T23:52:54.530Z" -->
 #### You
 REQ-13 is free coded (which you can see yourself, of course). Please proceed
+
+<!-- xgd-turn id="fe2607a9-4997-4740-8e16-0a4991cfc423-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T00:19:05.978Z" -->
+#### Claude
+Now I'll write the extractor schema and modules.
+
+Now wire `analyze_page` into the registry and extend `ActionContext` with `operatorLastMessage`.
+
+Now extend `ChatHandlerEnv`, populate `operatorLastMessage`, and generalize the `data:` surface rule.
+
+Now update the operator router to pass `operatorLastMessage: null` and add a summarizer entry, then type-check.
+
+I need to make the extractor DOM-type-free at the type boundary so control-app's worker compile doesn't pull in DOM lib. Switching to local minimal DOM interfaces.
+
+REQ-21 is free-coded.
+
+**Summary of what landed in commit `e4ac880`:**
+
+- **`packages/extractor` (new)** — Zod-typed `ReferenceDigest` schema + the five Layer A extractors (`parsePalette`, `parseTypography`, `parseLayout`, `parseImagery`, `parseContent`), `renderDigestMarkdown` (KMS-aware shape per DOC-9 §9), and the `shouldEscalateToRendered` stub. HTML parsing via `linkedom`, with local minimal DOM-shape interfaces so workers-types consumers don't need DOM lib.
+- **`analyze_page` system action** (apps/control-app) — full safety pipeline: input check → operator-intent → 24h KV digest cache → robots.txt → rate-limit → `safeFetch` → extractors → Haiku 4.5 commentary (with deterministic fallback) → cache store. Wired into `ChatHandlerEnv` (added `FETCH_CACHE_KV` / `FETCH_ROBOTS_KV`) and `ActionContext` (added `operatorLastMessage`).
+- **chat.ts generalization** — system-action results with a kind-tagged payload now surface in `body.toolCalls` AND `applied.data`, so the FE chat-driver routes them through the REQ-13 dispatcher. The legacy `get_site_definition` path (no kind → `systemActions` only) is preserved.
+- **`<DigestReport>` in builder-ui** — `info`-toned ChatCard with markdown body + structured asset-inventory sub-section (per-kind counts + thumbnail strip). "Convert this site" emits a `fc:digest-convert-requested` CustomEvent for REQ-28; "Discard" collapses. Registered with the dispatcher from `bootBuilder`.
+- **13 UATs** (`tests/test_UAT_FC_REQ-21_*`) — one per acceptance criterion, including the end-to-end chat → `analyze_page` → `<DigestReport>` test that exercises the full critical path with mocked `safeFetch` + Anthropic. Test fixtures under `tests/fixtures/convert-flow/{plain-html-site,sparse-signal}/`.
+
+**Quality:** `xgd quality run --all-tests` → ✅ SUCCESS (210 tests, matches quality.yaml expectations). One pre-existing REQ-6 race-condition flake when run in parallel; unrelated to this REQ and passes in isolation.
+
+**Ticket:** REQ-21 → status=`free_coded`, commits=[`e4ac880`].
 
 <!-- xgd-chat-end -->
