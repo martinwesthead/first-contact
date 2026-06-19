@@ -6,9 +6,9 @@ title: 'Site Transcription (Layer B): convert flow that maps a Reference Digest 
   module instances and theme tokens'
 created_by: xgd
 created_at: '2026-06-16T23:29:01.955584+00:00'
-updated_at: '2026-06-19T01:39:38.151816+00:00'
+updated_at: '2026-06-19T02:01:56.506443+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: in_progress
 fields:
   priority: high
@@ -218,3 +218,79 @@ All Stage 4 tests run against the Miniflare R2 emulator + the static-HTML fixtur
 - **Brief integration**: after successful transcription, the AI will be prompted to call `propose_brief_update` (from [[REQ-27]]) for `Project context`, `Palette`, `Typography`, and `References` sections so the converted site's Brief reflects what was imported. For the demo, this hook is dropped — the transcription prompt omits the `propose_brief_update` nudge.
 
 When these REQs land, the runtime path described above is wired up via a small follow-on refactor (no schema change here).
+
+
+---
+
+## Implementation status (2026-06-18)
+
+Free-coded to `xgd-working` across five `[FREE-CODED]` commits.
+
+**Commits**:
+
+1. `56ea818` — `packages/extractor/transcribe.ts`: pure-function transcription
+   primitives (`deriveThemeTokens`, `composePromptForTranscription`,
+   `validateTranscription`, `collectReferencedAssetUrls`, `rewriteAssetRefs`,
+   `buildHeroOnlyFallback`, `parseTranscriptionFromLlm`). Adds
+   `@1stcontact/framework/module-validate` subpath export so the validator can
+   be imported without dragging in Astro components.
+2. `0f74d82` — `packages/extractor/mirror-asset.ts`: `mirrorAssetToR2`,
+   `mirrorAssetBatchToR2`, content-type → extension classifier, content-hashed
+   R2 key generator. SHA-keyed dedup at the key level guarantees idempotence.
+3. `4daad44` — `apps/control-app/src/operator/transcribe-site.ts`: the
+   `transcribe_site` + `confirm_convert` operator actions with the 4-stage
+   orchestration; `apps/control-app/src/operator/chat-metadata.ts`
+   in-memory per-chat metadata store for the destructive-confirmation flag
+   and per-origin robots overrides (AC14).
+4. `0f6d904` — `packages/builder-ui/src/components/convert-confirmation.ts`
+   and `transcribe-progress.ts`: the two REQ-13-dispatcher-mounted chat-card
+   variants. ConvertConfirmation dispatches `fc:convert-confirmed` /
+   `fc:convert-cancelled`; TranscribeProgress exposes `applyTranscribeEvent`
+   so the SSE driver can push updates into the active card without re-render.
+5. `7360670` — `tests/fixtures/convert-flow/assets-heavy/` and
+   `duplicate-asset/` + the killer-demo end-to-end UAT verifying AC16.
+
+**Deviations from the spec body, noted for reconcile**:
+
+- **Digest lookup source**: AC text refers to "fetch the digest record from
+  the chat history". REQ-23 / REQ-24 (persistent chat sessions) are deferred,
+  so the action reads the digest from the existing `FETCH_CACHE_KV` digest
+  cache (24h TTL, written by `analyze_page` per REQ-21). The lookup key is
+  `digest:{sha256(url|SCHEMA)}`. When chat persistence lands the action will
+  switch to the chat history; the lookup-by-URL contract is identical.
+- **In-memory chat metadata**: the destructive-confirmation flag and per-origin
+  robots overrides live in the module-singleton `chat-metadata.ts`, keyed by
+  `(accountId, sessionId)`. Survives within a Worker isolate's lifetime; does
+  NOT survive isolate eviction or browser reload. Explicit demo trade-off
+  documented in the §Demo critical-path alignment section.
+- **Stage 4 sync-await**: stages 1–4 currently run sync-await inside the
+  action handler (rather than returning at stage 3 and continuing stage 4 in a
+  background task). This keeps the test surface deterministic and matches the
+  Cloudflare Workers execution model (no detached promises). The SSE events
+  for stage 4 still emit per-asset as they complete, so the
+  `<TranscribeProgress>` UX is identical. AC6's "Stage 4 starts within 1
+  second of Stage 3 completion" is trivially satisfied because stage 4 starts
+  immediately after stage 3 in the same call.
+- **Hero-only fallback when Site validation fails**: there is a defense-in-depth
+  fallback that runs the hero-only draft if the LLM-validated transcription
+  somehow fails the full Site schema gate. In practice this should never
+  fire because `validateTranscription` is a superset of the Site gate for
+  module instances, but it's there to prevent invalid state shipping to the
+  client.
+
+**Test coverage**: 38 new UATs land in this REQ:
+- `test_UAT_FC_REQ-28_derive_theme_tokens_from_digest` (6)
+- `test_UAT_FC_REQ-28_validate_transcription_against_catalog` (8)
+- `test_UAT_FC_REQ-28_compose_prompt_for_transcription` (3)
+- `test_UAT_FC_REQ-28_collect_and_rewrite_asset_refs` (4)
+- `test_UAT_FC_REQ-28_parse_llm_and_fallback` (7)
+- `test_UAT_FC_REQ-28_mirror_asset_to_r2` (13)
+- `test_UAT_FC_REQ-28_transcribe_site_requires_confirmation` (6)
+- `test_UAT_FC_REQ-28_transcribe_site_stages` (7)
+- `test_UAT_FC_REQ-28_transcribe_site_stage4_assets` (4)
+- `test_UAT_FC_REQ-28_convert_confirmation_card` (4)
+- `test_UAT_FC_REQ-28_transcribe_progress_card` (6)
+- `test_UAT_FC_REQ-28_fixtures_assets_heavy_dedup` (2)
+- `test_UAT_FC_REQ-28_killer_demo_end_to_end` (2)
+
+Full vitest run: 298 tests pass across 138 files.
