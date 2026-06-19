@@ -5,9 +5,9 @@ type: bug
 title: 'Convert flow: ConvertConfirmation Confirm/Cancel buttons are unwired'
 created_by: xgd
 created_at: '2026-06-19T23:43:39.348958+00:00'
-updated_at: '2026-06-19T23:43:39.348958+00:00'
+updated_at: '2026-06-19T23:49:40.235332+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -29,27 +29,30 @@ Two missing wires:
 
 1. **No event listener exists.** The Confirm button dispatches `CustomEvent("fc:convert-confirmed", { detail: { url, ownsSite }, bubbles: true })` on the document (`packages/builder-ui/src/components/convert-confirmation.ts:89-94`). Grep across the entire builder-ui source returns zero `addEventListener` calls for `fc:convert-confirmed` or `fc:convert-cancelled`. The event fires into the void.
 
-2. **`registerConvertConfirmation()` is never called.** The renderer is exported from `convert-confirmation.ts:117-122`. `bootBuilder` (`packages/builder-ui/src/main.ts:43`) calls `registerDigestReport()` but not `registerConvertConfirmation()`. So the chat-card never even mounts — until something else mounts it incidentally, or by re-render from the store, the card might not even appear correctly.
+2. **`registerConvertConfirmation()` is never called.** The renderer is exported from `convert-confirmation.ts:117-122`. `bootBuilder` (`packages/builder-ui/src/main.ts`) calls `registerDigestReport()` but not `registerConvertConfirmation()`. So the chat-card never even mounts via the dispatcher.
 
-REQ-28's implementation landed the component but the boot-time wiring and the listener bridge that turns the click into a re-invocation were never built. The chat-card itself works; the click handler dispatches; nothing on the other side.
+REQ-28's implementation landed the component but the boot-time wiring and the listener bridge that turns the click into a re-invocation were never built.
 
-## Fix
+## Fix (landed)
 
-1. Call `registerConvertConfirmation()` in `bootBuilder` alongside `registerDigestReport()`.
-2. Add a listener bridge that, on `fc:convert-confirmed`, drives a re-invocation of `transcribe_site` through the existing chat loop. Two viable shapes:
-   - **Synthetic user turn**: inject a hidden chat message like "I confirm. Proceed." → `runChatTurn` → AI sees the confirmation and calls `transcribe_site` again. Simplest, no new API surface, mirrors how the user worked around the bug manually.
-   - **Direct tool re-invocation**: bypass the chat loop and call `transcribe_site` directly with the chat metadata flag set. Faster but adds a parallel path the chat loop doesn't know about.
+In `packages/builder-ui/src/main.ts`:
 
-Synthetic user turn is the right shape — preserves a single chat-loop entry point and keeps the chat history honest about what happened. The message text can be standardised so the AI's prompt knows what to do with it.
+1. Import and call `registerConvertConfirmation()` alongside `registerDigestReport()` so the dispatcher routes `kind: 'convert_confirmation'` tool_results to the warning-toned card.
+2. Add document-level listeners for `fc:convert-confirmed` and `fc:convert-cancelled`. The listeners drive a **synthetic user turn** through the existing `runChatTurn`:
+   - Confirm → `"I confirm. Proceed with converting <url>."` (with `" I own this site."` appended when `ownsSite=true`).
+   - Cancel → `"Cancel the conversion of <url>."`
+3. Both listeners are removed in `destroy()` so re-mounting the builder doesn't accumulate handlers.
 
-3. The `fc:convert-cancelled` event also needs a listener that emits a chat message ("Convert cancelled.") so the operator sees feedback. Same shape.
+The synthetic-user-turn shape was chosen over direct tool re-invocation because it preserves a single chat-loop entry point and keeps the chat history honest about what the operator did — mirroring how operators were already working around the bug manually.
 
-## Test plan
+## Test plan (landed)
 
-UATs in `tests/test_UAT_FC_BUG-XX_*`:
+`tests/test_UAT_FC_BUG-4_convert_confirmation_listener.test.ts` — 5 UATs:
 
-1. **registerConvertConfirmation invoked at boot**: spy on `registerToolResultRenderer` (or whatever the dispatcher's register fn is); call `bootBuilder`; assert the spy was called with `kind: "convert_confirmation"`.
-2. **Confirm dispatch triggers chat turn**: boot the builder with a stubbed chat endpoint that records turn payloads; dispatch `fc:convert-confirmed` on the document with mock detail; assert the stub fetch received a turn whose user message matches the standardised confirmation text.
-3. **Cancel dispatch triggers chat turn**: same shape for `fc:convert-cancelled`.
+1. `bootBuilder` registers the `convert_confirmation` tool_result renderer.
+2. Dispatching `fc:convert-confirmed` drives a `/api/chat` POST whose last user message confirms the URL (no "I own this site" clause when `ownsSite=false`).
+3. Dispatching `fc:convert-confirmed` with `ownsSite=true` includes the ownership clause.
+4. Dispatching `fc:convert-cancelled` drives a `/api/chat` POST whose last user message cancels the conversion.
+5. After `destroy()`, neither event drives a chat turn (listeners cleaned up).
 
-Regression scope: REQ-28's `test_UAT_FC_REQ-28_convert_confirmation_card.test.ts` (4 tests) — the card's internal behaviour should still pass.
+Regression scope verified: REQ-28's `test_UAT_FC_REQ-28_convert_confirmation_card.test.ts` (4 tests) and REQ-31's `test_UAT_FC_REQ-31_preview_panel_reset_button.test.ts` (4 tests) all still pass. Total: 13 tests, all green.
