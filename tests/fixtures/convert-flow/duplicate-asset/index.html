@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Duplicate-Asset Reference — REQ-28 Stage 4 Dedup Fixture</title>
+  <style>
+    body {
+      background: #fffaf0;
+      color: #111;
+      font-family: system-ui, sans-serif;
+    }
+    .hero {
+      background-image: url("https://duplicate-asset.test/hero.jpg");
+      background-size: cover;
+      padding: 80px 24px;
+    }
+    .feature {
+      background-image: url("https://duplicate-asset.test/hero.jpg");
+      padding: 60px 24px;
+    }
+  </style>
+</head>
+<body>
+  <!-- /hero.jpg appears as an <img>, as the .hero background-image, AND as the
+       .feature background-image. Stage 4 dedup must collapse these to ONE R2
+       object and rewrite all three references to the same key (AC7). -->
+  <section class="hero">
+    <h1>The Same Hero</h1>
+    <img src="https://duplicate-asset.test/hero.jpg" alt="Hero img">
+  </section>
+
+  <section class="feature">
+    <h2>Same image as background</h2>
+    <p>Notice how the same asset URL appears in multiple roles.</p>
+  </section>
+</body>
+</html>
