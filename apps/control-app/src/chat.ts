@@ -5,6 +5,7 @@ import {
   mintIntentToken,
   operatorMessageImpliesIntent,
 } from "@1stcontact/web-fetch-safety";
+import { REPRODUCING_A_WEBSITE_DOC } from "./llm-context.js";
 import { sessionEventBus, type SseEvent } from "./operator/events.js";
 import {
   findAction,
@@ -481,6 +482,8 @@ ${dials}`;
     "- After each tool call you will receive a structured tool_result confirming success (with a short summary) or reporting a validation error. Read these results to decide what to do next.",
     "- Call get_site_definition when you need to verify the current state — e.g. before a complex change that depends on existing content/structure, or after a sequence of edits to confirm the result.",
     "- When done, reply with one short sentence describing what you changed.",
+    "",
+    REPRODUCING_A_WEBSITE_DOC,
     "",
     "Current site definition snapshot (computed fresh each turn from the canonical state):",
     JSON.stringify(siteDefinition).slice(0, 16_000),
