@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:06:16.990386+00:00'
+updated_at: '2026-06-19T23:09:21.108362+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -622,6 +622,35 @@ There are two ways the behavior you expected could be true, both new work:
 **(b) Ephemeral-preview-then-commit model for convert.** Bigger architectural shift — convert writes to an ephemeral preview state that's not persisted until the operator says "keep this". Doesn't match REQ-28's "writes directly into the operator's current draft" decision; that decision was made to win the killer-demo's "single explicit confirmation, then go" pattern. Reversing it is a real reshape.
 
 My guess is you want (a) — same demo flow, but easy reset between attempts. Want me to scope that as a separate ticket? It's small (1–2 story points) and orthogonal to REQ-30.
+
+
+<!-- xgd-turn id="ecc7477f-4265-4ed6-8699-bba47d70d9b7" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:09:20.049Z" -->
+#### You
+ok let's go a step at time because it is important that I understand it. When I look at the right hand panel the site created in the first contact framework where is that being served from? Is it being served from a test R2 server?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:09:20.049Z" -->
+#### Claude
+No — it's not served from R2 (or from anywhere remote). The preview is **in-process HTML synthesis in your browser**.
+
+Concretely (file refs to packages I just traced):
+
+- The right panel is a same-origin `<iframe>` (`packages/builder-ui/src/components/preview-panel.ts:54-64`). It has **no `src` URL**. The builder UI calls `document.open / write / close` on the iframe and injects HTML directly.
+- The HTML is generated client-side by `renderSiteToHtml(...)` in `packages/framework/src/render/browser.ts` from a JavaScript `Site` object held in the builder UI's in-memory store.
+- That `Site` object is initially loaded from `/starter-sites/1stcontact.json` — a **static file served by the control-app worker on port 8788** (just a JSON file in `apps/control-app/public/` or equivalent). No D1 read for the initial load.
+- As you (or AI tool calls) make edits, the in-memory `Site` object is mutated and the iframe re-renders synchronously. Each tool call mutates the store; preview re-renders next tick.
+- **Where R2 enters**: only for `<img>` and similar asset references *inside* the rendered HTML. If a module has an image whose `src` is `/assets/sites/{siteId}/imports/...`, the iframe's `<img>` element fetches it from the control-app's `/api/assets/get/<key>` route, which is backed by the `ASSETS_BUCKET` R2 binding. Locally that's Miniflare's R2 emulator (in-memory or on-disk under `.wrangler/`).
+
+So the bytes path for what you see in the preview:
+
+| What | Where it comes from |
+|---|---|
+| Layout / theme / module structure | In-browser, synthesized from the in-memory `Site` object |
+| Images referenced by modules | Control-app worker → R2 binding (Miniflare emulator locally) |
+| Initial site (cold load) | Static file `/starter-sites/1stcontact.json` from the control-app worker |
+
+Which means: at this point in the system's evolution, the site shown in the right panel is **not persisted on the server side at all** — it lives in your browser's memory between reloads. The reason it "still shows the changes" after a restart is something I need to confirm by tracing what happens on page reload — there may be a localStorage / sessionStorage cache, or the builder may be re-bootstrapping from a different source than the cold JSON. Want me to nail that down?
 
 
 <!-- xgd-chat-end -->
