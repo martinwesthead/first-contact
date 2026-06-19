@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:47:58.324091+00:00'
+updated_at: '2026-06-19T23:55:27.561727+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -841,6 +841,46 @@ Rule of thumb: if the field is one phrase that the AI would reasonably set as pa
 3. **Migration**: the bundled 1stcontact site has inline text-block body content today. Convert it to R2-backed copy as part of this REQ, or grandfather inline values (CopyRef OR inline-string union)? I lean union — small mercy that keeps existing tests intact and lets convert-flow output be CopyRef-only without forcing a baseline migration in the same ticket.
 
 Tell me how you want any of those answered (or say "go with your defaults") and I'll scope it as a single request ticket. Story-points estimate ~6 — touches schema, renderer, builder-ui resolver, tools/generate fetch, transcribe-site mechanical write, how-to doc.
+
+
+<!-- xgd-turn id="806e1714-31a6-4dd3-ba26-a2670ab27cb2" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:55:27.521Z" -->
+#### You
+Let me make sure we understand the design here. The asset manager tab has editors to allow the user to edit this text directly - that's the point
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:55:27.521Z" -->
+#### Claude
+Right — that reframes it substantially. I was inventing a parallel `CopyRef` system when copy is just **a text-kind asset that flows through the existing asset manager + TipTap editor (REQ-16)**. The R2 routes are already there (REQ-20); the editor is already specced. Convert flow just needs to write text files into the same bucket and point modules at them.
+
+## Revised proposal
+
+**One change to the asset model, not a new system:**
+
+- `AssetRef` gets `kind: 'image' | 'text'` (default `'image'` for back-compat). For `kind: 'text'`, `src` is the R2 key, `focalPoint` is dropped (not meaningful), `alt` becomes optional fallback text shown if R2 read fails.
+- Module schema's `"markdown"` content field type accepts **either** an inline string (current behaviour) **or** an `AssetRef` with `kind: 'text'` (new behaviour — fetched from R2). Text-block body, services-grid description, hero subhead, etc. are the eligible fields.
+- Storage stays in the existing flat namespace from REQ-20: `sites/{siteId}/copy/{moduleId}-{field}.md`, content-type `text/markdown`, served by the existing `/api/assets/get/<key>` route.
+- Render path takes `renderSiteToHtml(site, { resolveAsset })`. Preview resolver fetches via `/api/assets/get/<key>`; production `tools/generate` fetches at build time and inlines.
+- **Convert flow's verbatim guarantee** is now structural: `transcribe_site` mechanically writes one markdown file per source-page's body text into R2 (no LLM involvement). The digest's `extractedContent[i]` carries a ready-made `AssetRef { kind: 'text', src: '<key>', id: '<key>' }`. The AI's job is to drop those refs into module copy fields via `set_module_content` — it never authors text during convert. Same mechanic as the image-AssetRef fix in BUG-5.
+- **TipTap editor (REQ-16)** is the user's edit path. When it lands, it natively edits these `.md` files because they're just assets in the same bucket. No new editor needed in this REQ.
+- **AI-directed edits** (when operator says "change the hero copy to X"): the AI calls the existing `/api/assets/put/<key>` route via a small new tool `write_text_asset(key, content)`. That's a one-tool addition; the asset-PUT route already exists.
+
+## What this means for the boundary
+
+Doesn't change much from my earlier table — titles/labels stay inline JSON, body copy fields become text-AssetRefs. The decision is now "which content fields are eligible to be AssetRefs" — and that maps cleanly to the module schema's existing `"markdown"` type. So:
+
+| Inline JSON (config) | AssetRef text (copy) |
+|---|---|
+| variant, dial, title, headline, subhead (short), CTA label, link label, form field label, alt text | text-block body, services-grid item description, FAQ answer, hero long-form subhead (if marked markdown), any field declared as `"markdown"` in module meta |
+
+## Confirming before scoping
+
+1. **`kind: 'text'` on AssetRef, or a discriminated union** — I lean `kind` field (smaller schema change; existing AssetRef already has `id`/`src`/`alt` which carry over). OK?
+2. **R2 path** — `sites/{siteId}/copy/{moduleId}-{field}.md`. Drop into the existing assets namespace so the asset manager finds them automatically. OK?
+3. **Production fetch timing** — `tools/generate` fetches at build time and bakes into static output (no R2 runtime dependency for the public site). OK?
+4. **REQ-16 dependency** — this REQ ships without waiting for REQ-16. R2 routes exist; AI tools handle write; the user just doesn't have a GUI editor for the copy files until REQ-16 lands. OK?
+
+Say "go with those" or redirect any. ~5 SP estimate — schema + renderer + transcribe-site mechanical write + 1 new AI tool + doc update.
 
 
 <!-- xgd-chat-end -->
