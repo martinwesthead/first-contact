@@ -6,6 +6,7 @@ export {
 } from "./catalog.js";
 export {
   BuilderStore,
+  DEFAULT_STORAGE_KEY,
   type BuilderState,
   type BuilderStoreOptions,
   type ChatMessage,
@@ -29,6 +30,7 @@ export {
   createPreviewPanel,
   VIEWPORT_PRESETS,
   type PreviewPanelHandle,
+  type PreviewPanelOptions,
   type ViewportPreset,
 } from "./components/preview-panel.js";
 export {
