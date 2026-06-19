@@ -58,6 +58,18 @@ export {
   registerDigestReport,
 } from "./components/digest-report.js";
 export {
+  createConvertConfirmationRenderer,
+  registerConvertConfirmation,
+} from "./components/convert-confirmation.js";
+export {
+  createTranscribeProgressCard,
+  createTranscribeProgressRenderer,
+  applyTranscribeEvent,
+  registerTranscribeProgress,
+  type TranscribeProgressHandle,
+  type TranscribeProgressPayload,
+} from "./components/transcribe-progress.js";
+export {
   runChatTurn,
   type ChatApiResponse,
   type ChatDriverOptions,
