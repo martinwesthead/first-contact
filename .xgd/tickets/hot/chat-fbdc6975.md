@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T22:31:08.398893+00:00'
+updated_at: '2026-06-19T22:38:22.701014+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -572,6 +572,31 @@ Two plausible reads of what you want:
 **(b) Narrow REQ-30 back to digest-only, create two follow-ups.** REQ-30 drops to: mechanical `transcribe_site` + R2 digest + `read_transcription_digest` + `docs/llm-context/reproducing-a-website.md`. Two new tickets: one for multi-page (page CRUD + per-page plan + multi-page demo UAT), one for nav patterns. Closer to my original 3-ticket proposal but means REQ-30's body and ACs change while you're starting on it.
 
 Which? If you tell me (a) I'll create one ticket (nav + anything else); if (b) I'll narrow REQ-30 and create two. Or tell me a specific list of tickets you want and I'll work to that.
+
+
+<!-- xgd-turn id="83a4fabe-e254-49ac-8c35-a856ba22631e" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T22:38:21.617Z" -->
+#### You
+I mean drop the two write paths for the site download - put it all in R2
+
+So, does REQ-30 do everything?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T22:38:21.617Z" -->
+#### Claude
+Yes — now I get it. "Two destinations" = the two write paths the handler had (synthesized `Site` in the return payload + R2 asset mirror). Drop both, single R2 destination. That's exactly what REQ-30 specifies. Sorry for the misreads.
+
+**Yes, REQ-30 does everything that's required for the killer demo.** Walking the original three-ticket carve-up:
+
+- **T1 (digest reshape)** — in REQ-30: mechanical `transcribe_site`, R2 digest, drop Opus synthesis, `read_transcription_digest`, how-to doc, chat-prompt wiring.
+- **T2 (multi-page)** — in REQ-30: `add_page` / `remove_page` / `reorder_pages` state_edit tools + per-page plan in the digest + multi-page killer-demo UAT (AC10).
+- **T3 (nav patterns + asset-mirror race)** — both items are *moot*, not deferred:
+  - **Nav patterns** — the source's nav lives in the header module. The AI sets nav entries via `set_module_content` against the existing header module driven by the per-page plan. No dedicated `set_nav_pattern` / `set_nav_entries` tool needed for the demo. (Those tools remain on REQ-14's backlog for general operator-driven nav editing.)
+  - **Asset-mirror race** — gone by construction. With the new design, Stage 4 runs *inline* before the digest JSON is written, so the `assetInventory[].r2Key` values are populated when the AI reads the digest. There's no "external URLs render first, R2 swap later" window any more.
+
+So REQ-30 is the complete scope. No follow-up tickets needed for the killer demo. The only things explicitly OUT of REQ-30 are pixel-equivalent reproduction (best-effort layout fidelity instead) and machine-readable per-module confidence (replaced by AI narrative naming low-confidence sections).
+
+Want me to also append this clarification to REQ-30's body or the chat-transcript comment so the "do we need more tickets?" question is answered in-ticket? Otherwise REQ-30 is ready for you to start on.
 
 
 <!-- xgd-chat-end -->
