@@ -5,14 +5,14 @@ type: bug
 title: 'Builder preview: multi-page nav links navigate iframe to control-app root'
 created_by: xgd
 created_at: '2026-06-19T23:43:35.267511+00:00'
-updated_at: '2026-06-19T23:53:09.760240+00:00'
+updated_at: '2026-06-19T23:53:57.473759+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_points
 status: free_coded
 fields:
   priority: high
   severity: high
-  story_points: 3
+  story_points: 2
   auto_merge_back: true
   needs_review: false
   commits:
@@ -56,3 +56,24 @@ UATs in `tests/test_UAT_FC_BUG-XX_*`:
 3. **No regression on home page**: clicking the home-page nav link (hash `#/`) re-renders the home page; the home modules are visible; the menu modules are gone.
 
 Regression scope: existing REQ-8 preview UATs (`test_UAT_FC_REQ-8_tool_call_applies_to_preview.test.ts`, `test_UAT_FC_REQ-8_preview_fills_panel_height.test.ts`) — both pass after the change.
+## Implementation notes
+
+Implemented per Shape 1 (fragment-based nav). Files changed:
+
+- `packages/framework/src/render/browser.ts` — added `target: 'preview' | 'production'` option to `RenderSiteOptions` (default `'production'`, so production output is unchanged); threaded through `renderPageBody` / `renderModuleInstance` / `dispatchRenderer` / `renderHeader` to `navHref`, which emits `#/<pageId>` for `kind:'page'` entries in preview mode and `/<pageId>` in production mode.
+- `packages/framework/src/render/index.ts` — re-exported the new `RenderTarget` type.
+- `packages/builder-ui/src/preview.ts` — `renderSiteIntoIframe` now tracks per-iframe state in a `WeakMap`, resolves the active pageId from the iframe's hash, renders with `target: 'preview'`, and installs a one-shot `hashchange` listener on the iframe's `contentWindow`. In-page anchor clicks (e.g. `#contact`) do NOT switch pages — only `#/<pageId>` hashes trigger a re-render. Unknown pageIds fall back to the first page.
+
+UATs landed in `tests/test_UAT_FC_BUG-3_*`:
+
+- `test_UAT_FC_BUG-3_renderer_target_emits_hash_nav.test.ts` — production output unchanged; preview emits `#/<pageId>`.
+- `test_UAT_FC_BUG-3_preview_hashchange_switches_page.test.ts` — `#/menu` swaps to menu page; `#/` returns to home; unknown `#/nonexistent` falls back to first page.
+- `test_UAT_FC_BUG-3_preview_anchor_hash_preserves_current_page.test.ts` — in-page anchors do not trigger page switch.
+
+Shared fixture: `tests/_helpers_BUG-3_multipage_site.ts` (minimal 2-page site with `kind:'page'` nav entries).
+
+Regression scope verified: all REQ-8 preview UATs pass; full suite (320 tests across 148 files) passes.
+
+### Commit-message caveat
+
+The commit carrying this work is `ccfd392b7a07ed5490ace376b3f2b47ede5cf15a`. A concurrent automation swept the staged BUG-3 files into a commit whose subject claims to be about `xgd_version_bump` and references REQ-648 — the documented `git add -A` workflow-engine gap (LIFECYCLE-FRAGILE-INTENT.md §6). The commit body still carries `[FREE-CODED]` and the actual file contents are the BUG-3 fix; reconcile reads code via cherry-pick so this does not affect correctness. Worth a glance if cross-referencing git log to the ticket.
