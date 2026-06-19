@@ -37,6 +37,36 @@ export {
   type ChatPanelOptions,
 } from "./components/chat-panel.js";
 export {
+  createChatCard,
+  type ChatCardHandle,
+  type ChatCardOptions,
+  type ChatCardTone,
+} from "./components/chat-card.js";
+export {
+  clearToolResultRenderers,
+  getRegisteredToolResultRenderer,
+  registerToolResultRenderer,
+  renderToolResult,
+  type ToolResultRenderer,
+  type ToolResultRendererContext,
+} from "./components/tool-result-renderers.js";
+export {
+  createDigestReportRenderer,
+  registerDigestReport,
+} from "./components/digest-report.js";
+export {
+  createConvertConfirmationRenderer,
+  registerConvertConfirmation,
+} from "./components/convert-confirmation.js";
+export {
+  createTranscribeProgressCard,
+  createTranscribeProgressRenderer,
+  applyTranscribeEvent,
+  registerTranscribeProgress,
+  type TranscribeProgressHandle,
+  type TranscribeProgressPayload,
+} from "./components/transcribe-progress.js";
+export {
   runChatTurn,
   type ChatApiResponse,
   type ChatDriverOptions,
