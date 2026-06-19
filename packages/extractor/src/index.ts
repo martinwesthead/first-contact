@@ -92,6 +92,7 @@ export {
   type TranscriptionDigest,
   type TranscriptionDigestPerPage,
   type TranscriptionDigestAssetEntry,
+  type TranscriptionDigestAssetRef,
   type TranscriptionDigestMirrorSummary,
   type BuildTranscriptionDigestArgs,
 } from "./transcribe.js";
