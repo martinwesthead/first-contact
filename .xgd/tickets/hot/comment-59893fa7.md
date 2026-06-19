@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-30
 created_by: xgd
 created_at: '2026-06-19T22:27:36.674214+00:00'
-updated_at: '2026-06-19T22:30:36.217366+00:00'
+updated_at: '2026-06-19T22:30:48.492344+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -94,5 +94,21 @@ Flagged for sign-off: dropping the internal Opus call is non-reversible without 
 <!-- xgd-chat role="user" ts="2026-06-19T22:30:19.182Z" -->
 #### You
 Do you have enough information to free code this ticket?
+
+<!-- xgd-turn id="53daa706-5e83-4e49-9ff2-93b815bc768f-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T22:30:47.407Z" -->
+#### Claude
+Yes, with a few small confirmations worth getting on the record before I start. The ticket body is comprehensive — problem, root cause, decisions, IN/OUT, 12 ACs, dependencies — and the prior chat closed the architectural choices (R2-resident digest, mechanical-only handler, AI-in-chat-loop synthesis, static how-to doc, page CRUD claimed from REQ-14).
+
+Three things I want to flag before coding rather than after:
+
+1. **AC9 (end-to-end killer demo) calls Opus 4.7 in a UAT.** Real LLM calls in automated tests are expensive and non-deterministic. Two options: (a) gate it behind `XGD_ALLOW_REAL_CLAUDE` and run it as a manual/operator-triggered UAT; (b) wire it up to run on every CI run. My recommendation: (a) — same gate the test-safety guard already uses. Same question applies to AC10 (multi-page).
+
+2. **System-prompt wiring of the how-to doc.** Two mechanisms in §IN: bundled-asset read at worker init, or constant import. Constant import (e.g. `import promptDoc from '../../docs/llm-context/reproducing-a-website.md?raw'`) is simpler in a Workers bundle and avoids R2/static-asset plumbing. I'll go with that unless you'd prefer otherwise.
+
+3. **The new multi-page fixture for AC10.** REQ-28's fixtures are single-page; I'll add `tests/fixtures/convert-flow/multi-page/` with 3 linked HTML pages + shared header nav + a small asset inventory. Confirming that's in scope (it's named in AC10 but worth a sanity check on fixture-creation effort).
+
+If you're good with (1a) and (2 = constant import), and (3) is in scope, I'll proceed: read current `transcribe.ts`, `chat.ts`, registry conventions, and REQ-28's two backward-compat tests; then implement in the order RED→GREEN per AC.
 
 <!-- xgd-chat-end -->
