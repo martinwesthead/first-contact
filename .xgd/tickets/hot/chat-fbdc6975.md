@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-18T22:27:51.225886+00:00'
+updated_at: '2026-06-19T19:03:38.253990+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -282,6 +282,53 @@ All seven tickets updated. Final demo critical-path slice:
 **Untouched (deferred until after the demo validates the framework):** REQ-10, 11, 12, 14, 15, 16, 17, 18, 19, 25, 26, 29.
 
 Tickets are ready for implementation. Per the free-coding protocol they're already scope-defined — you can pick any of the five and start, with REQ-20 the natural first (it unblocks the others). REQ-13 and REQ-21 are independent of each other once REQ-20 lands; REQ-22 depends on REQ-21; REQ-28 depends on all four.
+
+
+<!-- xgd-turn id="ab0455f4-0e5d-4add-852a-05690f550785" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T19:03:37.163Z" -->
+#### You
+ok those tickets have been implemented. Walk me through what I should be able to do?
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T19:03:37.163Z" -->
+#### Claude
+I'll check what was recently implemented to give you an accurate walkthrough.
+
+Here's what's now wired up end-to-end with REQ-28 free-coded (depends on REQ-20/21/22 which are already reconciled):
+
+## The killer demo: paste URL → converted site
+
+In the builder chat, ask the AI to convert an external site (e.g. "convert https://example.com into my site"). The AI calls `transcribe_site(digestId)`. You should see:
+
+1. **Confirmation card** (`<ConvertConfirmation>`) — destructive-action modal: "Convert will replace your current draft…" with an **"I own this site"** checkbox. Confirm proceeds; Cancel exits. The checkbox also registers a per-origin robots override in chat metadata (AC14).
+2. **Stage 1 (≤2s)** — desktop screenshot lands as an ephemeral preview module; preview iframe shows the source site full-bleed.
+3. **Stage 2 (≤8s)** — theme tokens derived deterministically from the digest's palette/typography roles. CSS variables flip in the preview (surface, text, accent, action; body + heading typography).
+4. **Stage 3 (≤60s)** — Opus 4.7 transcribes the rendered DOM + screenshot + asset inventory into module instances. Validated against the framework catalog (one retry on validator error; second failure → hero-only fallback, never throws).
+5. **Stage 4 (async)** — every referenced `<img>`, computed `background-image`, and `<video>` URL is mirrored into R2 at `sites/{siteId}/imports/{sha256(url):16}.{ext}`. AssetRefs swap from external URLs to `/assets/{r2Key}` as each download completes. A `<TranscribeProgress>` card updates in place.
+
+## Things you can verify
+
+- **Dedup** — point at a site where the same image is used as `<img>` and `background-image`: one R2 object, both refs share the key. (Use the `duplicate-asset` fixture.)
+- **Failure surfacing** — any oversize/blocked/timeout asset stays at its external URL and is enumerated in the post-transcription chat message ("Couldn't mirror: {url} ({reason})"). (Use the `assets-heavy` fixture, which has a deliberate >5MB asset.)
+- **Confidence** — each transcribed module carries `confidence: high|medium|low`; the AI's narrative explicitly names low-confidence sections with "Verify or replace" affordances.
+- **Conversational continuity** — while Stage 4 mirrors assets in the background, you can ask "make the hero darker" and the AI responds in the same chat.
+- **Re-convert** — re-invoking on the same digest re-prompts confirmation (one-shot only).
+
+## Known demo trade-offs (documented for reconcile)
+
+- Confirmation flag + robots overrides live in **in-memory chat metadata** — survive a Worker isolate but not a browser reload. (Persists into REQ-23 once chat sessions land.)
+- Digest lookup reads from `FETCH_CACHE_KV` (24h TTL from REQ-21), not chat history — will swap when REQ-23/24 land.
+- Stages 1–4 currently run sync-await in the action handler (no detached promises, matches Workers model); SSE events still emit per-asset so the UX is identical.
+- Brief auto-update post-transcription (REQ-27 hook) is dropped from the demo.
+
+## What's NOT in scope yet
+
+- Side-by-side import workspace (destructive overwrite only)
+- Multi-page convert
+- Stylesheets / fonts / scripts mirroring (framework supplies its own)
+- Persistent confirmation across reloads
+
+REQ-28 is sitting at `free_coded`. When you've validated the demo flow and want the matrix updated, promote it to `ready_to_reconcile` — that's the operator call, not mine.
 
 
 <!-- xgd-chat-end -->
