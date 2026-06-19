@@ -6,16 +6,19 @@ title: 'Convert flow: how-to doc instructs string image paths but schema require
   AssetRef'
 created_by: xgd
 created_at: '2026-06-19T23:43:41.803817+00:00'
-updated_at: '2026-06-19T23:43:41.803817+00:00'
+updated_at: '2026-06-19T23:53:24.607907+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: high
   severity: high
   story_points: 1
   auto_merge_back: true
   needs_review: false
+  commits:
+  - 775351c561ea76c97de03c0dd2e326af57d65a4a
+  version: 0.14.1236
 ---
 
 ## Symptom
