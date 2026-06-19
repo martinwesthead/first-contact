@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-30
 created_by: xgd
 created_at: '2026-06-19T22:27:36.674214+00:00'
-updated_at: '2026-06-19T22:35:43.047341+00:00'
+updated_at: '2026-06-19T22:35:51.298463+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -118,5 +118,19 @@ If you're good with (1a) and (2 = constant import), and (3) is in scope, I'll pr
 1 We cannot call the LLM in automated tests - these have to be mocked
 2 I have no proference
 3 We should be able to support N pages, why 3? Is there a real need to bound N? If so, it should be a big number
+
+<!-- xgd-turn id="61eefaaf-2a2c-4fdb-be5b-b0ccc52a0bdf-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T22:35:51.272Z" -->
+#### Claude
+Got it. Revised plan:
+
+1. **Mock the LLM in all automated UATs.** I'll add a stub `ChatLLM` interface (or reuse whatever's in REQ-28's chat tests) that returns scripted tool-call sequences. AC9's UAT then verifies: digest is read → scripted assistant calls `add_page`/`reorder_pages` in the right order → final replica tree matches expected. That validates the orchestration (digest format consumable, tools work, system prompt loads) without exercising real model judgment. The "does Claude actually drive this conversation correctly" question becomes a manual smoke test, documented but not gated in CI.
+
+2. **Constant import** for the how-to doc. Locked.
+
+3. **No bound on N.** Agreed — the digest is a list, page CRUD is per-entry, R2 has no relevant limit at realistic scale, and the only real ceiling is the chat context window which is emergent, not enforced. The fixture I'll add has 3 pages purely as test data (enough to exercise nav + shared-asset dedup + non-trivial ordering); the code itself never references "3". I'll add an AC-style note in the ticket: "N is unbounded by design; fixture cardinality is illustrative only."
+
+Updating REQ-30's body with these three clarifications (preserving everything else), then starting the RED phase with AC1's UAT (mechanical handler emits no synthesis, only digest). Proceed?
 
 <!-- xgd-chat-end -->
