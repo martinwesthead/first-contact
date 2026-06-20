@@ -5,14 +5,18 @@ type: request
 title: Text/Background Color Safety
 created_by: xgd
 created_at: '2026-06-20T22:50:45.359513+00:00'
-updated_at: '2026-06-20T23:17:04.783233+00:00'
+updated_at: '2026-06-20T23:17:20.558879+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - 9a5a8485dd02dcf03f4fe0d68a80edf7330eabf4
+  - 6b2c84d07214a125c538f9cc17c0ec3f5bf1e8f7
+  version: 0.0.23
 ---
 
 **Type:** Framework + Instructions
