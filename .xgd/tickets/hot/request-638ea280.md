@@ -6,10 +6,10 @@ title: 'Convert flow: remove destructive-confirmation gate (defer copyright/robo
   concerns)'
 created_by: xgd
 created_at: '2026-06-20T18:25:57.452443+00:00'
-updated_at: '2026-06-20T18:40:05.400154+00:00'
+updated_at: '2026-06-20T21:18:05.649816+00:00'
 completed_at: null
-last_field_updated: story_points
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   priority: high
   story_points: 1
