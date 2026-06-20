@@ -4,6 +4,7 @@ import {
   confirmConvertHandler,
   transcribeSiteHandler,
 } from "./transcribe-site.js";
+import { writeTextAssetHandler } from "./write-text-asset.js";
 import type { ChatHandlerEnv } from "../chat.js";
 import type { SseEvent } from "./events.js";
 import { type ActionCategory, type PlanTier, type Session, tierPermits } from "./types.js";
@@ -469,6 +470,28 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
       },
     },
     handler: readTranscriptionDigestHandler,
+  },
+  {
+    name: "write_text_asset",
+    category: "system_action",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Writes a markdown text asset to R2 at sites/{siteId}/copy/{slug}.md. Used by the AI to update body copy referenced by AssetRef-text content fields when the operator asks for a rewrite. Key MUST match `sites/{siteId}/copy/{slug}.md` — keys outside that pattern are rejected. (REQ-33)",
+    tool_spec: {
+      name: "write_text_asset",
+      description:
+        "Update the markdown bytes a text-kind AssetRef points at. Pass `key` (must match `sites/{siteId}/copy/{slug}.md`) and `content` (the new markdown body). Returns { ok: true, key, bytes }. Use this when the operator asks you to rewrite body copy that lives in a `.md` file (a module content field whose value is an AssetRef with kind: 'text'); use `set_module_content` when the field is an inline string or when you need to swap the field between inline and a file reference.",
+      input_schema: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          content: { type: "string" },
+        },
+        required: ["key", "content"],
+      },
+    },
+    handler: writeTextAssetHandler,
   },
   {
     name: "report_validation_rejection",

@@ -118,10 +118,17 @@ function validatePrimitive(
 ): void {
   switch (kind) {
     case "string":
-    case "markdown":
     case "url":
       if (typeof value !== "string") {
         issues.push({ path, message: `expected string, got ${typeName(value)}` });
+      }
+      return;
+    case "markdown":
+      if (typeof value !== "string" && !isAssetRefTextShape(value)) {
+        issues.push({
+          path,
+          message: `expected string or asset-ref-text (object with kind: 'text', id, src), got ${typeName(value)}`,
+        });
       }
       return;
     case "boolean":
@@ -159,10 +166,23 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function isAssetRefShape(value: unknown): boolean {
   if (!isPlainObject(value)) return false;
+  if (value.kind === "text") return false;
   return (
     typeof value.src === "string" &&
     typeof value.alt === "string" &&
     typeof value.id === "string"
+  );
+}
+
+function isAssetRefTextShape(value: unknown): boolean {
+  if (!isPlainObject(value)) return false;
+  if (value.kind !== "text") return false;
+  return (
+    typeof value.src === "string" &&
+    value.src.length > 0 &&
+    typeof value.id === "string" &&
+    value.id.length > 0 &&
+    (value.alt === undefined || typeof value.alt === "string")
   );
 }
 

@@ -24,6 +24,10 @@ export {
 export type { NotDetected } from "./schema.js";
 
 export { resolveUrl } from "./dom.js";
+export {
+  htmlToMarkdown,
+  rewriteMarkdownImageRefs,
+} from "./html-to-markdown.js";
 export { parsePalette } from "./parse-palette.js";
 export { parseTypography } from "./parse-typography.js";
 export { parseLayout } from "./parse-layout.js";
@@ -85,6 +89,7 @@ export {
   summariseMirrorFailures,
   slugFromUrl,
   titleFromDigest,
+  classifyCapturedMarkdown,
   type Confidence,
   type TranscribedThemeTokens,
   type ExtractedBlock,
@@ -93,6 +98,8 @@ export {
   type TranscriptionDigestPerPage,
   type TranscriptionDigestAssetEntry,
   type TranscriptionDigestAssetRef,
+  type TranscriptionDigestCopyRef,
   type TranscriptionDigestMirrorSummary,
   type BuildTranscriptionDigestArgs,
+  type PageCopyResult,
 } from "./transcribe.js";
