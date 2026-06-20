@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-44
 created_by: xgd
 created_at: '2026-06-20T21:16:33.203004+00:00'
-updated_at: '2026-06-20T23:28:29.466140+00:00'
+updated_at: '2026-06-20T23:33:19.829510+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -138,5 +138,55 @@ I'll pause edits and wait for your go-ahead before redoing the work a third time
 <!-- xgd-chat role="user" ts="2026-06-20T23:28:17.512Z" -->
 #### You
 All other FE changes are done please complete the work
+
+<!-- xgd-turn id="927a7808-d7eb-4690-a9e4-c6535319658b-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:33:18.820Z" -->
+#### Claude
+Let me verify the current state is stable, then redo the implementation quickly:
+
+State is stable now. REQ-42/43 are properly registered, my .md/.ts edits are in HEAD, and my 4 REQ-44 test files survived. I need to redo meta.ts, index.astro (preserving REQ-47 img CSS), browser.ts, site.json, and the 3 REQ-5 test rewrites.
+
+Now let me redo all module + renderer + tests + JSON in parallel:
+
+Now update the canonical site JSON and the REQ-5 tests:
+
+Now let me run my REQ-44 tests + touched REQ-5 tests to confirm everything works:
+
+All 34 tests green. Now stage and commit immediately before anything resets:
+
+11 REQ-44 files staged. Now commit:
+
+Commit `bcee4ed` landed. Now mark the ticket free_coded with the SHA and update the body:
+
+Clean. Now commit the version bump:
+
+The bump commit accidentally swept in unrelated REQ-46/dev-tools-server work that was untracked when I committed. Let me split that cleanly with a soft reset:
+
+Clean — only `package.json` is staged now. Re-commit the bump:
+
+Clean bump commit `83a8041`. Now add this commit SHA to the ticket too:
+
+Now let me verify the final ticket state:
+
+REQ-44 is complete. Summary:
+
+**Status:** `free_coded`, version `0.0.25`
+**Commits:**
+- `bcee4ed` — `feat(framework): upgrade services-grid to v2 — per-item image, one-col variant, imageStyle dial (REQ-44) [FREE-CODED]`
+- `83a8041` — `chore: bump 0.0.24 → 0.0.25 (REQ-44) [FREE-CODED]`
+
+**What landed:**
+- `services-grid` bumped in place v1 → v2
+- Item schema: `icon` (asset-ref-or-string) → `image` (asset-ref only); `title` → `heading`
+- New `one-col` variant (single feature callout, narrow container); items `min` 2 → 1
+- New `imageStyle` dial: `icon` (default, 2.5rem pictogram), `thumb` (6rem square), `cover` (16:9 card-top bleed)
+- Astro module + SSR renderer (`render/browser.ts`) updated with new field names + image classes; sub-768px single-column collapse preserved
+- `sites/1stcontact/site.json` migrated to v2 contract
+- LLM convert-flow doc (`docs/llm-context/reproducing-a-website.md` + `apps/control-app/src/llm-context.ts` mirror) carries the new services-grid guidance (already in HEAD from a parallel sweep)
+
+**Tests:** 34 passing — 4 new REQ-44 UATs (registration, item validation including no-string-fallback, one-col rendering, imageStyle dial classes) + 3 updated REQ-5 tests + collapse-below-md + registry + starter-site loader.
+
+One housekeeping note: my first bump commit accidentally swept in unrelated REQ-46 dev-tools-server files that became staged between my `git status` and `git commit` (probably a concurrent session). I soft-reset and re-committed the bump cleanly; REQ-46 files remain untracked for whoever owns that ticket.
 
 <!-- xgd-chat-end -->
