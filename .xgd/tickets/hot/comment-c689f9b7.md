@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-33
 created_by: xgd
 created_at: '2026-06-20T00:33:26.408868+00:00'
-updated_at: '2026-06-20T01:07:25.382286+00:00'
+updated_at: '2026-06-20T18:14:55.011880+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -240,5 +240,18 @@ Done. REQ-33 is at `status=free_coded` with the commit SHA recorded.
 - **UATs** — 35 new tests across 8 files covering all 14 ACs.
 
 **Deviations from spec** (documented on the ticket body): per-page Stage 5 (vs per-section), `copy`/`inlineMarkdown` on `perPagePlan` entries (vs nested under `extractedContent`), `write_text_asset` registered as `system_action` (vs `state_edit` — codebase taxonomy difference, same effect).
+
+<!-- xgd-chat role="user" ts="2026-06-20T18:14:54Z" -->
+#### You
+Just to be clear on this the md-> HTML is triggered at build time, not at render time - the HTML is built (jamstack) and served right?
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T18:14:54Z" -->
+#### Claude
+Confirmed. Two contexts, same renderer code, different invocation timing:
+
+- **Production (public-site)**: `renderSiteToHtml` runs at **build time** inside `tools/generate`. Markdown→HTML conversion + R2 text-asset resolution both happen during build. Output is static HTML files served by the public-site Worker. Visitors hit zero markdown converter, zero R2 reads. Jamstack.
+- **Builder preview iframe**: `renderSiteToHtml` runs in the **browser** each time the in-memory store changes. Markdown→HTML happens on the fly per edit; text AssetRefs are fetched live from `/api/assets/get/<key>` via the resolver. This path exists so tool-call edits show up instantly without a build step.
+
+Updated REQ-33's Decisions section to spell this out explicitly (the previous wording "renderer does markdown-to-HTML at render time" was technically true for both contexts but could be misread as "runtime conversion in production").
 
 <!-- xgd-chat-end -->
