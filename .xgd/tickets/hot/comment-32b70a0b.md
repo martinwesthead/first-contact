@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-45
 created_by: xgd
 created_at: '2026-06-20T22:33:51.414538+00:00'
-updated_at: '2026-06-20T22:33:51.414538+00:00'
+updated_at: '2026-06-20T22:34:11.578279+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -66,5 +66,20 @@ The key principle it needs to make explicit is: **no human-in-the-loop steps dur
 Want me to draft the full updated instruction doc with these changes incorporated, or just flag this for your engineering team to patch?
 
 Please update the instructions as above
+
+<!-- xgd-turn id="c8c0f791-1066-4eb7-8021-fe0cba780bae-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T22:34:11.574Z" -->
+#### Claude
+I'll add the two instruction updates to the existing doc.
+
+Both updates landed in `docs/llm-context/reproducing-a-website.md`:
+
+- **New Section 1a** ("Execute the entire convert flow in a single turn") — explicitly forbids pausing after `transcribe_site` returns, calls out that there are no human-in-the-loop steps, and explains the digest-expiry consequence so future me understands *why* pausing breaks the flow.
+- **Section 6 addition** — covers the partial-build failure case: report immediately, ask for the URL again, never leave a half-populated draft un-explained.
+
+This is a documentation/configuration change (the file is loaded into the system prompt at runtime, not compiled into code), so no scope ticket or UAT is required per the free-coding rules.
+
+The next convert attempt should run end-to-end without the stop-and-confirm gap that hit you this time.
 
 <!-- xgd-chat-end -->
