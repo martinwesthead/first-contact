@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:16:29.334931+00:00'
+updated_at: '2026-06-20T23:26:20.084861+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -132,5 +132,11 @@ Two questions before I start typing code:
 
 1. Are the defaults OK? (Especially `.venv-xgendev-main` and `DEV_TOOLS_ENABLED` gating.) The original message said `.venv-workspace` which doesn't exist — I want to be sure `.venv-xgendev-main` is what you actually meant.
 2. Do you want me to proceed with all of step 1 (sidecar + its UATs) before checking in, or would you rather see each file as I write it?
+
+<!-- xgd-turn id="7dd982e4-6153-4101-bf98-8bee5df21279-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:26:11.862Z" -->
+#### You
+`~/Projects/xgendev-main/.venv-working`
 
 <!-- xgd-chat-end -->
