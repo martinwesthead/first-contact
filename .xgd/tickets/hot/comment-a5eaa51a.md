@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-42
 created_by: xgd
 created_at: '2026-06-20T21:14:37.217897+00:00'
-updated_at: '2026-06-20T23:24:58.924847+00:00'
+updated_at: '2026-06-20T23:25:02.003503+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -110,5 +110,14 @@ REQ-42 banner module shipped. Status `free_coded`, version `0.0.22`, with 8 UATs
 <!-- xgd-chat role="user" ts="2026-06-20T23:24:46.341Z" -->
 #### You
 Please check that the tests pass
+
+<!-- xgd-turn id="6d5ca70b-295d-4a61-94d4-92391492b7d7-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:25:01.971Z" -->
+#### Claude
+All 8 REQ-42 banner UATs pass:
+- `test_UAT_FC_REQ-42_banner_registered_in_catalog.test.ts` — 4 tests (registry resolution, catalog entry, dial/variant shape, content schema)
+- `test_UAT_FC_REQ-42_banner_simple_variant_renders.test.ts` — 2 tests (heading-only render, eyebrow + subhead markdown)
+- `test_UAT_FC_REQ-42_banner_with_cta_variant_renders.test.ts` — 2 tests (CTA renders when present, omitted when absent on `with-cta` variant)
 
 <!-- xgd-chat-end -->
