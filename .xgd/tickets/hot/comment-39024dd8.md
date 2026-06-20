@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-40
 created_by: xgd
 created_at: '2026-06-20T21:13:42.095023+00:00'
-updated_at: '2026-06-20T21:13:49.343228+00:00'
+updated_at: '2026-06-20T22:56:05.495517+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -37,5 +37,11 @@ Before I implement, three small spec questions where the ticket leaves room for 
 Also two implementation notes I'll just do unless you say otherwise:
 - Avatar styled as a circle, ~64px, with `alt` from the AssetRef (matches existing module patterns).
 - Quote rendered through `set:html` like other markdown fields (`text-block`, `services-grid` body).
+
+<!-- xgd-turn id="151d954b-3a65-4545-8090-62be8f1f221f-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T22:55:58.443Z" -->
+#### You
+Lets go with your proposals
 
 <!-- xgd-chat-end -->
