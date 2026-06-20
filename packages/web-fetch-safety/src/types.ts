@@ -1,3 +1,5 @@
+import type { KVNamespace } from "@cloudflare/workers-types";
+
 export type SsrfDetail =
   | "private_ip"
   | "loopback"
