@@ -6,9 +6,9 @@ title: 'Framework: markdown content fields accept inline string or R2 text-asset
   capture writes markdown'
 created_by: xgd
 created_at: '2026-06-20T00:32:32.584911+00:00'
-updated_at: '2026-06-20T01:07:04.350133+00:00'
+updated_at: '2026-06-20T18:14:42.635603+00:00'
 completed_at: null
-last_field_updated: story_points
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -19,10 +19,6 @@ fields:
   - ee886078120fdbde5c2daae5964e61003f8af50c
   version: 0.14.1236
 ---
-
-## Problem
-
-Today, every word of copy on a 1stcontact site is an inline string in the Site JSON. There is no separate "copy file" — `subhead`, `body`, item `description`, etc. are all string-typed (some markdown-typed) properties of the module's `content` block, baked into the single `site.json` document.
 
 That model has three concrete failures:
 
@@ -37,8 +33,12 @@ This REQ introduces a content-shape change that solves all three without forcing
 - **Union representation, per-instance choice.** Any module content field declared `"markdown"` in module meta accepts EITHER an inline string (current behaviour) OR an `AssetRef { kind: 'text', src: '<key>', id: '<key>', alt? }` (new). The choice is per content instance, not per field declaration. Promotion / demotion is free — short inline can be promoted to a file when it grows; a file with one line can be inlined back.
 - **Schema discriminator on `AssetRef`.** Add `kind: 'image' | 'text'` (default `'image'`). For `kind: 'text'`: `src` is the R2 key, `alt` becomes optional fallback text shown if read fails, `focalPoint` is dropped (irrelevant). Existing `kind: 'image'` AssetRefs are unaffected — the discriminator defaults preserve their schema shape.
 - **Markdown is the lingua franca.** All text content end-to-end is markdown — inline strings, `.md` files, capture output, AI output, TipTap output. One format.
-- **Renderer does markdown-to-HTML at render time.** With a sniff for the existing-baseline case: a string that starts with `<` is treated as trusted HTML passthrough (the current 1stcontact `<p>...</p>` content keeps working unmodified); otherwise the string runs through a markdown-to-HTML pass. This avoids a forced migration of `sites/1stcontact/site.json`.
-- **Asset resolver pattern.** `renderSiteToHtml(site, { resolveAsset })` takes a resolver. Builder preview's resolver fetches text-kind AssetRefs via `/api/assets/get/<key>` (existing route, content-type ignored — we treat the bytes as markdown). Production `tools/generate` fetches at build time and bakes the resolved markdown into the static output — public site has zero R2 runtime dependency.
+- **Markdown-to-HTML is the renderer's responsibility, executed whenever the renderer is invoked.** Two invocation contexts exist:
+  - **Production (Jamstack)**: `tools/generate` invokes `renderSiteToHtml` at **build time**. Markdown → HTML conversion and R2 text-asset resolution happen during build. The output is static HTML files served by the public-site Worker. Visitors never hit a markdown converter, never hit R2 for copy.
+  - **Builder preview**: the builder UI invokes `renderSiteToHtml` in the **browser** each time the in-memory store changes. Markdown → HTML conversion happens client-side per edit; text AssetRefs are fetched live via `/api/assets/get/<key>` and treated as markdown bytes (content-type ignored). This path exists because the preview must reflect tool-call edits instantly without a build step.
+  - Same renderer code in both — only the invocation timing and the resolver implementation differ.
+- **HTML-passthrough sniff for back-compat.** A string starting with `<` (after `trimStart`) is treated as trusted HTML and emitted as-is. The current 1stcontact `<p>...</p>` content keeps working unmodified, with no migration of `sites/1stcontact/site.json`.
+- **Asset resolver pattern.** `renderSiteToHtml(site, { resolveAsset })` takes a resolver. Builder preview's resolver: `fetch('/api/assets/get/' + key)`. Production `tools/generate`'s resolver: synchronous R2 read via `ASSETS_BUCKET` (Wrangler / Workers Runtime build context). The resolved markdown is then run through the renderer's markdown-to-HTML pass and inlined into the page output. Public site has zero R2 runtime dependency.
 - **Capture writes markdown, mechanically.** `transcribe_site` runs source HTML through an HTML-to-markdown converter (turndown or equivalent) and writes per-section verbatim markdown into R2 at `sites/{siteId}/copy/{moduleId}-{field}.md`. Whether a captured block becomes inline or a file is decided by a deterministic heuristic (size + structural complexity). No LLM involved in the text-writing path.
 - **AI gets one new tool: `write_text_asset(key, content)`.** For user-directed edits ("rewrite this paragraph as more formal"). Writes markdown to `/api/assets/put/<key>` and returns confirmation. The existing `set_module_content` tool already accepts an AssetRef as a value — that's how the AI swaps a field between inline and file.
 - **R2 path scheme.** `sites/{siteId}/copy/{moduleId}-{field}.md`. Sits inside the existing assets namespace from [[REQ-20]] so it shows up in the asset manager (when [[REQ-16]] ships) alongside images. Content-type `text/markdown`.
@@ -87,7 +87,7 @@ The killer-demo's "same color same fonts **same text** same images" expectation 
 
 ### `apps/public-site` / `tools/generate`
 
-- `tools/generate`'s render pipeline is given a `resolveAsset` function that reads from `ASSETS_BUCKET` synchronously at build time (Workers Runtime / Wrangler context). Each text-kind AssetRef is resolved during build; the markdown bytes are passed to the renderer; the output static HTML has the resolved content inlined. Public site has no runtime R2 dependency for copy.
+- `tools/generate`'s render pipeline is given a `resolveAsset` function that reads from `ASSETS_BUCKET` synchronously at build time (Workers Runtime / Wrangler context). Each text-kind AssetRef is resolved during build; the markdown bytes flow through the renderer's markdown-to-HTML pass; the static HTML output has the converted content inlined. **Public site serves static HTML only — no R2 reads, no markdown conversion at request time.** This preserves the Jamstack model.
 
 ### `docs/llm-context/reproducing-a-website.md`
 
@@ -161,3 +161,4 @@ Regression scope: existing REQ-3 validator UATs, REQ-4 renderer UATs (must still
 - The renderer's markdown-to-HTML pass is new; the markdown library (`marked` or `markdown-it`) is the only new runtime dependency in `packages/framework`. Bundle-size budget is a concern for the public-site worker — pick the lighter library and lazy-load the markdown pipeline only when a markdown field is encountered if bundle creep matters.
 
 -
+◀ xgd 0.14.1239 2026-06-20 11:14:10
