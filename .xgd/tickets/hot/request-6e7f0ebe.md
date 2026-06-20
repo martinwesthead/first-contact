@@ -6,9 +6,9 @@ title: 'D1 schema: accounts, sites (draft + published), revisions, slug validati
   1stcontact seed'
 created_by: xgd
 created_at: '2026-06-15T22:42:21.300689+00:00'
-updated_at: '2026-06-20T19:44:13.336226+00:00'
+updated_at: '2026-06-20T19:44:13.430706+00:00'
 completed_at: null
-last_field_updated: story_points
+last_field_updated: body
 status: free_coded
 fields:
   priority: medium
@@ -158,3 +158,18 @@ REQ-20 (web fetch safety + R2 assets) is landing **before** this REQ and needs a
 **Action for REQ-10:** when implementing the accounts schema and the auth path that issues `account_id`, update `extractAccountId` (or replace the call site) to resolve `account_id` from the authenticated session / magic-link cookie instead of the header. The function signature is the only contract REQ-20 depends on — replacing the body is sufficient; no shape change in the KV counter keys is required.
 
 KV counters in `FETCH_RATE_KV` and `BROWSER_BUDGET_KV` are keyed by `account_id`. Switching from `"default"` to real account IDs migrates cleanly (existing default-keyed counters become orphaned and age out via TTL).
+
+
+
+## Implementation note (2026-06-20, commit 8ea7a82)
+
+Landed as specified above. Notes for downstream REQs:
+
+- **Migration numbering follows the existing 4-digit convention** (`0002_*`–`0005_*`) rather than the 3-digit numbering shown in the original ticket, to match `0001_create_leads.sql`. Lexicographic ordering is preserved.
+- **Down migrations live in `db/migrations-down/`** (sibling directory), one `.down.sql` per forward migration. They are NOT in `db/migrations/` because `wrangler d1 migrations` scans that directory and would treat down files as forward migrations. The `migrations_reversible` UAT applies them via the test helper.
+- **Seed IDs are deterministic, not UUIDs**: `acct_1stcontact_platform`, `site_1stcontact`, `rev_1stcontact_seed`. Recognisable as platform-owned and stable across rebuilds. Customer accounts will use UUIDs.
+- **Seed JSON embedded inline** in `0005_seed_1stcontact.sql` as a SQL string literal (single quotes doubled per SQLite). The seed is a frozen snapshot of `sites/1stcontact/site.json` at commit time; future drift is expected (a later REQ should update `tools/generate` to read from D1).
+- **`extractAccountId` left header-driven**: per the coordination note, the swap to session-cookie resolution belongs to the auth REQ. This REQ is schema-only.
+- **`SITES_DB` binding name** used in the test helper; wrangler.toml currently binds `LEADS_DB`. The API REQ (REQ-11) will add the new D1 binding to wrangler.toml — this REQ does not modify wrangler config.
+
+UATs (8 files, 53 tests) all pass. The two failing tests in the broader suite (REQ-30 and BUG-5 doc-drift guards) are pre-existing on `main` and unrelated.
