@@ -176,6 +176,11 @@ const showImage = variant === "bg-image" && image !== undefined;
     line-height: var(--line-height-relaxed);
     max-width: var(--container-narrow);
   }
+  .fc-hero__subhead :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
 
   .fc-hero__cta {
     display: inline-block;

@@ -177,6 +177,11 @@ const visibleItems = variant === "single" ? items.slice(0, 1) : items;
   }
   .fc-testimonials__quote > :first-child { margin-top: 0; }
   .fc-testimonials__quote > :last-child { margin-bottom: 0; }
+  .fc-testimonials__quote :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
 
   .fc-testimonials__attribution {
     display: flex;

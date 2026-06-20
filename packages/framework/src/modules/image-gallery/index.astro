@@ -13,6 +13,7 @@ export interface Props {
   dials?: {
     columns?: "2" | "3" | "4";
     gap?: "tight" | "normal" | "loose";
+    imageSize?: "sm" | "md" | "lg";
     spacingTop?: string;
     spacingBottom?: string;
     surface?: "default" | "subtle" | "inverse" | "accent";
@@ -22,6 +23,7 @@ export interface Props {
 const { variant, heading, items, dials = {} } = Astro.props;
 const columns = dials.columns ?? "3";
 const gap = dials.gap ?? "normal";
+const imageSize = dials.imageSize ?? "md";
 const surface = dials.surface ?? "default";
 const spacingTop = dials.spacingTop ?? "12";
 const spacingBottom = dials.spacingBottom ?? "12";
@@ -33,6 +35,7 @@ const spacingBottom = dials.spacingBottom ?? "12";
     `fc-image-gallery--variant-${variant}`,
     `fc-image-gallery--cols-${columns}`,
     `fc-image-gallery--gap-${gap}`,
+    `fc-image-gallery--image-${imageSize}`,
     `fc-image-gallery--surface-${surface}`,
     `fc-image-gallery--space-top-${spacingTop}`,
     `fc-image-gallery--space-bottom-${spacingBottom}`,
@@ -165,6 +168,21 @@ const spacingBottom = dials.spacingBottom ?? "12";
   .fc-image-gallery--variant-masonry .fc-image-gallery__item {
     break-inside: avoid;
     margin-bottom: var(--space-6);
+  }
+
+  /* imageSize caps masonry image height so a single tall image cannot dominate
+     the column. Grid variant is fixed 1:1, so the dial is a no-op there. */
+  .fc-image-gallery--variant-masonry.fc-image-gallery--image-sm .fc-image-gallery__image {
+    max-height: 16rem;
+    object-fit: contain;
+  }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--image-md .fc-image-gallery__image {
+    max-height: 32rem;
+    object-fit: contain;
+  }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--image-lg .fc-image-gallery__image {
+    max-height: 56rem;
+    object-fit: contain;
   }
 
   /* Gap dial */

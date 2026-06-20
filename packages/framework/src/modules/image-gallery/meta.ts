@@ -7,6 +7,7 @@ export const meta = {
   dials: {
     columns: ["2", "3", "4"] as const,
     gap: ["tight", "normal", "loose"] as const,
+    imageSize: ["sm", "md", "lg"] as const,
     spacingTop: ["0", "1", "2", "3", "4", "6", "8", "12", "16", "24"] as const,
     spacingBottom: ["0", "1", "2", "3", "4", "6", "8", "12", "16", "24"] as const,
     surface: ["default", "subtle", "inverse", "accent"] as const,
