@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-18
 created_by: xgd
 created_at: '2026-06-20T19:23:39.986463+00:00'
-updated_at: '2026-06-20T19:34:59.972892+00:00'
+updated_at: '2026-06-20T19:35:02.672156+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -76,5 +76,13 @@ Done. Wrangler bumped to v4.103.0, committed as `40d7ded`, CHAT-18 updated.
 <!-- xgd-chat role="user" ts="2026-06-20T19:34:19.971Z" -->
 #### You
 PLease create a ticket for the build issue
+
+<!-- xgd-turn id="412ad869-a67a-4e5e-abe2-4b34d90d7e57-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T19:35:02.669Z" -->
+#### Claude
+Created **BUG-11** (`bug-f0774599`): *pnpm build fails: TS2304 'KVNamespace' in extractor → web-fetch-safety*.
+
+The ticket captures the symptom (9 TS2304 errors), confirms it's pre-existing (reproduces under both old + new workers-types), pinpoints the root cause (`packages/extractor/tsconfig.json` doesn't include `@cloudflare/workers-types` in `types`, and `web-fetch-safety` uses `KVNamespace` as a bare global), and proposes the cleaner fix (add `import type { KVNamespace } from '@cloudflare/workers-types'` to the four `web-fetch-safety` files so consumers don't need to replicate the dep).
 
 <!-- xgd-chat-end -->
