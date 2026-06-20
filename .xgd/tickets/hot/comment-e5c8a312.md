@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-41
 created_by: xgd
 created_at: '2026-06-20T21:13:52.055228+00:00'
-updated_at: '2026-06-20T23:25:26.762147+00:00'
+updated_at: '2026-06-20T23:27:47.698745+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -255,5 +255,49 @@ Done. Summary:
 <!-- xgd-chat role="user" ts="2026-06-20T23:25:14.727Z" -->
 #### You
 how are you going to rresolve that/
+
+<!-- xgd-turn id="d1696ada-5d33-4772-a50e-24d1de3e33da-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:27:47.698Z" -->
+#### Claude
+Let me inspect what's actually still in the stash vs HEAD and figure out whether to drop, manually apply, or surface for manual resolution.
+
+Most of the stash is redundant — `contrast.ts`, REQ-47/48 tests, image-gallery `imageSize` etc. are already in HEAD. But REQ-44 work (services-grid v2: title→heading rename, one-col variant, new test files) is uniquely in the stash. Let me enumerate exactly what's genuinely missing.
+
+I'll proactively restore just the orphaned REQ-44 untracked test files (they can't conflict with anything in HEAD), and leave the source-file changes in the stash for the REQ-44 agent to merge manually. The stash stays.
+
+Now write a one-page recovery note so the REQ-44 agent (or you) can find the rest later, then we're done.
+
+Here's how I resolved the stash situation:
+
+**What I did**
+
+1. **Audited each file in the stash** against HEAD to classify it as redundant, restorable, or needing manual merge.
+2. **Restored 4 orphaned REQ-44 test files** from the stash directly to the working tree. They were untracked-only and couldn't conflict with anything.
+3. **Wrote a recovery note** at `/tmp/REQ-44-RECOVERY.md` so the REQ-44 agent (or you) can recover the rest deliberately.
+4. **Left the stash in place** with its descriptive label `REQ-41-history-rewrite-safety`.
+
+**The classification**
+
+| Category | Files | Action |
+|----------|-------|--------|
+| Already in HEAD (redundant) | `tokens/contrast.ts`, image-gallery `imageSize`, REQ-47 + REQ-48 tests, several module index.astros | Nothing — committed by concurrent agents during my session |
+| Restored from stash | 4 REQ-44 services-grid v2 test files (untracked, no conflict risk) | Now on disk |
+| Diverged — needs human merge | `services-grid/{index.astro,meta.ts}`, `render/browser.ts`, `tokens/css.ts`, `sites/1stcontact/site.json`, 3 REQ-5 test files (title→heading rename) | Stays in stash |
+| **MUST NOT restore** | `.xgd/tickets/hot/request-68544e6c.md` (stash version has the stale `3fe9b0b` SHA, would clobber my `0dcaa39` remap) | Stays in stash, do not pop blindly |
+
+**Why I didn't fully pop the stash**
+
+HEAD already has partial REQ-44 v2 work (the `heading` field was added but `title` is still present). The stash's source-file changes are *partial overlap* with HEAD — a blind pop would create conflicts. The REQ-44 agent needs to decide what to take from `services-grid/meta.ts` (likely the `title` removal + their renames) and reapply intentionally.
+
+**Recovery path for REQ-44 agent**
+
+```bash
+git stash show -p stash@{0}                    # see full diff
+git show 'stash@{0}:<path>' > <path>            # extract single file
+git stash drop stash@{0}                        # when done
+```
+
+The recovery note at `/tmp/REQ-44-RECOVERY.md` documents the same. Working tree is now clean except for the restored REQ-44 tests (which the REQ-44 agent will commit when they pick up).
 
 <!-- xgd-chat-end -->
