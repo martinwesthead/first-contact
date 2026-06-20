@@ -537,11 +537,11 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
     plan_tier: "trial",
     ui_route: null,
     side_effects:
-      "Read-only. Fetches sites/{siteId}/transcription/digest.json from ASSETS_BUCKET and returns the parsed TranscriptionDigest. Call after transcribe_site succeeds to get the digest the AI uses to drive page-CRUD and module-content tool calls.",
+      "Read-only. Fetches sites/{siteId}/transcription/digest.json from ASSETS_BUCKET. Returns {kind: 'transcription_digest', digest} when the convert has completed, or {kind: 'transcription_digest_not_ready'} when no digest is present (either because transcribe_site hasn't run yet or because Stage 0 has evicted the prior one and the new write hasn't landed).",
     tool_spec: {
       name: "read_transcription_digest",
       description:
-        "Read the transcription digest written by transcribe_site. Returns {kind: 'transcription_digest', digestKey, digest} on success, or fails with 'digest_not_found' if the convert hasn't run.",
+        "Read the transcription digest written by transcribe_site. Returns {kind: 'transcription_digest', digestKey, digest} on success, or {kind: 'transcription_digest_not_ready', digestKey} when no digest is currently present — poll again after transcribe_site reports done.",
       input_schema: {
         type: "object",
         properties: {

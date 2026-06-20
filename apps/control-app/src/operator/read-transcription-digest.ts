@@ -16,7 +16,14 @@ export const readTranscriptionDigestHandler: ActionHandler = async (input, ctx) 
   const key = `sites/${siteId}/transcription/digest.json`;
   const obj = await env.ASSETS_BUCKET.get(key);
   if (!obj) {
-    return fail(`digest_not_found: no transcription digest at ${key}`);
+    // REQ-37: a missing digest is an expected polling state (transcribe_site
+    // hasn't run yet, or is mid-flight after Stage 0 evicted the prior one),
+    // not a hard failure. Return ok with a distinct `not_ready` kind so the
+    // AI can poll without it surfacing as a tool error.
+    return ok({
+      kind: "transcription_digest_not_ready",
+      digestKey: key,
+    });
   }
   let parsed: unknown;
   try {

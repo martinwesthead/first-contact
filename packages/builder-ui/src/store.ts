@@ -31,9 +31,31 @@ export interface ChatMessage {
   readonly toolCalls?: ReadonlyArray<ChatToolCallRecord>;
 }
 
+/**
+ * REQ-37: a tool call the AI attempted in the previous turn that the
+ * client-side validator (state_edit) or server-side handler (system_action)
+ * rejected. The chat-driver accumulates these between turns; the chat panel
+ * surfaces them in a dismissable banner; the driver prepends a synthetic
+ * `system` message describing them on the next outbound request so the AI
+ * can retry without the operator restating the failure.
+ */
+export interface PendingToolFailure {
+  readonly name: string;
+  readonly input: Record<string, unknown>;
+  readonly error: string;
+}
+
 export interface BuilderState {
   readonly siteDefinition: Site;
   readonly chatHistory: ReadonlyArray<ChatMessage>;
+  readonly pendingToolFailures: ReadonlyArray<PendingToolFailure>;
+}
+
+/** Constructor input — `pendingToolFailures` defaults to []. */
+export interface BuilderStateInit {
+  readonly siteDefinition: Site;
+  readonly chatHistory: ReadonlyArray<ChatMessage>;
+  readonly pendingToolFailures?: ReadonlyArray<PendingToolFailure>;
 }
 
 export type Listener = (state: BuilderState) => void;
@@ -56,13 +78,22 @@ export class BuilderStore {
   /** Diff log of historical (site definition before patch) entries — supports per-session undo. */
   private readonly history: Site[] = [];
 
-  constructor(initial: BuilderState, options: BuilderStoreOptions = {}) {
+  constructor(initial: BuilderStateInit, options: BuilderStoreOptions = {}) {
     const persisted = options.storage
       ? loadPersisted(options.storage, options.storageKey ?? DEFAULT_STORAGE_KEY)
       : null;
+    const pending = initial.pendingToolFailures ?? [];
     this.state = persisted
-      ? { siteDefinition: persisted, chatHistory: initial.chatHistory }
-      : initial;
+      ? {
+          siteDefinition: persisted,
+          chatHistory: initial.chatHistory,
+          pendingToolFailures: pending,
+        }
+      : {
+          siteDefinition: initial.siteDefinition,
+          chatHistory: initial.chatHistory,
+          pendingToolFailures: pending,
+        };
     this.storage = options.storage ?? null;
     this.storageKey = options.storageKey ?? DEFAULT_STORAGE_KEY;
     this.sizeWarningBytes = options.sizeWarningBytes ?? 1_000_000;
@@ -97,6 +128,40 @@ export class BuilderStore {
       ...this.state,
       chatHistory: [...this.state.chatHistory, message],
     };
+    this.emit();
+  }
+
+  /** REQ-36 G9: replace the most recently appended chat message in place.
+   *  Used by the streaming driver to grow the in-flight assistant bubble as
+   *  text deltas arrive without rebuilding history each token. No-ops when
+   *  there is no last message. */
+  updateLastChatMessage(message: ChatMessage): void {
+    const history = this.state.chatHistory;
+    if (history.length === 0) return;
+    const next = history.slice(0, -1);
+    next.push(message);
+    this.state = { ...this.state, chatHistory: next };
+    this.emit();
+  }
+
+  /** REQ-37: append tool failures from a completed turn so the panel and the
+   *  next outbound chat request can surface them. No-op when `failures` is
+   *  empty so callers can pass driver output unconditionally. */
+  recordToolFailures(failures: ReadonlyArray<PendingToolFailure>): void {
+    if (failures.length === 0) return;
+    this.state = {
+      ...this.state,
+      pendingToolFailures: [...this.state.pendingToolFailures, ...failures],
+    };
+    this.emit();
+  }
+
+  /** REQ-37: drop all accumulated tool failures (called by the driver after
+   *  reinjecting them into the next chat request, and by the panel's
+   *  Dismiss control). */
+  clearToolFailures(): void {
+    if (this.state.pendingToolFailures.length === 0) return;
+    this.state = { ...this.state, pendingToolFailures: [] };
     this.emit();
   }
 
