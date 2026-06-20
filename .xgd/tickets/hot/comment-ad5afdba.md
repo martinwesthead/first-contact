@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-10
 created_by: xgd
 created_at: '2026-06-15T22:45:26.276076+00:00'
-updated_at: '2026-06-15T22:45:26.374780+00:00'
+updated_at: '2026-06-20T19:36:11.166785+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -116,5 +116,11 @@ Story points 3. No dependencies. Foundational for REQ-11 (lifecycle API) and REQ
 Key deliverables: three numbered migrations (accounts, sites with draft/published JSON columns, revisions); reserved-slug list including `1stcontact`; slug validation utilities (`isValidSlug`, `isReservedSlug`, `suggestAlternativeSlug`); seed migration that bootstraps the 1stcontact site row from `sites/1stcontact/site.json` so D1-backed and file-backed paths converge.
 
 Multi-site bones (accounts → sites 1:N) baked into schema even though v1 UX only exposes the single-site case.
+
+<!-- xgd-turn id="b8afad99-674b-4742-af39-eadb3ac08bcf-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T19:35:59.394Z" -->
+#### You
+Please free code a fix for this?
 
 <!-- xgd-chat-end -->
