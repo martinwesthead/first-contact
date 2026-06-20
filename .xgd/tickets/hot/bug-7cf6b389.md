@@ -5,9 +5,9 @@ type: bug
 title: 'Convert flow: ConvertConfirmation Confirm/Cancel buttons are unwired'
 created_by: xgd
 created_at: '2026-06-19T23:43:39.348958+00:00'
-updated_at: '2026-06-20T00:16:07.023090+00:00'
+updated_at: '2026-06-20T18:27:03.773771+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -19,6 +19,12 @@ fields:
   - 5242e88657f9018756420ac6e9ccc480f9a853f5
   - 502d741b2b57068764909b543b7a1b5188749599
   version: 0.14.1236
+---
+
+## ⚠️ Superseded by [[REQ-35]]
+
+[[REQ-35]] removes the destructive-confirmation gate entirely (the operator framing: the gate is broken AND the wrong UX shape for the testing iteration loop). Once REQ-35 lands, the code this BUG was attempting to fix no longer exists. **Do not implement BUG-4 — implement REQ-35 instead.** Closing this bug out as obsolete is part of REQ-35's acceptance criteria.
+
 ---
 
 ## Symptom
@@ -66,3 +72,4 @@ The synthetic-user-turn shape was chosen over direct tool re-invocation because 
 8. After `destroy()`, neither convert event drives a chat turn (listeners cleaned up).
 
 Regression scope: full vitest run — **327/327 tests pass**, including REQ-28 (`test_UAT_FC_REQ-28_convert_confirmation_card.test.ts`), REQ-31 (`test_UAT_FC_REQ-31_preview_panel_reset_button.test.ts`), and REQ-21 end-to-end (`test_UAT_FC_REQ-21_end_to_end_chat_renders_digest.test.ts` — already sends `x-session-id: session-e2e`, so the new header is backwards-compatible with the server contract).
+◀ xgd 0.14.1239 2026-06-20 11:26:52
