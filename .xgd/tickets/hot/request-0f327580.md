@@ -5,10 +5,10 @@ type: request
 title: Robust transcription pipeline with error reporting
 created_by: xgd
 created_at: '2026-06-20T21:08:41.521098+00:00'
-updated_at: '2026-06-20T21:44:10.413676+00:00'
+updated_at: '2026-06-20T22:54:03.785172+00:00'
 completed_at: null
 last_field_updated: status
-status: free_coded
+status: ready_to_reconcile
 fields:
   auto_merge_back: true
   needs_review: false
