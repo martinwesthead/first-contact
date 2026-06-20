@@ -21,10 +21,11 @@ export type MarkdownString = z.infer<typeof MarkdownString>;
 export const EnumValue = z.string().brand<"EnumValue">();
 export type EnumValue = z.infer<typeof EnumValue>;
 
-export const AssetRef = z.object({
+export const AssetRefImage = z.object({
   id: z.string().min(1),
   src: z.string().min(1),
   alt: z.string(),
+  kind: z.literal("image").optional(),
   focalPoint: z
     .object({
       x: z.number().min(0).max(1),
@@ -32,7 +33,21 @@ export const AssetRef = z.object({
     })
     .optional(),
 });
+export type AssetRefImage = z.infer<typeof AssetRefImage>;
+
+export const AssetRefText = z.object({
+  id: z.string().min(1),
+  src: z.string().min(1),
+  alt: z.string().optional(),
+  kind: z.literal("text"),
+});
+export type AssetRefText = z.infer<typeof AssetRefText>;
+
+export const AssetRef = z.union([AssetRefImage, AssetRefText]);
 export type AssetRef = z.infer<typeof AssetRef>;
+
+export const MarkdownContent = z.union([z.string(), AssetRefText]);
+export type MarkdownContent = z.infer<typeof MarkdownContent>;
 
 export type ContentValue =
   | string

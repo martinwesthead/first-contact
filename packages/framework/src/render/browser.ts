@@ -1,4 +1,5 @@
 import type {
+  AssetRef,
   ModuleInstance,
   Page,
   Site,
@@ -27,9 +28,24 @@ export function escapeAttr(value: unknown): string {
 
 export type RenderTarget = "production" | "preview";
 
+export type ResolveAsset = (ref: AssetRef) => string | undefined;
+
 export interface RenderSiteOptions {
   pageId?: string;
   target?: RenderTarget;
+  /**
+   * Resolver for AssetRef-text references in markdown content fields. When a
+   * markdown field's value is an AssetRef with kind: 'text', the renderer
+   * passes it to this resolver and uses the returned string as the markdown
+   * source. If the resolver returns undefined (or no resolver is provided),
+   * the renderer falls back to `ref.alt ?? ''`. Image-kind AssetRefs are not
+   * passed to the resolver — they are emitted as <img src> directly.
+   *
+   * The resolver is synchronous; callers needing async fetches must pre-fetch
+   * into a cache and pass a sync closure over it (the builder preview and
+   * tools/generate both use this pattern).
+   */
+  resolveAsset?: ResolveAsset;
 }
 
 export function renderSiteToHtml(
@@ -40,7 +56,8 @@ export function renderSiteToHtml(
   const moduleCss = MODULE_CSS;
   const page = pickPage(site, options.pageId);
   const target = options.target ?? "production";
-  const body = renderPageBody(page, target);
+  const ctx: RenderContext = { target, resolveAsset: options.resolveAsset };
+  const body = renderPageBody(page, ctx);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -55,15 +72,29 @@ ${body}
 </html>`;
 }
 
-export function renderPageBody(page: Page, target: RenderTarget = "production"): string {
-  return page.modules.map((m) => renderModuleInstance(m, target)).join("\n");
+interface RenderContext {
+  readonly target: RenderTarget;
+  readonly resolveAsset?: ResolveAsset;
+}
+
+function toContext(t: RenderTarget | RenderContext): RenderContext {
+  return typeof t === "string" ? { target: t } : t;
+}
+
+export function renderPageBody(
+  page: Page,
+  targetOrContext: RenderTarget | RenderContext = "production",
+): string {
+  const ctx = toContext(targetOrContext);
+  return page.modules.map((m) => renderModuleInstance(m, ctx)).join("\n");
 }
 
 export function renderModuleInstance(
   instance: ModuleInstance,
-  target: RenderTarget = "production",
+  targetOrContext: RenderTarget | RenderContext = "production",
 ): string {
-  const inner = dispatchRenderer(instance, target);
+  const ctx = toContext(targetOrContext);
+  const inner = dispatchRenderer(instance, ctx);
   return `<div id="${escapeAttr(instance.id)}" data-module-instance="${escapeAttr(
     instance.id,
   )}">${inner}</div>`;
@@ -77,23 +108,176 @@ function pickPage(site: Site, pageId?: string): Page {
   return site.pages[0]!;
 }
 
-function dispatchRenderer(instance: ModuleInstance, target: RenderTarget): string {
+function dispatchRenderer(instance: ModuleInstance, ctx: RenderContext): string {
   switch (instance.type) {
     case "header":
-      return renderHeader(instance, target);
+      return renderHeader(instance, ctx.target);
     case "hero":
-      return renderHero(instance);
+      return renderHero(instance, ctx);
     case "footer":
       return renderFooter(instance);
     case "text-block":
-      return renderTextBlock(instance);
+      return renderTextBlock(instance, ctx);
     case "services-grid":
-      return renderServicesGrid(instance);
+      return renderServicesGrid(instance, ctx);
     case "contact-form":
-      return renderContactForm(instance);
+      return renderContactForm(instance, ctx);
     default:
       return `<!-- unknown module type: ${escapeHtml(instance.type)} -->`;
   }
+}
+
+/**
+ * Render a markdown content field value to HTML.
+ *
+ *   - String starting with `<` → trusted HTML passthrough (preserves the
+ *     1stcontact baseline's existing inline `<p>` strings).
+ *   - String otherwise → markdown-to-HTML.
+ *   - AssetRef with kind: 'text' → resolve via ctx.resolveAsset, then
+ *     markdown-to-HTML. Falls back to escaped `alt` (or empty) if the
+ *     resolver returns undefined.
+ *   - undefined / null → empty string.
+ */
+function renderMarkdownField(value: unknown, ctx: RenderContext): string {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") {
+    return renderMarkdownString(value);
+  }
+  if (isAssetRefText(value)) {
+    const resolved = ctx.resolveAsset ? safeResolve(ctx.resolveAsset, value) : undefined;
+    if (typeof resolved === "string") {
+      return renderMarkdownString(resolved);
+    }
+    return escapeHtml(value.alt ?? "");
+  }
+  return "";
+}
+
+function safeResolve(
+  resolveAsset: ResolveAsset,
+  ref: AssetRef,
+): string | undefined {
+  try {
+    return resolveAsset(ref);
+  } catch {
+    return undefined;
+  }
+}
+
+function isAssetRefText(
+  value: unknown,
+): value is { kind: "text"; src: string; id: string; alt?: string } {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return v.kind === "text" && typeof v.src === "string" && typeof v.id === "string";
+}
+
+function renderMarkdownString(s: string): string {
+  if (s.length === 0) return "";
+  if (s.trimStart().startsWith("<")) return s;
+  return markdownToHtml(s);
+}
+
+/**
+ * Minimal markdown-to-HTML for the framework. Supports:
+ *
+ *   - ATX headings (# / ## / … / ######)
+ *   - Paragraphs (blank-line separated)
+ *   - Unordered lists (- / *)
+ *   - Ordered lists (1.)
+ *   - Blockquotes (>)
+ *   - Inline: **bold**, *italic*, `code`, [text](url), ![alt](src)
+ *
+ * Self-contained — no runtime deps. Output is HTML; rendered output uses the
+ * framework's existing module CSS for typography. For HTML-passthrough cases
+ * (existing 1stcontact baseline inline strings starting with '<'), this
+ * function is bypassed — see renderMarkdownString.
+ */
+function markdownToHtml(input: string): string {
+  const lines = input.replace(/\r\n/g, "\n").split("\n");
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^\s*$/.test(line)) {
+      i++;
+      continue;
+    }
+    const heading = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (heading) {
+      const level = heading[1].length;
+      out.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+      i++;
+      continue;
+    }
+    if (/^\s*>\s?/.test(line)) {
+      const buf: string[] = [];
+      while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+        buf.push(lines[i].replace(/^\s*>\s?/, ""));
+        i++;
+      }
+      out.push(`<blockquote>${renderInline(buf.join(" "))}</blockquote>`);
+      continue;
+    }
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*[-*]\s+/, ""));
+        i++;
+      }
+      out.push(
+        `<ul>${items.map((t) => `<li>${renderInline(t)}</li>`).join("")}</ul>`,
+      );
+      continue;
+    }
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*\d+\.\s+/, ""));
+        i++;
+      }
+      out.push(
+        `<ol>${items.map((t) => `<li>${renderInline(t)}</li>`).join("")}</ol>`,
+      );
+      continue;
+    }
+    // Paragraph — accumulate non-blank lines.
+    const buf: string[] = [];
+    while (i < lines.length && !/^\s*$/.test(lines[i]) && !isBlockStart(lines[i])) {
+      buf.push(lines[i]);
+      i++;
+    }
+    out.push(`<p>${renderInline(buf.join(" "))}</p>`);
+  }
+  return out.join("\n");
+}
+
+function isBlockStart(line: string): boolean {
+  return (
+    /^(#{1,6})\s+/.test(line) ||
+    /^\s*>\s?/.test(line) ||
+    /^\s*[-*]\s+/.test(line) ||
+    /^\s*\d+\.\s+/.test(line)
+  );
+}
+
+function renderInline(text: string): string {
+  let s = escapeHtml(text);
+  // Images: ![alt](src)
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_m, alt: string, src: string) => {
+    return `<img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" />`;
+  });
+  // Links: [text](url)
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, label: string, href: string) => {
+    return `<a href="${escapeAttr(href)}">${label}</a>`;
+  });
+  // Bold: **text**
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  // Italic: *text*
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+  // Inline code: `text`
+  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+  return s;
 }
 
 function dialClasses(prefix: string, dials: Record<string, string> | undefined): string {
@@ -164,12 +348,13 @@ function navHref(
   return "#";
 }
 
-function renderHero(instance: ModuleInstance): string {
+function renderHero(instance: ModuleInstance, ctx: RenderContext): string {
   const variant = instance.variant ?? "bg-color";
   const dials = dialClasses("fc-hero", instance.dials);
   const eyebrow = content<string>(instance, "eyebrow");
   const heading = content<string>(instance, "heading") ?? "";
-  const subhead = content<string>(instance, "subhead");
+  const subhead = content<unknown>(instance, "subhead");
+  const subheadHtml = renderMarkdownField(subhead, ctx);
   const cta = content<{ label: string; href: string }>(instance, "cta");
   const image = content<{ src: string; alt: string }>(instance, "image");
   const showImage = variant === "bg-image" && image !== undefined;
@@ -182,7 +367,7 @@ function renderHero(instance: ModuleInstance): string {
   <div class="fc-hero__inner">
     ${eyebrow ? `<p class="fc-hero__eyebrow">${escapeHtml(eyebrow)}</p>` : ""}
     <h1 class="fc-hero__heading">${escapeHtml(heading)}</h1>
-    ${subhead ? `<div class="fc-hero__subhead">${subhead}</div>` : ""}
+    ${subheadHtml ? `<div class="fc-hero__subhead">${subheadHtml}</div>` : ""}
     ${cta ? `<a class="fc-hero__cta" href="${escapeAttr(cta.href)}">${escapeHtml(cta.label)}</a>` : ""}
   </div>
 </section>`;
@@ -205,27 +390,29 @@ function renderFooter(instance: ModuleInstance): string {
 </footer>`;
 }
 
-function renderTextBlock(instance: ModuleInstance): string {
+function renderTextBlock(instance: ModuleInstance, ctx: RenderContext): string {
   const variant = instance.variant ?? "landing";
   const dials = dialClasses("fc-text-block", instance.dials);
   const heading = content<string>(instance, "heading");
-  const body = content<string>(instance, "body") ?? "";
+  const body = content<unknown>(instance, "body");
+  const bodyHtml = renderMarkdownField(body, ctx);
   return `<section class="fc-text-block fc-text-block--variant-${escapeAttr(variant)} ${dials}" data-module="text-block">
   <div class="fc-text-block__inner">
     ${heading ? `<h2 class="fc-text-block__heading">${escapeHtml(heading)}</h2>` : ""}
-    <div class="fc-text-block__body">${body}</div>
+    <div class="fc-text-block__body">${bodyHtml}</div>
   </div>
 </section>`;
 }
 
-function renderServicesGrid(instance: ModuleInstance): string {
+function renderServicesGrid(instance: ModuleInstance, ctx: RenderContext): string {
   const variant = instance.variant ?? "three-col";
   const dials = dialClasses("fc-services-grid", instance.dials);
   const heading = content<string>(instance, "heading");
-  const subhead = content<string>(instance, "subhead");
+  const subhead = content<unknown>(instance, "subhead");
+  const subheadHtml = renderMarkdownField(subhead, ctx);
   const items = (content<unknown[]>(instance, "items") ?? []) as Array<{
     title: string;
-    body: string;
+    body: unknown;
     cta?: { label: string; href: string };
   }>;
   const itemsHtml = items
@@ -233,7 +420,7 @@ function renderServicesGrid(instance: ModuleInstance): string {
       (item) => `
     <div class="fc-services-grid__item">
       <h3 class="fc-services-grid__item-title">${escapeHtml(item.title)}</h3>
-      <div class="fc-services-grid__item-body">${item.body ?? ""}</div>
+      <div class="fc-services-grid__item-body">${renderMarkdownField(item.body, ctx)}</div>
       ${
         item.cta
           ? `<a class="fc-services-grid__item-cta" href="${escapeAttr(item.cta.href)}">${escapeHtml(item.cta.label)}</a>`
@@ -245,17 +432,18 @@ function renderServicesGrid(instance: ModuleInstance): string {
   return `<section class="fc-services-grid fc-services-grid--variant-${escapeAttr(variant)} ${dials}" data-module="services-grid">
   <div class="fc-services-grid__inner">
     ${heading ? `<h2 class="fc-services-grid__heading">${escapeHtml(heading)}</h2>` : ""}
-    ${subhead ? `<div class="fc-services-grid__subhead">${subhead}</div>` : ""}
+    ${subheadHtml ? `<div class="fc-services-grid__subhead">${subheadHtml}</div>` : ""}
     <div class="fc-services-grid__items">${itemsHtml}</div>
   </div>
 </section>`;
 }
 
-function renderContactForm(instance: ModuleInstance): string {
+function renderContactForm(instance: ModuleInstance, ctx: RenderContext): string {
   const variant = instance.variant ?? "inline";
   const dials = dialClasses("fc-contact-form", instance.dials);
   const heading = content<string>(instance, "heading");
-  const subhead = content<string>(instance, "subhead");
+  const subhead = content<unknown>(instance, "subhead");
+  const subheadHtml = renderMarkdownField(subhead, ctx);
   const action = content<string>(instance, "action") ?? "#";
   const submitLabel = content<string>(instance, "submitLabel") ?? "Send";
   const fields = (content<unknown[]>(instance, "fields") ?? []) as Array<{
@@ -279,7 +467,7 @@ function renderContactForm(instance: ModuleInstance): string {
   return `<section class="fc-contact-form fc-contact-form--variant-${escapeAttr(variant)} ${dials}" data-module="contact-form">
   <div class="fc-contact-form__inner">
     ${heading ? `<h2 class="fc-contact-form__heading">${escapeHtml(heading)}</h2>` : ""}
-    ${subhead ? `<div class="fc-contact-form__subhead">${subhead}</div>` : ""}
+    ${subheadHtml ? `<div class="fc-contact-form__subhead">${subheadHtml}</div>` : ""}
     <form action="${escapeAttr(action)}" method="post">
       ${fieldsHtml}
       <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-10000px" />

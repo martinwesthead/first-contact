@@ -1,12 +1,16 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import {
+  bakeModuleContentForRender,
+  collectTextAssetSrcsForInstance,
   findFontByFamilyDeclaration,
   generateThemeCss,
   getModule,
   googleFontsHref,
   loadModuleStyles,
   type FontSpec,
+  type ResolveAsset,
 } from "@1stcontact/framework";
+import type { AssetRef } from "@1stcontact/site-schema";
 import type {
   ModuleInstance,
   Page,
@@ -29,7 +33,25 @@ export interface RenderedSite {
 
 const THEME_CSS_PATH = "/assets/theme.css";
 
-export async function renderSite(loaded: { site: Site }): Promise<RenderedSite> {
+export interface RenderSiteOptions {
+  /**
+   * REQ-33 — async resolver for AssetRef-text body copy referenced by
+   * markdown content fields. Called with the AssetRef; should return the
+   * markdown body (as a string) or `undefined` if not found. The generator
+   * prefetches all referenced text assets before invoking the Astro
+   * container so the inner bake step stays sync.
+   *
+   * When omitted, text-kind AssetRefs fall back to their `alt` text in the
+   * baked HTML. The 1stcontact baseline does not use text-kind AssetRefs,
+   * so it works without a resolver.
+   */
+  resolveAsset?: (ref: AssetRef) => Promise<string | undefined> | string | undefined;
+}
+
+export async function renderSite(
+  loaded: { site: Site },
+  options: RenderSiteOptions = {},
+): Promise<RenderedSite> {
   const container = await AstroContainer.create();
   const tokenCss = generateThemeCss(loaded.site.theme);
   const moduleCss = await loadModuleStyles();
@@ -39,9 +61,15 @@ export async function renderSite(loaded: { site: Site }): Promise<RenderedSite> 
 
   const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY ?? "";
 
+  // REQ-33 — Prefetch every text-AssetRef body referenced by markdown content
+  // fields so the per-instance bake (synchronous) hits a populated cache.
+  const textAssetCache = await prefetchTextAssets(loaded.site, options.resolveAsset);
+  const syncResolver: ResolveAsset = (ref) =>
+    isTextRef(ref) ? textAssetCache.get(ref.src) : undefined;
+
   const pages: RenderedPage[] = [];
   for (const page of loaded.site.pages) {
-    const body = await renderPageBody(page, loaded.site, container);
+    const body = await renderPageBody(page, loaded.site, container, syncResolver);
     const head = renderHead(loaded.site, page, fontsHref, turnstileSiteKey);
     const html = renderHtml(head, body);
     pages.push({
@@ -64,11 +92,12 @@ async function renderPageBody(
   page: Page,
   _site: Site,
   container: AstroContainer,
+  resolveAsset: ResolveAsset,
 ): Promise<string> {
   const parts: string[] = [];
   for (const instance of page.modules) {
     const entry = getModule(instance.type, instance.version);
-    const props = buildProps(instance);
+    const props = buildProps(instance, resolveAsset);
     const inner = await container.renderToString(entry.Component, { props });
     parts.push(
       `<div id="${escapeAttr(instance.id)}" data-module-instance="${escapeAttr(instance.id)}">${inner}</div>`,
@@ -77,11 +106,45 @@ async function renderPageBody(
   return parts.join("\n");
 }
 
-function buildProps(instance: ModuleInstance): Record<string, unknown> {
-  const props: Record<string, unknown> = { ...(instance.content ?? {}) };
+function buildProps(
+  instance: ModuleInstance,
+  resolveAsset: ResolveAsset,
+): Record<string, unknown> {
+  const baked = bakeModuleContentForRender(instance, resolveAsset) ?? {};
+  const props: Record<string, unknown> = { ...baked };
   if (instance.variant !== undefined) props.variant = instance.variant;
   if (instance.dials !== undefined) props.dials = instance.dials;
   return props;
+}
+
+async function prefetchTextAssets(
+  site: Site,
+  resolveAsset: RenderSiteOptions["resolveAsset"],
+): Promise<Map<string, string>> {
+  const cache = new Map<string, string>();
+  if (!resolveAsset) return cache;
+  const srcs = new Set<string>();
+  for (const page of site.pages) {
+    for (const m of page.modules) {
+      for (const s of collectTextAssetSrcsForInstance(m)) srcs.add(s);
+    }
+  }
+  await Promise.all(
+    [...srcs].map(async (src) => {
+      try {
+        const ref: AssetRef = { kind: "text", id: src, src };
+        const result = await resolveAsset(ref);
+        if (typeof result === "string") cache.set(src, result);
+      } catch {
+        // Swallow — sync resolver falls back to alt text for missing refs.
+      }
+    }),
+  );
+  return cache;
+}
+
+function isTextRef(ref: AssetRef): ref is AssetRef & { kind: "text" } {
+  return (ref as { kind?: string }).kind === "text";
 }
 
 function renderHead(

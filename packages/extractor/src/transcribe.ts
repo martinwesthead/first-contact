@@ -160,6 +160,18 @@ export function inferSuggestedModuleTypes(digest: ReferenceDigest): string[] {
   return out;
 }
 
+/**
+ * REQ-33 — text-asset reference for body copy. Same shape as the framework's
+ * `AssetRef { kind: 'text' }` so the AI can drop it verbatim into
+ * `set_module_content` for any markdown content field.
+ */
+export interface TranscriptionDigestCopyRef {
+  readonly id: string;
+  readonly src: string;
+  readonly alt?: string;
+  readonly kind: "text";
+}
+
 export interface TranscriptionDigestPerPage {
   readonly url: string;
   readonly slug: string;
@@ -167,6 +179,22 @@ export interface TranscriptionDigestPerPage {
   readonly screenshotKey: string;
   readonly extractedContent: ExtractedBlock[];
   readonly suggestedModuleTypes: string[];
+  /**
+   * REQ-33 — body copy AssetRef (kind: 'text') the AI passes directly into
+   * `set_module_content` for markdown body fields. Populated by
+   * `transcribe_site` Stage 5 when the captured body markdown is large or
+   * structured enough to warrant a separate `.md` file in R2. Mutually
+   * exclusive with `inlineMarkdown` — small single-paragraph captures use
+   * `inlineMarkdown` instead.
+   */
+  readonly copy?: TranscriptionDigestCopyRef;
+  /**
+   * REQ-33 — short single-paragraph body copy. Populated by Stage 5 when the
+   * captured markdown is under the inline threshold (200 chars,
+   * single-paragraph). The AI passes this string verbatim to
+   * `set_module_content` instead of a `copy` AssetRef.
+   */
+  readonly inlineMarkdown?: string;
 }
 
 export interface TranscriptionDigestAssetRef {
@@ -256,6 +284,39 @@ export interface BuildTranscriptionDigestArgs {
   readonly urlToR2Key: ReadonlyMap<string, string>;
   readonly mirrorSummary: TranscriptionDigestMirrorSummary;
   readonly capturedAt: string;
+  /**
+   * REQ-33 — Stage-5 copy overlay, keyed by source URL. When present, the
+   * per-page entry for that URL is augmented with `copy` and/or
+   * `inlineMarkdown` fields.
+   */
+  readonly pageCopyByUrl?: ReadonlyMap<string, PageCopyResult>;
+}
+
+export interface PageCopyResult {
+  readonly copy?: TranscriptionDigestCopyRef;
+  readonly inlineMarkdown?: string;
+}
+
+const INLINE_MARKDOWN_MAX_CHARS = 200;
+
+/**
+ * Decide whether a captured markdown block should be inlined or written to a
+ * file. The threshold for inline: under 200 characters AND contains no block
+ * structure (no blank-line paragraph break, no heading, no list, no
+ * blockquote). Anything else is considered "structured" and goes to a file.
+ *
+ * Used by `transcribe_site` Stage 5 (REQ-33).
+ */
+export function classifyCapturedMarkdown(markdown: string): "inline" | "file" {
+  const trimmed = markdown.trim();
+  if (trimmed.length === 0) return "inline";
+  if (trimmed.length >= INLINE_MARKDOWN_MAX_CHARS) return "file";
+  if (/\n\n/.test(trimmed)) return "file";
+  if (/^\s*#{1,6}\s+/m.test(trimmed)) return "file";
+  if (/^\s*[-*]\s+/m.test(trimmed)) return "file";
+  if (/^\s*\d+\.\s+/m.test(trimmed)) return "file";
+  if (/^\s*>\s?/m.test(trimmed)) return "file";
+  return "inline";
 }
 
 /**
@@ -270,14 +331,25 @@ export function buildTranscriptionDigest(
   const themeTokens = applyTokenPatch(homePatch);
 
   const pageDigests = [args.homeDigest, ...args.additionalPageDigests];
-  const perPagePlan: TranscriptionDigestPerPage[] = pageDigests.map((d) => ({
-    url: d.sourceUrl,
-    slug: slugFromUrl(d.sourceUrl),
-    title: titleFromDigest(d),
-    screenshotKey: d.screenshotKeys.desktop ?? "",
-    extractedContent: extractPageContent(d),
-    suggestedModuleTypes: inferSuggestedModuleTypes(d),
-  }));
+  const perPagePlan: TranscriptionDigestPerPage[] = pageDigests.map((d) => {
+    const copyEntry = args.pageCopyByUrl?.get(d.sourceUrl);
+    const base: TranscriptionDigestPerPage = {
+      url: d.sourceUrl,
+      slug: slugFromUrl(d.sourceUrl),
+      title: titleFromDigest(d),
+      screenshotKey: d.screenshotKeys.desktop ?? "",
+      extractedContent: extractPageContent(d),
+      suggestedModuleTypes: inferSuggestedModuleTypes(d),
+    };
+    if (copyEntry?.copy) {
+      (base as Mutable<TranscriptionDigestPerPage>).copy = copyEntry.copy;
+    }
+    if (copyEntry?.inlineMarkdown !== undefined) {
+      (base as Mutable<TranscriptionDigestPerPage>).inlineMarkdown =
+        copyEntry.inlineMarkdown;
+    }
+    return base;
+  });
 
   const assetInventory: TranscriptionDigestAssetEntry[] = [];
   const seen = new Set<string>();
@@ -366,3 +438,5 @@ function normalizeHex(s: string): string {
   const trimmed = s.trim();
   return trimmed.startsWith("#") ? trimmed.toLowerCase() : `#${trimmed.toLowerCase()}`;
 }
+
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };

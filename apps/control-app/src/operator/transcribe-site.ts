@@ -1,12 +1,17 @@
 import {
   applyTokenPatch,
   buildTranscriptionDigest,
+  classifyCapturedMarkdown,
   collectReferencedAssetUrls,
   deriveThemeTokens,
+  htmlToMarkdown,
   mirrorAssetBatchToR2,
+  rewriteMarkdownImageRefs,
   type MirrorAssetResult,
+  type PageCopyResult,
   type ReferenceDigest,
 } from "@1stcontact/extractor";
+import { safeFetch } from "@1stcontact/web-fetch-safety";
 import type { ActionHandler, ActionResult } from "./registry.js";
 import {
   isConvertConfirmed,
@@ -214,6 +219,19 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
     };
   }
 
+  // ── Stage 5: capture body markdown per page → R2 (REQ-33) ───────────────
+  // Convert each cached page's source HTML to markdown, rewrite image refs to
+  // R2 keys, and write small inline blocks vs. larger files. The digest gains
+  // `copy` (AssetRef text) or `inlineMarkdown` per page so the AI passes them
+  // verbatim into set_module_content for any markdown body field.
+  const pageCopyByUrl = await captureBodyMarkdown({
+    env,
+    siteId: accountId,
+    pageDigests,
+    urlToR2Key,
+    onEvent: (data) => ctx.emit({ event: "action:notify", data }),
+  });
+
   // ── Stage 3: build and write the TranscriptionDigest ────────────────────
   const capturedAt = new Date().toISOString();
   const digest = buildTranscriptionDigest({
@@ -223,6 +241,7 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
     urlToR2Key,
     mirrorSummary,
     capturedAt,
+    pageCopyByUrl,
   });
   const digestKey = `sites/${accountId}/transcription/digest.json`;
   if (!env.ASSETS_BUCKET) {
@@ -292,4 +311,166 @@ function fail(error: string): ActionResult {
 
 function ok(payload: Record<string, unknown>): ActionResult {
   return { status: "ok", payload };
+}
+
+/**
+ * REQ-33 — Stage 5: walk each cached page digest, re-fetch the source HTML
+ * (via safeFetch — typically a cache HIT since analyze_page populated the
+ * cache), convert to markdown, rewrite any embedded image URLs to their R2
+ * keys from the mirror result, and either inline (short single-paragraph
+ * blocks) or write to R2 (everything else). Returns a per-page map the
+ * digest builder uses to populate `copy` / `inlineMarkdown` fields on
+ * `perPagePlan` entries.
+ *
+ * Source HTML re-fetch is best-effort — if a page can't be fetched we skip
+ * it. The previously-captured digest signals (headings, palette, etc.) are
+ * preserved; only the body copy attachment is missing.
+ */
+async function captureBodyMarkdown(args: {
+  env: TranscribeSiteEnv;
+  siteId: string;
+  pageDigests: ReadonlyArray<ReferenceDigest>;
+  urlToR2Key: ReadonlyMap<string, string>;
+  onEvent: (data: Record<string, unknown>) => void;
+}): Promise<Map<string, PageCopyResult>> {
+  const out = new Map<string, PageCopyResult>();
+  const env = args.env;
+  if (!env.FETCH_CACHE_KV || !env.FETCH_ROBOTS_KV || !env.ASSETS_BUCKET) {
+    return out;
+  }
+  args.onEvent({
+    tool: "transcribe_site",
+    stage: 5,
+    status: "started",
+    total: args.pageDigests.length,
+  });
+  let written = 0;
+  let inlined = 0;
+  for (const digest of args.pageDigests) {
+    const slug = slugForCopyKey(digest.sourceUrl);
+    try {
+      const fetched = await safeFetch(
+        digest.sourceUrl,
+        { FETCH_CACHE_KV: env.FETCH_CACHE_KV, FETCH_ROBOTS_KV: env.FETCH_ROBOTS_KV },
+        { headers: { "user-agent": "1stcontact-bot" } },
+      );
+      if (!fetched.ok) {
+        args.onEvent({
+          tool: "transcribe_site",
+          stage: 5,
+          status: "page_skipped",
+          url: digest.sourceUrl,
+          reason: fetched.reason,
+        });
+        continue;
+      }
+      const html = new TextDecoder("utf-8").decode(fetched.body);
+      const bodyHtml = extractBodyHtml(html);
+      const markdown = rewriteMarkdownImageRefs(
+        htmlToMarkdown(bodyHtml),
+        args.urlToR2Key,
+      );
+      const trimmed = markdown.trim();
+      if (trimmed.length === 0) {
+        args.onEvent({
+          tool: "transcribe_site",
+          stage: 5,
+          status: "page_skipped",
+          url: digest.sourceUrl,
+          reason: "no_body_text",
+        });
+        continue;
+      }
+      if (classifyCapturedMarkdown(trimmed) === "inline") {
+        out.set(digest.sourceUrl, { inlineMarkdown: trimmed });
+        inlined++;
+        args.onEvent({
+          tool: "transcribe_site",
+          stage: 5,
+          status: "page_inlined",
+          url: digest.sourceUrl,
+          bytes: trimmed.length,
+        });
+        continue;
+      }
+      const key = `sites/${args.siteId}/copy/${slug}.md`;
+      await env.ASSETS_BUCKET.put(key, trimmed, {
+        httpMetadata: { contentType: "text/markdown" },
+      });
+      out.set(digest.sourceUrl, {
+        copy: {
+          kind: "text",
+          id: key,
+          src: `/assets/${key}`,
+          alt: firstLine(trimmed),
+        },
+      });
+      written++;
+      args.onEvent({
+        tool: "transcribe_site",
+        stage: 5,
+        status: "page_written",
+        url: digest.sourceUrl,
+        r2Key: key,
+        bytes: trimmed.length,
+      });
+    } catch (err) {
+      args.onEvent({
+        tool: "transcribe_site",
+        stage: 5,
+        status: "page_failed",
+        url: digest.sourceUrl,
+        reason: String(err),
+      });
+    }
+  }
+  args.onEvent({
+    tool: "transcribe_site",
+    stage: 5,
+    status: "completed",
+    written,
+    inlined,
+  });
+  return out;
+}
+
+/** Derive the per-page copy slug from a URL. Root → 'home', else last path segment. */
+function slugForCopyKey(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/$/, "");
+    if (!path) return "home";
+    const last = path.split("/").filter(Boolean).pop() ?? "home";
+    const cleaned = last
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return cleaned || "home";
+  } catch {
+    return "home";
+  }
+}
+
+/**
+ * Extract the body HTML for markdown conversion. Strips head/script/style;
+ * if a `<main>` element exists, prefers its inner HTML; else falls back to
+ * the body. Keeps the input modest in size and avoids capturing nav/footer
+ * boilerplate unless it's part of the main content.
+ */
+function extractBodyHtml(html: string): string {
+  const stripped = html
+    .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, "");
+  const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(stripped);
+  if (main) return main[1];
+  const body = /<body\b[^>]*>([\s\S]*?)<\/body>/i.exec(stripped);
+  if (body) return body[1];
+  return stripped;
+}
+
+function firstLine(markdown: string): string {
+  const line = markdown.split("\n").find((l) => l.trim().length > 0) ?? "";
+  return line.trim().slice(0, 120);
 }
