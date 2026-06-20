@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-44
 created_by: xgd
 created_at: '2026-06-20T21:16:33.203004+00:00'
-updated_at: '2026-06-20T23:44:38.842958+00:00'
+updated_at: '2026-06-20T23:44:41.469942+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -194,5 +194,15 @@ One housekeeping note: my first bump commit accidentally swept in unrelated REQ-
 <!-- xgd-chat role="user" ts="2026-06-20T23:44:13.678Z" -->
 #### You
 Please note this in your ticket so reconciliation can take it into account
+
+<!-- xgd-turn id="e0ff4e0c-05bd-4852-983c-d5e965be0962-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:44:41.468Z" -->
+#### Claude
+Reconciliation note appended to the REQ-44 body. It records:
+
+1. **The two valid commit SHAs** (`bcee4ed`, `83a8041`) and explicitly flags the discarded `208ee0c` so reconcile doesn't chase it.
+2. **Why the soft-reset happened** — a concurrent session staged unrelated REQ-46 dev-tools-server files between my `git status` and `git commit` calls.
+3. **The convert-flow doc bullet attribution** — the `services-grid` LLM-context line landed via a parallel sweep (not in `bcee4ed`) but IS in HEAD; canonical owner is REQ-44 so reconcile shouldn't mis-attribute it to REQ-43/REQ-47.
 
 <!-- xgd-chat-end -->
