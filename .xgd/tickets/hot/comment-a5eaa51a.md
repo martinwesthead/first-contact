@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-42
 created_by: xgd
 created_at: '2026-06-20T21:14:37.217897+00:00'
-updated_at: '2026-06-20T23:11:38.020545+00:00'
+updated_at: '2026-06-20T23:24:58.924847+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -104,5 +104,11 @@ REQ-42 banner module shipped. Status `free_coded`, version `0.0.22`, with 8 UATs
 **Commits attributed to REQ-42:** `4737cc2` (registry/index wiring), `e505d92` (version bump).
 
 **Caveat:** The banner module source + UAT files were swept into commit `499b074` (a REQ-39 version bump) by concurrent free-coding session contention. That SHA is recorded on REQ-39; the cross-ticket attribution is noted in the REQ-42 ticket body for reconcile to smooth out. All banner-scoped facts (REGISTRY entry, version bump) are cleanly on REQ-42's own commits.
+
+<!-- xgd-turn id="6d5ca70b-295d-4a61-94d4-92391492b7d7-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:24:46.341Z" -->
+#### You
+Please check that the tests pass
 
 <!-- xgd-chat-end -->
