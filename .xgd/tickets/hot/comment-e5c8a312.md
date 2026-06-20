@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-41
 created_by: xgd
 created_at: '2026-06-20T21:13:52.055228+00:00'
-updated_at: '2026-06-20T23:15:29.592713+00:00'
+updated_at: '2026-06-20T23:25:26.762147+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -249,5 +249,11 @@ Done. Summary:
 
 **One caveat**
 - `git stash pop` couldn't cleanly apply all of the pre-rewrite uncommitted work (concurrent agents had already incorporated some of it into HEAD via commits I rebased over). The leftover changes are preserved at `stash@{0}` with label `REQ-41-history-rewrite-safety` — mainly REQ-44 services-grid v2 work-in-progress. The concurrent agent should be able to `git stash pop stash@{0}` or `git stash show -p stash@{0}` to recover.
+
+<!-- xgd-turn id="d1696ada-5d33-4772-a50e-24d1de3e33da-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:25:14.727Z" -->
+#### You
+how are you going to rresolve that/
 
 <!-- xgd-chat-end -->
