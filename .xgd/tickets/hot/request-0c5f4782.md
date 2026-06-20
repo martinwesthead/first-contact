@@ -5,14 +5,18 @@ type: request
 title: 'Module: split-section@v1'
 created_by: xgd
 created_at: '2026-06-20T21:10:54.218719+00:00'
-updated_at: '2026-06-20T22:55:59.112166+00:00'
+updated_at: '2026-06-20T23:07:01.842571+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - 3f6cb5ef8c57f66d35b01c38f35215fca33f6a54
+  - 499b074de6f20e4fca29f47dbc28bfd80fb0a029
+  version: 0.0.20
 ---
 
 This is the single highest-value missing module. It's an image on one side, text on the other — used constantly on small business sites.
