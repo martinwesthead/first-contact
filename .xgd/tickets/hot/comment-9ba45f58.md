@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-34
 created_by: xgd
 created_at: '2026-06-20T18:26:42.904782+00:00'
-updated_at: '2026-06-20T18:54:40.724348+00:00'
+updated_at: '2026-06-20T18:58:11.272949+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -90,5 +90,33 @@ The REQ-34 ticket body was extended with an "Implementation notes" section descr
 <!-- xgd-chat role="user" ts="2026-06-20T18:52:23.496Z" -->
 #### You
 After this change (and REQ-35) I am (1) no longer seeing the downloaded site content and (2) seeing blank page after conversion?
+
+<!-- xgd-turn id="f4ad95dd-4c64-45e7-9b27-77bdf9c9c05e-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T18:58:11.270Z" -->
+#### Claude
+Two regressions reported. Let me investigate before scoping a fix.
+
+Let me check one more thing — what the AI actually sees after Stage 0 clears the workingSite.
+
+Found a plausible root cause. Before scoping a fix or new ticket, let me confirm with you.
+
+**Diagnosis (most likely):** The how-to doc (`reproducing-a-website.md`) tells the AI to call `add_module` then `set_module_content` — but **never tells the AI to pass an explicit `id` to `add_module`**. Without an `id`, `applyAddModule` generates a random one (`hero-x7q9pz` etc.). The AI's subsequent `set_module_content` calls use the canonical examples from the how-to (`hero-1`, `body-1`, `text-1`) and reference IDs that don't exist → silent rejection → page renders with empty/no modules.
+
+Why this only surfaces now:
+- **Before REQ-34**, the AI's `set_module_content` calls landed on the 1stcontact starter's pre-seeded modules (`hero`, `services`, `contact`, …). The AI could just read those IDs from the site JSON in the system prompt and mutate them — `add_module` was rarely needed.
+- **After REQ-34**, the cleared scaffold has zero modules. The AI must `add_module` first, and the doc's silence on the `id` parameter means the AI either omits it (random id, set_module_content misses) or guesses (`hero-1`, set_module_content still misses unless add_module happened to pass the same string).
+
+This is consistent with both your symptoms:
+1. *"No longer seeing the downloaded site content"* — the source assets/copy were mirrored to R2 fine, but the `set_module_content` calls that would have plumbed those AssetRefs into module fields all failed.
+2. *"Blank page after conversion"* — modules might be added with no content, or never added if the AI gave up.
+
+I haven't repro'd in the dev server yet — this is reasoned from the code path. To confirm I'd want to see the convert turn's `body.toolCalls` summary (each call's `accepted` flag) from the chat panel, or `wrangler dev` logs.
+
+Would you like me to:
+
+My recommendation: option 2 (update the how-to doc) as a fast first cut, since it's pure prose and doesn't need a new ticket — REQ-34's own how-to update was an IN scope item, and tightening the instructions to make the AI's `add_module` → `set_module_content` chain actually work is part of "the AI lands on a cleared scaffold and reconstructs from it." If that doesn't fix it, option 1 (return the assigned id from `add_module`) is the proper structural fix and warrants its own bug ticket.
+
+If you want me to ship the doc-only fix now (as a follow-up commit on REQ-34, keeping the ticket open at `free_coded`), say the word and I'll: pass an explicit `id` recipe to the AI (`add_module({ ..., id: "hero-1" })`), reuse it in subsequent `set_module_content`, add a worked example, and add a UAT that exercises the add_module-with-explicit-id path end-to-end via mocked Anthropic responses.
 
 <!-- xgd-chat-end -->
