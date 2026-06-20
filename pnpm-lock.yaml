@@ -11,6 +11,9 @@ importers:
       '@1stcontact/builder-ui':
         specifier: workspace:*
         version: link:packages/builder-ui
+      '@1stcontact/dev-tools-server':
+        specifier: workspace:*
+        version: link:tools/dev-tools-server
       '@1stcontact/framework':
         specifier: workspace:*
         version: link:packages/framework
@@ -184,6 +187,15 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20260617.1
         version: 4.20260620.1
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
+  tools/dev-tools-server:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.43
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
