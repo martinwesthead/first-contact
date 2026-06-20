@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:45:06.762351+00:00'
+updated_at: '2026-06-20T23:50:01.607784+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -226,5 +226,71 @@ Want me to do the smoke test now, or is your local setup in a state where you'd 
 <!-- xgd-chat role="user" ts="2026-06-20T23:44:54.972Z" -->
 #### You
 sure please complete this now
+
+<!-- xgd-turn id="ade84627-0fe0-4477-a604-75ee2c52dbb8-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:50:00.599Z" -->
+#### Claude
+I'll complete the end-to-end smoke test. Steps: enable the flag, start the sidecar, verify it can actually spawn xgd, then start the control-app and hit the chat endpoint.
+
+Adding `DEV_TOOLS_ENABLED=true` to `.dev.vars` (preserving existing content, which contains a real API key — keeping that quiet).
+
+Starting the sidecar in the background, then probing it with a real `xgd ticket list`.
+
+The sidecar fails because `vite-node` isn't a direct dep. Adding it.
+
+Sidecar is up. Now hitting it with a real `xgd ticket list`.
+
+Sidecar end-to-end works (REQ-46 is in the listed output). Confirming the live allowlist guard rejects `delete`.
+
+Server-side end-to-end is verified — the sidecar spawned the right venv's `xgd` against the project, returned REQ-46 in the list, and rejected non-allowlist commands with HTTP 400. The Worker-side handler is already proven by UATs (mock fetch) and the visible/invisible gating is proven by UATs. The only piece left is the LLM actually choosing to call `xgd_ticket` from the browser — that's non-deterministic and needs a real session.
+
+Let me try the next-most-thorough check: boot wrangler dev with the new config, POST a chat request, and confirm the worker (a) accepts the request with the new env interface and (b) doesn't crash with `xgd_ticket` registered.
+
+Wrangler started cleanly and confirmed `env.DEV_TOOLS_ENABLED` is loaded as a binding — that proves the new env interface is correct. Port 8788 was already in use (you likely have your own dev session running). Trying a different port.
+
+Wrangler dev is ready on 8789 with `DEV_TOOLS_ENABLED` loaded. Now I need a minimal valid chat-request payload to actually trigger a turn.
+
+End-to-end works — the LLM picked the tool, the sidecar spawned `xgd`, and the stdout containing REQ-47 + REQ-44 flowed all the way back to the SSE `done` event.
+
+**But the smoke surfaced a real bug**: the AI's response said "the result returned a general success summary without exposing the raw CLI stdout/stderr output". Looking at `chat.ts:354-370`, system_action payloads only get surfaced as `data` to the AI's next turn when either `callName === "get_site_definition"` or `payload.kind` is set. My handler returns `{ok, stdout, stderr, exitCode}` with no `kind`, so the AI only saw the summary line — it couldn't read the ticket list it actually fetched.
+
+Fixing the handler to set `kind: "xgd_ticket_result"`, updating a UAT to assert this, and adding a richer summary so the chat-pane shows the exit code.
+
+Verified end-to-end: the AI now sees the stdout, quotes it verbatim, and the chat-pane summary reads "`ran xgd ticket list --type request --limit 2 (exit 0)`". Cleaning up background processes and committing the fix.
+
+All five SHAs recorded. End-to-end smoke test complete.
+
+**Final state of REQ-46:**
+
+| Field | Value |
+|---|---|
+| Status | `free_coded` |
+| Version | `0.0.27` |
+| Tests | 28/28 REQ-46 UATs pass; full suite 627/627 |
+| Commits | 5 SHAs (2 feat, 2 bump, 1 fix) |
+
+**End-to-end live verification:**
+- Sent a chat request to the running Worker with `DEV_TOOLS_ENABLED=true`
+- AI chose `xgd_ticket` with `{command:"list", args:["--type","request","--limit","2"]}`
+- Worker handler POSTed to the localhost sidecar
+- Sidecar spawned the configured venv's `xgd` against `~/Projects/first-contact`
+- `xgd` returned a real ticket list including REQ-44 and REQ-47
+- AI received the stdout via the `kind`-tagged payload and quoted it verbatim back to the user
+- Chat-pane summary read `ran xgd ticket list --type request --limit 2 (exit 0)`
+
+**Bug found and fixed mid-smoke:** the initial handler didn't set `payload.kind`, so `chat.ts`'s system-action dispatcher only sent the AI the summary string and the AI couldn't read the ticket list. Fix tagged the payload with `kind: "xgd_ticket_result"` and echoed `command`/`args`. UAT updated to assert the new shape.
+
+**To use it from now on:**
+
+```bash
+# In one terminal — leave this running:
+node tools/dev-tools-server/bin/start.mjs
+
+# In another terminal — your normal dev loop:
+pnpm dev:control
+```
+
+Open the builder, ask the AI to list/get/create XGD tickets, and the dispatcher will route through the sidecar. The tool is invisible to any session where `DEV_TOOLS_ENABLED` is not `"true"`, so prod is unaffected.
 
 <!-- xgd-chat-end -->
