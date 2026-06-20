@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-20T18:15:02.694462+00:00'
+updated_at: '2026-06-20T18:27:18.549573+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -1120,6 +1120,45 @@ Done.
 And the Decisions section's resolver bullet now spells out: production's resolver does sync R2 read at build time → markdown→HTML → inlined → static HTML; preview's resolver does live fetch → markdown→HTML → injected into iframe.
 
 The clarification turn is also appended to COMMENT-113 so future ticket readers see your "build time not render time" question and the explicit answer alongside the rest of the design thread.
+
+Ready for the next one.
+
+
+<!-- xgd-turn id="28eb20e6-5c64-41a6-991a-964840499f12" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T18:27:17.509Z" -->
+#### You
+REQ-33 is already implemented - did it do the right thing?
+
+1. The new site creation is sort of pasting new material on top of the example site - this leads to a confusing mess. Can we clear the previous content when we do an import so that I am just looking at what the AI created from the new site (no contamination)?
+2. The safety protocol is broken and frustrating for testing. I don't think it is the correct UX, it doesn't work and it is slowing testing down. Can you remove it for now? We will need to return to the copyright issues later but we have more fundamental concerns to address first.
+
+Please create tickets for these two
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T18:27:17.509Z" -->
+#### Claude
+REQ-33 verdict first: **fully matches spec, 14/14 ACs pass with UAT coverage**. Commit `ee88607`. Verbatim source copy is now structurally enforced — no AI authoring path for body content. Solid.
+
+Now drafting the two tickets.
+
+Both tickets created. Now fixing cross-references, attaching transcripts, and updating BUG-4 to point at REQ-35 as superseder.
+
+Done.
+
+**REQ-33 verdict:** ✅ Implementation in commit `ee88607` fully matches spec. 14/14 ACs satisfied, 35 new UATs pass, no scope creep, back-compat preserved (AssetRef-image schema unchanged; inline-string markdown fields keep working via the HTML-passthrough sniff). One unrelated test flake (REQ-6 CSS-serving filesystem race, not REQ-33's territory). The verbatim source-copy guarantee is now structural — the AI has no authoring path for body content during convert.
+
+**Two new tickets:**
+
+| Ticket | UID | Title | SP |
+|---|---|---|---|
+| **REQ-34** | `request-6c4fbbc3` | Convert flow: clear existing draft to empty scaffold before AI reconstruction | 2 |
+| **REQ-35** | `request-638ea280` | Convert flow: remove destructive-confirmation gate (defer copyright/robots concerns) | 1 |
+
+Both at `draft`. Cross-references between the two are wired (REQ-34 mentions REQ-35 as removing the gate it sits behind; REQ-35 mentions REQ-34's clear-on-import as part of the new safety net). Each has its own design-thread `chat_transcript` comment.
+
+**BUG-4 updated:** body now leads with a "Superseded by REQ-35" banner so anyone landing on it implements REQ-35 instead of fixing the unwired click. Closing BUG-4 out is part of REQ-35's AC 7.
+
+**Net effect once both ship:** operator types "convert this URL" → mirror runs → digest writes → draft clears → AI rebuilds from a clean slate using REQ-33's verbatim copy mechanics. No modal, no contamination, no broken click handler in the way.
 
 Ready for the next one.
 
