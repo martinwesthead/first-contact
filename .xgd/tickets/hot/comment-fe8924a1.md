@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-43
 created_by: xgd
 created_at: '2026-06-20T21:15:48.272700+00:00'
-updated_at: '2026-06-20T23:11:38.251245+00:00'
+updated_at: '2026-06-20T23:30:09.588885+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -138,5 +138,11 @@ Two commits cover the work:
 - `f2d9508` — meta.ts re-export + LLM context updates (recorded on REQ-43).
 
 Note on the concurrency: a parallel headless Claude session working on REQ-42/47/48 was actively rewriting `registry.ts`, `index.ts`, and `meta.ts` during this session, which is why my edits had to be re-applied multiple times and why two of my files ended up in their commit. The wiring is correct in HEAD either way.
+
+<!-- xgd-turn id="dc43afb4-2c5b-4b2a-94a3-c7ed6d2fc0bc-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:29:41.008Z" -->
+#### You
+Can you make a note in those tickets that it contains content described by your commit please
 
 <!-- xgd-chat-end -->
