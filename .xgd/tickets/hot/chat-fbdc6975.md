@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-20T00:08:38.179497+00:00'
+updated_at: '2026-06-20T00:13:57.629715+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -1003,6 +1003,27 @@ Going hybrid solves it cleanly:
 3. **For the existing 1stcontact baseline** — keep its current inline `subhead`/`body` strings as-is (the union allows it), or migrate them to copy files as part of this REQ? Inline-keep is smaller; migration makes the site "use the new system" everywhere. I lean inline-keep — converted sites use files, the baseline keeps its inline strings, no dual-update during the schema change.
 
 Tell me yea/nay on those three and I'll scope. The combined story-points feel like ~5 for the schema/convert-flow REQ and another ~4-5 for the click-to-edit modal REQ — two independent landing steps.
+
+
+<!-- xgd-turn id="7033c88e-42e6-4f2a-9591-1a1097a39159" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:13:57.589Z" -->
+#### You
+Agreed the JSON should support either representation and the user or AI chooses what is most appropriate the system understands both. Agreed?
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T00:13:57.589Z" -->
+#### Claude
+Agreed. So the schema rule is just: **any `"markdown"`-typed content field is a union of `string | AssetRef{kind: 'text'}`.** No per-field "this one must be inline" / "this one must be a file" — the choice is per-instance, made at content time by whoever's authoring (AI during convert, user in the editor, or AI later when directed).
+
+What that simplifies:
+
+- **No boundary table needed.** Any field declared `"markdown"` is file-capable. Other field types (plain string, AssetRef-image, dial, variant) stay as they are.
+- **Promotion/demotion is free.** A short inline body that grows into longform can be moved into a file. A file that ends up being one line can be inlined back. No schema migration — it's the same field type either way.
+- **The convert flow's heuristic is simple**: any source `extractedContent` block above some threshold (paragraph length, has formatting) → file. Below → inline. AI doesn't decide; it's mechanical in `transcribe_site`.
+- **The popup editor's two modes** (simple input vs TipTap) are picked from what's *in* the field, not from the field's schema position. If the value is a string → simple input opens. If it's an AssetRef → TipTap opens against the file. User can convert between via the editor's "save as file" / "inline this" action if we want that affordance.
+- **Existing 1stcontact baseline** stays untouched — all its markdown fields are currently inline strings, which is still valid.
+
+Want me to scope this as the next request ticket now? I'd name it something like "Markdown content fields accept inline string or text-AssetRef union" and scope the schema change + renderer resolver + transcribe_site mechanical-write + minimal AI tool surface (so the AI can create/update text assets). The popup editor lands as a separate follow-up REQ — it doesn't depend on this one's specifics beyond the union type being in place.
 
 
 <!-- xgd-chat-end -->
