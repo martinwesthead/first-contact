@@ -74,7 +74,13 @@ export const xgdTicketHandler: ActionHandler = async (input, ctx) => {
         : `sidecar returned status ${resp.status}`;
     return fail(message);
   }
-  return { status: "ok", payload: parsed };
+  // Tag the payload with `kind` so chat.ts surfaces stdout/stderr to the AI's
+  // next turn (the dispatcher only forwards system_action payloads when kind
+  // is set or the action is get_site_definition).
+  return {
+    status: "ok",
+    payload: { ...parsed, kind: "xgd_ticket_result", command, args: args ?? [] },
+  };
 };
 
 function fail(error: string): ActionResult {

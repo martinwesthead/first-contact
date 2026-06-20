@@ -192,6 +192,13 @@ importers:
         version: 5.9.3
 
   tools/dev-tools-server:
+    dependencies:
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@20.19.43)
+      vite-node:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@20.19.43)
     devDependencies:
       '@types/node':
         specifier: ^20.0.0

@@ -59,7 +59,22 @@ describe("UAT FC REQ-46: xgd_ticket handler routes valid calls to the sidecar an
 
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
-      expect(result.payload).toEqual(sidecarResponse);
+      // Sidecar fields survive verbatim …
+      expect(result.payload!.ok).toBe(true);
+      expect(result.payload!.stdout).toBe(sidecarResponse.stdout);
+      expect(result.payload!.stderr).toBe(sidecarResponse.stderr);
+      expect(result.payload!.exitCode).toBe(0);
+      // … plus a kind tag so chat.ts surfaces the payload to the AI's next
+      // turn (otherwise the system-action dispatcher only sends the summary
+      // string, and the AI can't read the stdout it just fetched).
+      expect(result.payload!.kind).toBe("xgd_ticket_result");
+      expect(result.payload!.command).toBe("create");
+      expect(result.payload!.args).toEqual([
+        "--type",
+        "task",
+        "--title",
+        "Demo",
+      ]);
     }
   });
 
