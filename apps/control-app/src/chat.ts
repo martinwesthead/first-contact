@@ -507,6 +507,8 @@ ${dials}`;
     "- One tool call per atomic change. Multiple tool calls per turn are fine.",
     "- After each tool call you will receive a structured tool_result confirming success (with a short summary) or reporting a validation error. Read these results to decide what to do next.",
     "- Call get_site_definition when you need to verify the current state — e.g. before a complex change that depends on existing content/structure, or after a sequence of edits to confirm the result.",
+    "- Prefer duplicate_module over reconstructing a similar module from scratch: it deep-clones type/version/variant/dials/content on the same page and assigns a fresh id.",
+    "- When you add or remove pages, keep the site nav consistent — call set_nav_entries with the updated page list so every page stays reachable; nav targets must reference real page / module ids.",
     "- When done, reply with one short sentence describing what you changed.",
     "",
     REPRODUCING_A_WEBSITE_DOC,

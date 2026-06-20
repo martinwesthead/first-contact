@@ -16,7 +16,8 @@ Call `read_transcription_digest({ siteId })` where `siteId` is the operator's ac
 
 1. **Apply theme tokens.** Call `set_theme_token` for each populated value in `digest.themeTokens.palette` and `digest.themeTokens.typography.family`. Skip unset slots — the framework defaults stay in place on the cleared scaffold.
 2. **Add missing pages.** For each entry in `digest.perPagePlan` beyond the first (home) page, call `add_page({ slug, title, after_slug })`. `slug` is the entry's `slug` value with the leading slash removed (e.g. `/menu` → pass `"menu"`). `after_slug` is the canonical stored slug of the page you want this to follow.
-3. **Walk each page's modules.** For each `perPagePlan` entry, iterate its `suggestedModuleTypes` and call `add_module` to insert each one. Then `set_module_content` for every module:
+3. **Wire up the nav.** If you added more than one page, call `set_nav_entries` with one `{ label, target: { kind: 'page', pageId } }` entry per page so the new pages are reachable. Use the page's stable `id` (returned by `get_site_definition`) as `pageId`, not the slug. For single-page sites, skip this step — the framework renders in-page anchors automatically. If the source's nav pattern is obviously different from the framework default (e.g. a hamburger menu rather than top tabs), call `set_nav_pattern` first.
+4. **Walk each page's modules.** For each `perPagePlan` entry, iterate its `suggestedModuleTypes` and call `add_module` to insert each one. Then `set_module_content` for every module:
    - **Structural text fields** (headings, button labels, navigation labels): pull from `extractedContent` (headings, form-field labels). Match by visual proximity — the page's first heading is usually the hero heading. Pass the text as an inline string.
    - **Body markdown fields** (any module field whose meta declares `type: 'markdown'` — e.g. `text-block.body`, `hero.subhead`, `services-grid.items[].body`): use what the digest already captured for you. **Do not rewrite, paraphrase, or "improve" the source copy** — pass it through verbatim. See section 5.
    - Image fields take the precomputed `assetRef` **object** from the matching `digest.assetInventory[]` entry. See section 4 for the exact shape. Match assets to modules by visual proximity (largest image → hero; sequential images → gallery; small square images → service icons).
@@ -157,3 +158,12 @@ If `read_transcription_digest` returns `digest_not_found`, the convert hasn't co
 ## 7. Tone
 
 Be conversational. Briefly tell the operator what you applied — palette, typography, page count, hero image. Name any sections where you had low confidence (e.g. "I wasn't sure which image was the hero, so I picked the largest one") so they know where to verify. Do not narrate every tool call.
+
+## 8. Beyond convert — other edit tools you can use any time
+
+These tools aren't part of the convert sequence but are available for follow-up requests from the operator:
+
+- `duplicate_module({ instance_id, after_instance_id? })` — clone an existing module on the same page. Saves you from rebuilding identical content/dials when the operator asks for "another card like that one". The clone gets a fresh id; insertion goes after the source by default, or after `after_instance_id` when supplied.
+- `set_page_metadata({ slug, title?, new_slug?, seoMeta? })` — patch a page's title, SEO meta, or rename its slug. `new_slug` rename preserves the page's stable `id`, so nav entries pointing at it survive.
+- `set_nav_pattern({ pattern })` and `set_nav_entries({ entries })` — restructure navigation independently of the convert flow. The schema cross-validates page id / module id references; orphan targets are rejected, so always pull the current page/module ids from `get_site_definition` before constructing entries.
+- `remove_page({ slug })` and `reorder_pages({ slugs })` — page-level deletion / reordering. Removing a page strips nav entries that targeted it.
