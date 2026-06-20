@@ -1,6 +1,9 @@
 import type {
   ModuleInstance,
+  NavEntry,
+  NavPattern,
   Page,
+  SeoMeta,
   Site,
 } from "@1stcontact/site-schema";
 import { validateSite } from "@1stcontact/site-schema";
@@ -13,11 +16,15 @@ export type ToolName =
   | "add_module"
   | "remove_module"
   | "reorder_modules"
+  | "duplicate_module"
   | "set_theme_token"
   | "set_site_config"
   | "add_page"
   | "remove_page"
-  | "reorder_pages";
+  | "reorder_pages"
+  | "set_page_metadata"
+  | "set_nav_pattern"
+  | "set_nav_entries";
 
 export interface ToolCall {
   readonly name: ToolName;
@@ -62,6 +69,8 @@ export function applyToolCall(
       return applyRemoveModule(site, call);
     case "reorder_modules":
       return applyReorderModules(site, call);
+    case "duplicate_module":
+      return applyDuplicateModule(site, call);
     case "set_theme_token":
       return applySetThemeToken(site, catalog, call);
     case "set_site_config":
@@ -72,6 +81,12 @@ export function applyToolCall(
       return applyRemovePage(site, call);
     case "reorder_pages":
       return applyReorderPages(site, call);
+    case "set_page_metadata":
+      return applySetPageMetadata(site, call);
+    case "set_nav_pattern":
+      return applySetNavPattern(site, call);
+    case "set_nav_entries":
+      return applySetNavEntries(site, call);
     default:
       return failure({
         tool: call.name,
@@ -511,6 +526,178 @@ function applyReorderPages(site: Site, call: ToolCall): ApplyResult {
     }
     nextPages.push(page);
   }
+  return runValidator({ ...site, pages: nextPages }, call.name);
+}
+
+const NAV_PATTERNS: readonly NavPattern[] = [
+  "in-page-anchors",
+  "top-tabs",
+  "top-tabs-dropdown",
+  "hamburger",
+  "footer-only",
+];
+
+function applySetNavPattern(site: Site, call: ToolCall): ApplyResult {
+  const { pattern } = call.input as { pattern?: unknown };
+  if (typeof pattern !== "string") {
+    return failure({ tool: call.name, message: "'pattern' must be a string" });
+  }
+  if (!NAV_PATTERNS.includes(pattern as NavPattern)) {
+    return failure({
+      tool: call.name,
+      path: "nav.pattern",
+      expected: NAV_PATTERNS,
+      got: pattern,
+      message: `nav pattern '${pattern}' is not in [${NAV_PATTERNS.join(", ")}]`,
+    });
+  }
+  const next: Site = {
+    ...site,
+    nav: { ...site.nav, pattern: pattern as NavPattern },
+  };
+  return runValidator(next, call.name);
+}
+
+function applySetNavEntries(site: Site, call: ToolCall): ApplyResult {
+  const { entries } = call.input as { entries?: unknown };
+  if (!Array.isArray(entries)) {
+    return failure({ tool: call.name, message: "'entries' must be an array" });
+  }
+  const next: Site = {
+    ...site,
+    nav: { ...site.nav, entries: entries as NavEntry[] },
+  };
+  return runValidator(next, call.name);
+}
+
+function applySetPageMetadata(site: Site, call: ToolCall): ApplyResult {
+  const { slug, title, new_slug, seoMeta } = call.input as {
+    slug?: unknown;
+    title?: unknown;
+    new_slug?: unknown;
+    seoMeta?: unknown;
+  };
+  if (typeof slug !== "string" || slug.length === 0) {
+    return failure({ tool: call.name, message: "'slug' must be a non-empty string" });
+  }
+  if (
+    title === undefined &&
+    new_slug === undefined &&
+    seoMeta === undefined
+  ) {
+    return failure({
+      tool: call.name,
+      message: "at least one of 'title', 'new_slug', 'seoMeta' must be provided",
+    });
+  }
+  const target = normalizeSlug(slug);
+  const idx = site.pages.findIndex((p) => p.slug === target);
+  if (idx < 0) {
+    return failure({ tool: call.name, message: `no page with slug '${slug}'` });
+  }
+  const page = site.pages[idx]!;
+  let nextPage: Page = page;
+  if (title !== undefined) {
+    if (typeof title !== "string" || title.length === 0) {
+      return failure({
+        tool: call.name,
+        message: "'title' must be a non-empty string",
+      });
+    }
+    nextPage = { ...nextPage, title };
+  }
+  if (new_slug !== undefined) {
+    if (typeof new_slug !== "string" || new_slug.length === 0) {
+      return failure({
+        tool: call.name,
+        message: "'new_slug' must be a non-empty string",
+      });
+    }
+    if (new_slug.startsWith("/")) {
+      return failure({
+        tool: call.name,
+        message:
+          `new_slug '${new_slug}' must be a bare segment (e.g. 'menu'), not a leading-slash path`,
+      });
+    }
+    if (!SLUG_RE.test(new_slug)) {
+      return failure({
+        tool: call.name,
+        message: `invalid new_slug '${new_slug}': must match ${SLUG_RE.source}`,
+      });
+    }
+    const storedNewSlug = `/${new_slug}`;
+    if (storedNewSlug !== page.slug && site.pages.some((p) => p.slug === storedNewSlug)) {
+      return failure({
+        tool: call.name,
+        message: `page with slug '${storedNewSlug}' already exists (duplicate)`,
+      });
+    }
+    nextPage = { ...nextPage, slug: storedNewSlug };
+  }
+  if (seoMeta !== undefined) {
+    if (!isPlainObject(seoMeta)) {
+      return failure({ tool: call.name, message: "'seoMeta' must be an object" });
+    }
+    const merged: SeoMeta = { ...(nextPage.seoMeta ?? {}), ...(seoMeta as SeoMeta) };
+    nextPage = { ...nextPage, seoMeta: merged };
+  }
+  const nextPages = site.pages.map((p, i) => (i === idx ? nextPage : p));
+  return runValidator({ ...site, pages: nextPages }, call.name);
+}
+
+function applyDuplicateModule(site: Site, call: ToolCall): ApplyResult {
+  const { instance_id, after_instance_id } = call.input as {
+    instance_id?: unknown;
+    after_instance_id?: unknown;
+  };
+  if (typeof instance_id !== "string" || instance_id.length === 0) {
+    return failure({
+      tool: call.name,
+      message: "'instance_id' must be a non-empty string",
+    });
+  }
+  const located = findInstance(site, instance_id);
+  if (!located) {
+    return failure({
+      tool: call.name,
+      message: `no module with id '${instance_id}'`,
+    });
+  }
+  const pageIdx = site.pages.findIndex((p) => p.id === located.pageId);
+  const page = site.pages[pageIdx]!;
+  let afterId = instance_id;
+  if (after_instance_id !== undefined) {
+    if (typeof after_instance_id !== "string") {
+      return failure({
+        tool: call.name,
+        message: "'after_instance_id' must be a string when provided",
+      });
+    }
+    if (!page.modules.some((m) => m.id === after_instance_id)) {
+      return failure({
+        tool: call.name,
+        message:
+          `after_instance_id '${after_instance_id}' is not on the same page as source '${instance_id}'`,
+      });
+    }
+    afterId = after_instance_id;
+  }
+  const clone: ModuleInstance = structuredClone(located.instance);
+  const existingIds = new Set(site.pages.flatMap((p) => p.modules.map((m) => m.id)));
+  let suffix = 0;
+  let newId = `${located.instance.type}-${Math.random().toString(36).slice(2, 8)}`;
+  while (existingIds.has(newId)) {
+    suffix += 1;
+    newId = `${located.instance.type}-${Math.random().toString(36).slice(2, 8)}-${suffix}`;
+  }
+  clone.id = newId;
+  const afterIdx = page.modules.findIndex((m) => m.id === afterId);
+  const nextModules = [...page.modules];
+  nextModules.splice(afterIdx + 1, 0, clone);
+  const nextPages = site.pages.map((p, i) =>
+    i === pageIdx ? { ...p, modules: nextModules } : p,
+  );
   return runValidator({ ...site, pages: nextPages }, call.name);
 }
 
