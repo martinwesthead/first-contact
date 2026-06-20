@@ -5,14 +5,17 @@ type: request
 title: 'Chat panel: block send while turn in flight (spinner + disabled button)'
 created_by: xgd
 created_at: '2026-06-20T00:26:31.230463+00:00'
-updated_at: '2026-06-20T00:29:03.157951+00:00'
+updated_at: '2026-06-20T00:33:52.595200+00:00'
 completed_at: null
-last_field_updated: priority
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - f66a3c5f790155c7e37c5f4b2f8952a4bef61583
+  version: 0.14.1236
 ---
 
 ## Symptom
