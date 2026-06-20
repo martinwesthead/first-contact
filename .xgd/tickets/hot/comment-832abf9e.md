@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-18
 created_by: xgd
 created_at: '2026-06-20T19:23:39.986463+00:00'
-updated_at: '2026-06-20T19:33:01.426955+00:00'
+updated_at: '2026-06-20T19:34:59.972892+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -70,5 +70,11 @@ Done. Wrangler bumped to v4.103.0, committed as `40d7ded`, CHAT-18 updated.
 - Verified: `pnpm install` clean, `vitest` 394/394 pass, both apps pass `wrangler deploy --dry-run` with all bindings (D1, KV×4, R2, ASSETS) intact
 
 **Heads-up — pre-existing issue noticed (not caused by this bump)**: `pnpm build` in `packages/extractor` fails `tsc --noEmit` with `TS2304: Cannot find name 'KVNamespace'` against `web-fetch-safety` sources. Reproduced under the v3 lockfile too — extractor's `tsconfig.json` doesn't declare `@cloudflare/workers-types` in `types`, and `web-fetch-safety` uses `KVNamespace` as a global without importing it. Out of scope here; flag if you'd like a separate ticket.
+
+<!-- xgd-turn id="412ad869-a67a-4e5e-abe2-4b34d90d7e57-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T19:34:19.971Z" -->
+#### You
+PLease create a ticket for the build issue
 
 <!-- xgd-chat-end -->
