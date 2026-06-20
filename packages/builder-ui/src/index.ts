@@ -19,6 +19,10 @@ export {
   type ToolCall,
   type ToolName,
 } from "./tools.js";
+export {
+  buildEmptyScaffold,
+  type EmptyScaffoldArgs,
+} from "./empty-scaffold.js";
 export { renderSiteIntoIframe } from "./preview.js";
 export {
   createBuilderLayout,
@@ -56,10 +60,6 @@ export {
   createDigestReportRenderer,
   registerDigestReport,
 } from "./components/digest-report.js";
-export {
-  createConvertConfirmationRenderer,
-  registerConvertConfirmation,
-} from "./components/convert-confirmation.js";
 export {
   createTranscribeProgressCard,
   createTranscribeProgressRenderer,

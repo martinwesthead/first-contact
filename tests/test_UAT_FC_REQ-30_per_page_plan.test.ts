@@ -6,7 +6,6 @@ describe("UAT FC REQ-30: digest.perPagePlan reflects discovered pages (AC7)", ()
   it("single-page digest produces a perPagePlan with one entry whose slug derives from URL path", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-single" });
     await h.seedDigest("https://acme.test/");
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const obj = await h.env.ASSETS_BUCKET.get(
@@ -97,7 +96,6 @@ describe("UAT FC REQ-30: digest.perPagePlan reflects discovered pages (AC7)", ()
         assetInventory: [],
       },
     } as Partial<ReferenceDigest>);
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const obj = await h.env.ASSETS_BUCKET.get(
