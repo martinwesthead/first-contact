@@ -74,4 +74,8 @@ export {
   type ChatDriverOptions,
   type ChatTurnResult,
 } from "./chat-driver.js";
-export { bootBuilder, type BootBuilderOptions } from "./main.js";
+export {
+  bootBuilder,
+  SESSION_ID_STORAGE_KEY,
+  type BootBuilderOptions,
+} from "./main.js";
