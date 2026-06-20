@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-34
 created_by: xgd
 created_at: '2026-06-20T18:26:42.904782+00:00'
-updated_at: '2026-06-20T19:19:19.206082+00:00'
+updated_at: '2026-06-20T19:25:40.575455+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -223,5 +223,31 @@ added text-block@v1 to page home
 added services-grid@v1 to page home
 
 Unfortunately even after a couple of attempts I am still seeing no assets in the chat feed (did REQ-35 remove them?) and the sandbox iFrame is still blank
+
+<!-- xgd-turn id="ebe7e996-c9e1-45d6-83fd-796d60a56778-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T19:25:39.563Z" -->
+#### Claude
+Let me check what was rendered in the chat before vs. now.
+
+I see two distinct symptoms in your trace. Let me scope a bug ticket and dig in — this is beyond REQ-34's scope.
+
+BUG-10 scoped. Let me ship the mechanical wiring fix first (low-risk, clearly correct — `registerTranscribeProgress` was never called in `bootBuilder`), which addresses symptom 1 directly. Symptom 2 needs dev-server verification before I touch code.
+
+Making the wiring fix for symptom 1 (TranscribeProgress card).
+
+Now write a UAT that locks in the wiring so this regression can't sneak back in.
+
+All 380 tests pass. Bump version and commit.
+
+**Status:**
+
+- **BUG-10** scoped: `bug-52efd958` — *Convert flow: blank iframe + missing TranscribeProgress card after REQ-34/REQ-35*
+- **Issue 1 (no assets in chat feed) — fixed.** Commit `65e79b6` wires `registerTranscribeProgress()` into `bootBuilder` next to `registerDigestReport()`. The renderer existed and tested fine in isolation, but was never registered in the live SPA, so `transcribe_site_done` results were dropping to the plain summary card (which has no asset list / no failures section / no Stage rows). Pre-existed REQ-34; my Stage 0 addition just made it more visible. Locked in by a UAT that clears the dispatcher and asserts `bootBuilder` registers both `transcribe_site_done` and `reference_digest` keys.
+- **Issue 2 (blank iframe) — not yet fixed.** My ID-mismatch hypothesis is plausible but not proven. The user's trace shows the AI now sees IDs like `header-1`, `hero-1` (suggesting it's already passing explicit IDs on retry) yet the iframe is still blank — so there's more to it than just the doc-gap. Want to boot `wrangler dev`, run an actual convert, capture each tool-call summary's `accepted`/`error`, and look at the iframe's rendered HTML before committing to a fix.
+
+REQ-34 stays at `free_coded`. BUG-10 is open at `in_progress` with the partial fix recorded.
+
+Do you want me to (a) keep going on BUG-10 issue 2 via dev-server repro now, or (b) hand back so you can refresh and tell me whether issue 1's fix already changed what you see?
 
 <!-- xgd-chat-end -->
