@@ -146,9 +146,38 @@
         cursor: pointer;
         flex: 0 0 auto;
         align-self: flex-end;
+        min-width: 64px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
       .fc-chat__send:hover {
         background: #1d4ed8;
+      }
+      .fc-chat__send:disabled {
+        cursor: not-allowed;
+        background: #1d4ed8;
+        opacity: 0.85;
+      }
+      .fc-chat__send-spinner {
+        display: none;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: fc-chat-spin 0.8s linear infinite;
+      }
+      .fc-chat__send[aria-busy="true"] .fc-chat__send-label {
+        display: none;
+      }
+      .fc-chat__send[aria-busy="true"] .fc-chat__send-spinner {
+        display: inline-block;
+      }
+      @keyframes fc-chat-spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
       .fc-preview {
         display: flex;
