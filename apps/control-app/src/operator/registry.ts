@@ -2,6 +2,7 @@ import { analyzePageHandler } from "./analyze-page.js";
 import { readTranscriptionDigestHandler } from "./read-transcription-digest.js";
 import { transcribeSiteHandler } from "./transcribe-site.js";
 import { writeTextAssetHandler } from "./write-text-asset.js";
+import { xgdTicketHandler } from "./xgd-ticket.js";
 import type { ChatHandlerEnv } from "../chat.js";
 import type { SseEvent } from "./events.js";
 import { type ActionCategory, type PlanTier, type Session, tierPermits } from "./types.js";
@@ -602,6 +603,37 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
     },
     handler: reportValidationRejectionHandler,
   },
+  {
+    name: "xgd_ticket",
+    category: "system_action",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "REQ-46 dev-only. Proxies a constrained allowlist of `xgd ticket` subcommands ({create, list, get}) to a localhost sidecar (tools/dev-tools-server) that spawns xgd against the developer's first-contact checkout. visibleToolSpecs() hides this tool unless env.DEV_TOOLS_ENABLED === 'true', so production chat sessions never see it; the handler also re-checks the flag itself.",
+    tool_spec: {
+      name: "xgd_ticket",
+      description:
+        "DEV-ONLY tool for the operator (the developer building 1st Contact). Runs the constrained xgd ticket allowlist {create, list, get} against the local first-contact project. Use 'list' to enumerate tickets, 'get' to read one by id/uid, and 'create' to file a new ticket. Returns the xgd CLI's stdout / stderr / exitCode.",
+      input_schema: {
+        type: "object",
+        properties: {
+          command: {
+            type: "string",
+            enum: ["create", "list", "get"],
+            description: "Which `xgd ticket` subcommand to run.",
+          },
+          args: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Extra argv tokens appended after the subcommand, e.g. ['--type','task','--title','Foo'].",
+          },
+        },
+        required: ["command"],
+      },
+    },
+    handler: xgdTicketHandler,
+  },
 ];
 
 export const OPERATOR_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
@@ -613,9 +645,17 @@ export function findAction(name: string): OperatorActionSpec | undefined {
   return OPERATOR_ACTIONS.find((a) => a.name === name);
 }
 
-export function visibleToolSpecs(planTier: PlanTier): ReadonlyArray<ToolSpec> {
+export interface VisibleToolOpts {
+  readonly devToolsEnabled?: boolean;
+}
+
+export function visibleToolSpecs(
+  planTier: PlanTier,
+  opts: VisibleToolOpts = {},
+): ReadonlyArray<ToolSpec> {
   return OPERATOR_ACTIONS
     .filter((a) => tierPermits(planTier, a.plan_tier))
+    .filter((a) => (a.name === "xgd_ticket" ? opts.devToolsEnabled === true : true))
     .map((a) => a.tool_spec);
 }
 
