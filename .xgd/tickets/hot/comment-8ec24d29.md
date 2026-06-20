@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-38
 created_by: xgd
 created_at: '2026-06-20T21:10:59.668713+00:00'
-updated_at: '2026-06-20T21:43:20.296418+00:00'
+updated_at: '2026-06-20T21:53:41.428606+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -187,5 +187,11 @@ pnpm test tests/test_UAT_FC_REQ-38_one_throw_does_not_drop_batch.test.ts
 ```
 
 REQ-38 ticket stays in `draft` status (no commits yet, nothing to attribute under the free-coding protocol).
+
+<!-- xgd-turn id="45a2c10e-9703-4ca0-9eb2-4dfdeaa80b6a-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T21:53:24.648Z" -->
+#### You
+REQ-36 is now complete, please proceed
 
 <!-- xgd-chat-end -->
