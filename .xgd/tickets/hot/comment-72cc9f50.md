@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:31:26.124711+00:00'
+updated_at: '2026-06-20T23:39:14.161790+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -173,5 +173,52 @@ I have **not** committed yet. Want me to:
 <!-- xgd-chat role="user" ts="2026-06-20T23:31:15.442Z" -->
 #### You
 yes
+
+<!-- xgd-turn id="8b5f417d-8677-4701-8c69-8ebbfc36632a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:39:13.155Z" -->
+#### Claude
+I'll commit step 1, then proceed to step 2.
+
+The stale `.claude/headless-settings.json` is back somehow (Claude Code may track it). Cleaning it up and staging only the REQ-46 files for the commit.
+
+The version-bump commit ran between my edit and now, but only touched the version line — my dev-tools-server dep line was lost separately. I'll re-add it.
+
+Step 1 committed at `3484fb1` and recorded on REQ-46. Moving to step 2 — the Workers handler, registration with dev-only gating, and the five remaining UATs.
+
+Now wire it into `registry.ts` and gate `visibleToolSpecs` on `devToolsEnabled`.
+
+Now update `chat.ts` to pass the flag and add the env keys to its interface.
+
+Now the five UATs.
+
+All 28 REQ-46 UATs pass. Quick check that I didn't break any other test that uses `visibleToolSpecs`.
+
+Full test suite: **627/627 pass**. The TS errors are pre-existing DOM-type issues in builder-ui (untouched by my changes). Committing step 2.
+
+REQ-46 is **free_coded**. Final state:
+
+- **Status**: `free_coded`
+- **Version**: `0.0.26`
+- **Commits**: 3 SHAs recorded
+  - `3484fb1` — step 1 (sidecar + 12 sidecar UATs)
+  - `35eeb8d` — step 2 (xgd_ticket handler, registration, gating + 16 Workers UATs)
+  - `f4724a3` — version bump 0.0.25 → 0.0.26
+- **Tests**: 28 REQ-46 UATs (all green); full suite 627/627
+- **Body**: preserved from the scoping pass
+
+**What's now wired up end-to-end** (still gated off by default):
+
+1. `tools/dev-tools-server/` — localhost Node sidecar. Run with `pnpm --filter @1stcontact/dev-tools-server exec node bin/start.mjs` (or `fc-dev-tools-server`). Defaults: bin = `.venv-working/bin/xgd`, cwd = `~/Projects/first-contact`, port = `7878`. Allowlist = `{create, list, get}`. Cwd guard rejects anything outside `~/Projects/first-contact`.
+2. `apps/control-app/src/operator/xgd-ticket.ts` — Worker-side handler that POSTs to the sidecar; refuses everything when `DEV_TOOLS_ENABLED !== "true"`.
+3. `visibleToolSpecs(planTier, {devToolsEnabled})` — hides the tool from the AI's tool list unless explicitly enabled.
+
+To smoke-test end-to-end locally (step 3 of the original plan, **not yet done** — you said to commit and continue, so I stopped here):
+
+1. Add `DEV_TOOLS_ENABLED = "true"` to `apps/control-app/.dev.vars`.
+2. Start the sidecar: `node tools/dev-tools-server/bin/start.mjs` from the repo root.
+3. `pnpm dev:control` — open the builder, ask the AI "list our tickets" and you should see the `xgd_ticket` tool call render in the chat panel.
+
+Want me to do the smoke test now, or is your local setup in a state where you'd rather drive it yourself?
 
 <!-- xgd-chat-end -->
