@@ -6,9 +6,9 @@ title: 'Dev workflow: pnpm dev:control does not rebuild builder SPA bundle on so
   change'
 created_by: xgd
 created_at: '2026-06-20T00:23:20.860987+00:00'
-updated_at: '2026-06-20T00:28:32.582282+00:00'
+updated_at: '2026-06-20T00:29:07.081871+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -47,33 +47,33 @@ Result: a developer who runs `pnpm dev` and edits builder-ui or framework code s
 
 This caused real wasted time on the BUG-3 fix (~30 min of "is my fix not working? is the browser caching? is localStorage corrupting state?") before realizing the bundle itself was stale.
 
-## Fix
+## Fix (shipped)
 
-Make `pnpm dev:control` run the bundler in watch mode alongside wrangler.
+Option 1 from the original analysis — `concurrently` in the `dev` script, watch mode added to the existing bundler script.
 
-Options:
+- `apps/control-app/scripts/build-builder-bundle.mjs` now accepts `--watch`. When set, it uses esbuild's `context().watch()` to rebuild incrementally instead of running a one-shot `esbuild.build()`. Logs `Watching <entry> → <outfile>` after the first build so the dev loop is visible.
+- `apps/control-app/package.json` adds `build:bundle:watch` (`node scripts/build-builder-bundle.mjs --watch`) and rewires `dev` to:
+  `concurrently -k -n bundle,wrangler -c yellow,magenta "pnpm build:bundle:watch" "wrangler dev --port 8788"`.
+  `concurrently` is already a root devDependency.
 
-1. **`concurrently` in the dev script** (preferred — minimal, matches the existing pattern in the root `package.json` `dev` script). Wrap esbuild's `context.watch()` in a tiny `build-builder-bundle.watch.mjs` (or add a `--watch` flag to the existing script), then:
-
-   ```json
-   "dev": "concurrently -k -n bundle,wrangler -c yellow,magenta \"pnpm build:bundle:watch\" \"wrangler dev --port 8788\"",
-   "build:bundle:watch": "node scripts/build-builder-bundle.mjs --watch",
-   ```
-
-2. **esbuild watch inside wrangler's lifecycle** — wrangler 3 has a `pre` hook in some configs; not as clean.
-
-Shape 1 is the recommended path. The builder-ui and framework packages are TS source the bundler reads directly (no `tsc` step is needed for the SPA build), so esbuild's incremental watch is fast (~50ms per rebuild based on the cold-start time).
+The build path consumes TS source directly via esbuild's dep graph, so edits anywhere in the entry graph — both `packages/builder-ui` and `packages/framework` — trigger an incremental rebuild without further plumbing.
 
 ## Test plan
 
-Manual smoke test (no automated UAT is realistic here — this is a dev-loop concern, not a runtime behavior):
+A UAT covers both modes of the bundler:
+`tests/test_UAT_FC_BUG-7_build_bundle_watch.test.ts`
 
-1. `pnpm dev:control`.
-2. Confirm initial bundle build happens at startup (esbuild logs the output path).
+1. **One-shot** (no `--watch`): spawns the script, asserts exit code 0, asserts `Built …builder.js` log, asserts the output bundle exists and is non-empty.
+2. **Watch** (`--watch`): spawns the script, waits for the `Watching` log line, captures the bundle's mtime, bumps the entry source's mtime (`utimes`) to trigger esbuild's watcher, then polls the bundle's mtime for up to 15s and asserts it advances. The subprocess is killed in a `finally` block; a session-scoped `afterAll` SIGKILLs any stragglers.
+
+Run: `pnpm test tests/test_UAT_FC_BUG-7_build_bundle_watch.test.ts` — both tests pass in well under a second on a warm cache.
+
+Manual smoke (the original test plan, still valid):
+
+1. `pnpm dev:control` from the repo root.
+2. Observe the initial build log from the watcher, then `wrangler` startup.
 3. Open http://localhost:8788/builder.
-4. Edit `packages/builder-ui/src/main.ts` — add a `console.log("WATCH-OK")` inside `bootBuilder`.
-5. Save; observe esbuild rebuild log within ~200ms.
+4. Edit `packages/builder-ui/src/main.ts` — add `console.log("WATCH-OK")` inside `bootBuilder`.
+5. Save; observe the esbuild rebuild log within ~200ms.
 6. Hard-reload the browser; confirm `WATCH-OK` appears in the console.
-7. Remove the `console.log`; observe rebuild; reload; gone.
-
-Also verify the rebuild path includes both packages: edit `packages/framework/src/render/browser.ts` similarly and confirm the rebuild fires (esbuild's dep graph should pick it up automatically since the entry point pulls it transitively).
+7. Repeat with `packages/framework/src/render/browser.ts` to confirm the cross-package dep graph is watched.
