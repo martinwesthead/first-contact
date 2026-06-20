@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-43
 created_by: xgd
 created_at: '2026-06-20T21:15:48.272700+00:00'
-updated_at: '2026-06-20T23:30:09.588885+00:00'
+updated_at: '2026-06-20T23:30:13.263434+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -144,5 +144,16 @@ Note on the concurrency: a parallel headless Claude session working on REQ-42/47
 <!-- xgd-chat role="user" ts="2026-06-20T23:29:41.008Z" -->
 #### You
 Can you make a note in those tickets that it contains content described by your commit please
+
+<!-- xgd-turn id="dc43afb4-2c5b-4b2a-94a3-c7ed6d2fc0bc-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:30:12.242Z" -->
+#### Claude
+Both tickets now carry cross-attribution notes:
+
+- **REQ-42** (request-e220320e) — comment COMMENT-132: explains that its commit `e505d92` also contains REQ-43's logo-strip module + UATs.
+- **REQ-43** (request-65dcc242) — comment COMMENT-133: explains the bulk of REQ-43's implementation lives in `e505d92` (registered against REQ-42), with `f2d9508` carrying only the meta.ts re-export + LLM context updates.
+
+The notes flag the cross-attribution for reconcile so the work isn't lost or mis-categorized.
 
 <!-- xgd-chat-end -->
