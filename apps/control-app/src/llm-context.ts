@@ -27,7 +27,8 @@ Call \`read_transcription_digest({ siteId })\` where \`siteId\` is the operator'
 3. **Walk each page's modules.** For each \`perPagePlan\` entry, iterate its \`suggestedModuleTypes\` and call \`add_module\` to insert each one. Then \`set_module_content\` for every module:
    - **Structural text fields** (headings, button labels, navigation labels): pull from \`extractedContent\` (headings, form-field labels). Match by visual proximity — the page's first heading is usually the hero heading. Pass the text as an inline string.
    - **Body markdown fields** (any module field whose meta declares \`type: 'markdown'\` — e.g. \`text-block.body\`, \`hero.subhead\`, \`services-grid.items[].body\`): use what the digest already captured for you. **Do not rewrite, paraphrase, or "improve" the source copy** — pass it through verbatim. See section 5.
-   - Image fields take the precomputed \`assetRef\` **object** from the matching \`digest.assetInventory[]\` entry. See section 4 for the exact shape. Match assets to modules by visual proximity (largest image → hero; sequential images → gallery; small square images → service icons).
+   - Image fields take the precomputed \`assetRef\` **object** from the matching \`digest.assetInventory[]\` entry. See section 4 for the exact shape. Match assets to modules by visual proximity (largest image → hero; sequential images → \`image-gallery\`; small square images → service icons).
+   - \`image-gallery\` populates \`items[]\` one entry per asset, where each entry is \`{ image: <assetRef>, caption?: <string> }\`. Pull captions from \`extractedContent\` if present (figcaption-adjacent text); otherwise leave \`caption\` unset rather than fabricating one.
    - Skip any module whose content/assets can't be matched. Don't fabricate content.
 
 ## 4. Asset reference rules
