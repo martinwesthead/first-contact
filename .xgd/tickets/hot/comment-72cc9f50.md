@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:26:20.084861+00:00'
+updated_at: '2026-06-20T23:30:43.979405+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -138,5 +138,34 @@ Two questions before I start typing code:
 <!-- xgd-chat role="user" ts="2026-06-20T23:26:11.862Z" -->
 #### You
 `~/Projects/xgendev-main/.venv-working`
+
+<!-- xgd-turn id="7dd982e4-6153-4101-bf98-8bee5df21279-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:30:42.858Z" -->
+#### Claude
+Updating the ticket with the venv choice, then I'll do step 1.
+
+I have enough to write step 1. Building the sidecar package now: handler + spawner + HTTP server + bin shim + 2 UATs.
+
+Installing the new workspace package and running the UATs.
+
+12/12 sidecar UATs pass. Step 1 is functionally complete. Let me update the ticket and pause for sign-off before committing or moving to step 2.
+
+**Step 1 complete.** Status:
+
+- New workspace package `@1stcontact/dev-tools-server` at `tools/dev-tools-server/`
+  - `src/handler.ts` — pure function, validates command ∈ {create,list,get}, validates args is `string[]`, cwd-guards against being outside the project root, delegates to an injected `Spawner`
+  - `src/spawner.ts` — real `execFile`-based spawner
+  - `src/server.ts` — Node `http` server, binds 127.0.0.1, max body 64 KiB, only `POST /xgd-ticket`
+  - `src/start.ts` + `bin/start.mjs` — entrypoint using the same vite-node shim pattern as `tools/generate`. Defaults: `XGD_BIN=~/Projects/xgendev-main/.venv-working/bin/xgd`, `XGD_CWD=~/Projects/first-contact`, `PORT=7878`
+- `package.json` (root) gained `@1stcontact/dev-tools-server` workspace dep so the symlink resolves
+- Two UAT files, **12 tests, all passing**:
+  - `test_UAT_FC_REQ-46_sidecar_refuses_command_outside_allowlist.test.ts` (7 tests — covers `delete`/`update`/empty/non-string command rejection, accepts `create`/`list`/`get`, rejects non-string args)
+  - `test_UAT_FC_REQ-46_sidecar_refuses_cwd_outside_first_contact.test.ts` (5 tests — including the prefix-substring attack `first-contact-evil`, subdir acceptance, exact-root acceptance)
+
+I have **not** committed yet. Want me to:
+
+(a) commit step 1 now as a `[FREE-CODED]` commit on `xgd-working`, then continue to step 2 (Workers handler + registration with `DEV_TOOLS_ENABLED` gating + the five remaining UATs), or
+(b) hold off on the commit and continue to step 2 first, then commit everything together?
 
 <!-- xgd-chat-end -->
