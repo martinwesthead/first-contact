@@ -5,10 +5,10 @@ type: request
 title: 'Convert flow: clear existing draft to empty scaffold before AI reconstruction'
 created_by: xgd
 created_at: '2026-06-20T18:25:53.585952+00:00'
-updated_at: '2026-06-20T18:47:40.917646+00:00'
+updated_at: '2026-06-20T21:17:01.448841+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   priority: high
   story_points: 2
