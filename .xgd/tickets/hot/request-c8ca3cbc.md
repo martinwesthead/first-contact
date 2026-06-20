@@ -5,9 +5,9 @@ type: request
 title: 'Module: testimonials@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:02.247298+00:00'
-updated_at: '2026-06-20T23:08:46.803271+00:00'
+updated_at: '2026-06-20T23:08:59.077733+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   auto_merge_back: true
@@ -67,3 +67,15 @@ Single quotes or a carousel of client quotes. Very common on service businesses.
 - `UAT-4` `align` dial applies an `fc-testimonials--align-${value}` class.
 - `UAT-5` Avatar is rendered as an `<img>` with the AssetRef `src`/`alt` when provided; omitted when not.
 - `UAT-6` Quote markdown is rendered as HTML (not escaped).
+
+
+
+## Attribution note
+
+Concurrent free-coding sessions across REQ-39/40/41/42/43 created interleaving file writes. The testimonials module source files (`packages/framework/src/modules/testimonials/{index.astro, meta.ts}`) and the six `test_UAT_FC_REQ-40_*` UAT tests landed in commit `3f6cb5e` alongside REQ-39's split-section work. That SHA is attributed to REQ-39.
+
+REQ-40's own commits cleanly add the registry/exports wiring and the version bump:
+- `ab0035a` — registry.ts + index.ts entries for testimonials
+- `d4c5e4b` — version bump 0.0.20 → 0.0.21
+
+All 9 REQ-40 UAT tests (`test_UAT_FC_REQ-40_*`) pass after the registration commit.
