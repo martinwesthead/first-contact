@@ -5,17 +5,17 @@ type: request
 title: 'Module: testimonials@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:02.247298+00:00'
-updated_at: '2026-06-20T23:09:36.971514+00:00'
+updated_at: '2026-06-20T23:14:09.946973+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: commits
 status: ready_to_reconcile
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
   commits:
-  - ab0035a2a065a46b715f122cc8c6ec05321952d6
-  - d4c5e4bc809c11e33f78a2fc2e630f2e84fa848d
+  - 36d7728eaf1deb2c66ac8fc568dede51f4d7c5ea
+  - 41bb985fc5a98996c891b29a59689c5b22b18934
   version: 0.0.21
 ---
 
