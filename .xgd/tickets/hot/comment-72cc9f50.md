@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:15:24.256612+00:00'
+updated_at: '2026-06-20T23:16:29.334931+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -98,5 +98,39 @@ I haven't built a wrapper script — you mentioned the headless launcher exists 
 <!-- xgd-chat role="user" ts="2026-06-20T23:13:31.121Z" -->
 #### You
 Ok I would like you to remove anything that applies to command line Claude and listen carefully. The project in this workspace is a web builder that invokes Claude via API. Today it has the ability to modifyu the web settings and a tool for downloading website content. I want you to give it another tool specifically for dev, it neets to run xgd ticket per the constraints we discussed. It needs to use the implementation in ~martin/Projects/xgendev-main/.venv-workspace and it needs to run in ~martin/Projects/first-contact - got it?
+
+<!-- xgd-turn id="b9eabe81-c5cb-413b-9aa2-732a840cee1d-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:16:29.334Z" -->
+#### Claude
+Got it — completely different scope than I was working on. The web builder calls the **Anthropic API** with tool definitions; you want a new tool registered for it. Let me clean up the wrong direction and explore the existing tools.
+
+The venv path you gave (`~/Projects/xgendev-main/.venv-workspace`) doesn't exist. Let me check what's actually there, and also find the existing builder tools so I can pattern the new one correctly.
+
+Let me find where tools are registered for the Anthropic API and the "download website content" tool — those will be the right pattern to follow.
+
+This is a Cloudflare Workers app (`KVNamespace`, `R2Bucket` in the env) — Workers can't spawn subprocesses. Before I scope this, let me confirm a few things: how the control-app is run locally, and what's actually at the xgendev path you named.
+
+I now have enough context to ask precisely. Two blockers I need you to resolve before I scope the ticket and write code:
+
+1. **Venv path mismatch**: `~/Projects/xgendev-main/.venv-workspace` doesn't exist. There are five candidates with `xgd` installed:
+   - `.venv-main-hot`, `.venv-xgendev-main`, `.venv-working`, `.venv-main` (all run xgd 0.14.1243)
+   - `.venv-calc` has no xgd binary
+
+2. **Runtime**: control-app runs on Cloudflare Workers (`wrangler dev` for local, `wrangler deploy` for prod). Workers has no `child_process`, so the tool handler can't directly spawn `xgd`. The pattern has to be: handler in Workers → HTTP call to a small local sidecar (Node) → sidecar spawns `xgd` with cwd=first-contact.
+
+OK, proceeding with the recommended defaults. I'll write the ticket scope first and share it for your sign-off before any code lands.
+
+REQ-46 is now scoped with the architecture, tool spec, defaults, UAT names, and out-of-scope. Quick summary:
+
+- **Tool**: `xgd_ticket` system-action; `command ∈ {create, list, get}`; arrays of args.
+- **Architecture**: Workers handler → fetch → `127.0.0.1:7878` Node sidecar → spawn xgd. Sidecar enforces venv path, cwd guard (must be `~/Projects/first-contact`), and re-checks the command allowlist.
+- **Defaults I picked (since you skipped the questions)**: venv = `.venv-xgendev-main`, port = `7878`, gating = `env.DEV_TOOLS_ENABLED === "true"` so the tool is invisible to end users in prod.
+- **Order**: sidecar (+ its UATs) → handler/registration (+ Workers UATs) → smoke test → commit + status=free_coded.
+
+Two questions before I start typing code:
+
+1. Are the defaults OK? (Especially `.venv-xgendev-main` and `DEV_TOOLS_ENABLED` gating.) The original message said `.venv-workspace` which doesn't exist — I want to be sure `.venv-xgendev-main` is what you actually meant.
+2. Do you want me to proceed with all of step 1 (sidecar + its UATs) before checking in, or would you rather see each file as I write it?
 
 <!-- xgd-chat-end -->
