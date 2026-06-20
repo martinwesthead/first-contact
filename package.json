@@ -1,6 +1,6 @@
 {
   "name": "1stcontact",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "private": true,
   "description": "1stcontact.io platform monorepo",
   "packageManager": "pnpm@9.12.0",
