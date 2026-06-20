@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-37
 created_by: xgd
 created_at: '2026-06-20T21:10:31.892309+00:00'
-updated_at: '2026-06-20T21:11:22.384231+00:00'
+updated_at: '2026-06-20T21:28:42.350426+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -51,5 +51,16 @@ I've read the ticket and the relevant code. Before implementing, I want to clari
    - (c) **Client-side display** — chat driver collects `action:failed` events and shows a "retry these" panel after the run.
    
    Which do you want? And what counts — every failed action handler call, or only module-mutation calls?
+
+<!-- xgd-turn id="4abc97c0-7c7c-4b19-b989-f9d2b08ca4eb-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T21:28:29.577Z" -->
+#### You
+**The summary for your dev team:**
+
+1. Yes — failed URLs and reasons in the summary payload
+2. Yes — read-back check before returning from transcribe_site
+3. Option (a) — delete old digest at Stage 0, return `not_ready` if none exists
+4. Option (c) — client-side failure panel, plus inject failures back into AI context for automatic retry
 
 <!-- xgd-chat-end -->
