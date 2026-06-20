@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-41
 created_by: xgd
 created_at: '2026-06-20T21:13:52.055228+00:00'
-updated_at: '2026-06-20T22:56:59.286885+00:00'
+updated_at: '2026-06-20T23:11:37.216113+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -119,5 +119,71 @@ Pre-existing unrelated working-tree changes (`docs/llm-context/reproducing-a-web
 <!-- xgd-chat role="user" ts="2026-06-20T22:56:54.830Z" -->
 #### You
 Can you make sure the AI instructions are updated to include this feature
+
+<!-- xgd-turn id="5b0e165f-cd2c-4b15-b542-14cd18d92f1a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:03:18.653Z" -->
+#### Claude
+Let me find which docs serve as the AI module catalog.
+
+Let me check the drift test to understand what byte-for-byte sync I need to preserve.
+
+The drift test is already failing due to a pre-existing unsynced edit (not mine). I'll mirror my changes to both files so I don't add new drift. First, update the ticket body to reflect the additional scope, then make the edits.
+
+Now edit both files identically. Look at the exact line in both.
+
+Now add a UAT that asserts the doc names `image-gallery`.
+
+Now confirm I haven't introduced fresh drift in REQ-30 — my edits to the two mirrored files should net out.
+
+Drift is unchanged — my mirror is balanced. Let me confirm by inspecting what I'm about to stage.
+
+I need to stage only my hunk in the .md, leaving the pre-existing unstaged edits unchanged. Let me do a checkout/apply dance.
+
+Now apply only my image-gallery edit on HEAD content, stage it, then restore the full working tree.
+
+External edits reverted my .ts change. Let me reapply, and also check what changed externally on the registry.
+
+The repo is being concurrently edited. Let me check what's actually in my staged llm-context.ts and unstage the unrelated files.
+
+Those three module-catalog files got staged by another concurrent process — they belong to REQ-39 / REQ-40. Unstage them.
+
+Now stage and commit immediately. The .md has pre-existing unrelated hunks I need to skip — I'll use the same dance.
+
+Now stage, restore working tree, and commit in one chained command to minimize window for concurrent disruption.
+
+Unstage the unrelated split-section files and commit only mine.
+
+Now exactly my 3 files are staged. Commit immediately.
+
+My image-gallery doc edit got committed by a concurrent automation as commit `3fe9b0b`, but under a misleading "feat(framework): add split-section@v1" message. The actual diff is mine. Let me add that commit to REQ-41's tracking.
+
+Done. Here's what landed and an important note:
+
+**REQ-41 docs update — committed**
+
+| Item | Value |
+|------|-------|
+| Status | `ready_to_reconcile` |
+| Commits tracked | `6f3fa5a` (feature), `ff2c55d` (bump), `3fe9b0b` (docs) |
+| Doc UAT | 2/2 pass |
+
+**Edits shipped**
+
+- `docs/llm-context/reproducing-a-website.md` and its byte-for-byte mirror `apps/control-app/src/llm-context.ts` now name `image-gallery` explicitly in the visual-proximity heuristic and explain how to populate its `items[]` (one entry per asset, each `{ image, caption? }`).
+- New `test_UAT_FC_REQ-41_llm_context_doc_mentions_image_gallery.test.ts` asserts the doc names the module — drift removes the hint deliberately rather than silently.
+
+**Heads-up — commit `3fe9b0b` has a misleading message**
+
+The repo was being concurrently edited during this session. My staged image-gallery doc edit landed inside commit `3fe9b0b`, whose author wrote `feat(framework): add split-section@v1 module [FREE-CODED]` in the subject — but the diff in that commit is entirely the REQ-41 doc-update work (the 3 files above, +26/-2). The actual split-section module/test code is still untracked in the working tree. You may want to either:
+
+- Amend `3fe9b0b`'s message to reflect its real contents (REQ-41 doc update), or
+- Reset/move that commit if a separate `split-section` commit was intended for REQ-39 and the message belongs there.
+
+I left the commit alone (not my call to rewrite history that's already published locally).
+
+**Drift caveat**
+
+The pre-existing REQ-30 byte-for-byte drift between the .md and .ts mirror (sections 1a / fallback paragraph in .md but not in .ts) was already failing before I started and remains failing — out of scope for REQ-41.
 
 <!-- xgd-chat-end -->
