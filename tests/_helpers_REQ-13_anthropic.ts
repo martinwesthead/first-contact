@@ -1,7 +1,11 @@
 /**
  * Helpers for stubbing the Anthropic Messages API in REQ-13 multi-turn
- * tool-result loop tests.
+ * tool-result loop tests. REQ-36 G9 switched the chat handler to consume
+ * Anthropic's streaming SSE protocol; this helper now emits stubbed
+ * responses as SSE so existing tests keep working transparently.
  */
+
+import { encodeAnthropicSSE } from "./_helpers_REQ-36_chat_sse.js";
 
 export interface AnthropicTextBlock {
   type: "text";
@@ -47,9 +51,9 @@ export function makeAnthropicSequenceFetch(
     calls.push({ body: reqBody });
     const r = responses[Math.min(index, responses.length - 1)]!;
     index++;
-    return new Response(JSON.stringify(r), {
+    return new Response(encodeAnthropicSSE(r), {
       status: 200,
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "text/event-stream" },
     });
   };
   return { fetch: stub as unknown as typeof fetch, calls };

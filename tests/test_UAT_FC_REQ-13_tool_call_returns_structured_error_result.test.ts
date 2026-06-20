@@ -3,6 +3,7 @@ import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeAnthropicSequenceFetch } from "./_helpers_REQ-13_anthropic.js";
+import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT FC REQ-13: an invalid tool call produces a structured ok=false tool_result with a validation error matching the validator's structured output", () => {
   it("rejects an out-of-enum dial value, returns ok:false in the tool_result, and surfaces the validator's structured error", async () => {
@@ -47,21 +48,19 @@ describe("UAT FC REQ-13: an invalid tool call produces a structured ok=false too
       { fetch: stubFetch },
     );
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      toolCalls: Array<{
-        name: string;
-        result: {
-          ok: false;
-          error: { tool: string; validation: Record<string, unknown> };
-        };
-      }>;
-    };
+    const consumed = await consumeChatSSE(response);
+    expect(consumed.done).not.toBeNull();
+    const body = consumed.done!;
 
     expect(body.toolCalls).toHaveLength(1);
     const call = body.toolCalls[0]!;
-    expect(call.result.ok).toBe(false);
-    expect(call.result.error.tool).toBe("set_module_dial");
-    const v = call.result.error.validation as {
+    const callResult = call.result as {
+      ok: false;
+      error: { tool: string; validation: Record<string, unknown> };
+    };
+    expect(callResult.ok).toBe(false);
+    expect(callResult.error.tool).toBe("set_module_dial");
+    const v = callResult.error.validation as {
       tool: string;
       path?: string;
       expected?: string[];

@@ -14,6 +14,10 @@ import {
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeMemKv } from "./_helpers_REQ-20_kv.js";
+import {
+  consumeChatSSE,
+  encodeAnthropicSSE,
+} from "./_helpers_REQ-36_chat_sse.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLAIN_HTML = readFileSync(
@@ -96,9 +100,9 @@ describe("UAT FC REQ-21: end-to-end chat → analyze_page → <DigestReport> ren
         if (isChatTurn) {
           const r = anthropicResponses[Math.min(anthropicTurn, anthropicResponses.length - 1)];
           anthropicTurn++;
-          return new Response(JSON.stringify(r), {
+          return new Response(encodeAnthropicSSE(r), {
             status: 200,
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "text/event-stream" },
           });
         }
         // Commentary call from analyze_page.
@@ -146,7 +150,9 @@ describe("UAT FC REQ-21: end-to-end chat → analyze_page → <DigestReport> ren
 
     const response = await handleChatRequest(request, env);
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
+    const consumed = await consumeChatSSE(response);
+    expect(consumed.done).not.toBeNull();
+    const body = consumed.done! as {
       text: string;
       toolCalls: Array<{
         name: string;

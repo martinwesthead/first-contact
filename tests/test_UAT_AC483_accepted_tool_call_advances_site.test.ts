@@ -7,6 +7,7 @@ import {
   runChatTurn,
 } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT AC-483: accepted AI tool call advances the working site and re-renders the preview", () => {
   afterEach(() => {
@@ -28,18 +29,15 @@ describe("UAT AC-483: accepted AI tool call advances the working site and re-ren
 
     // Stub /api/chat to return a single set_theme_token call.
     const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          text: "Updated the primary color.",
-          toolCalls: [
-            {
-              name: "set_theme_token",
-              input: { name: "palette.primary", value: "#ff0099" },
-            },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+      makeChatSSEResponse({
+        text: "Updated the primary color.",
+        toolCalls: [
+          {
+            name: "set_theme_token",
+            input: { name: "palette.primary", value: "#ff0099" },
+          },
+        ],
+      }),
     );
 
     const result = await runChatTurn("make the primary color pink", {

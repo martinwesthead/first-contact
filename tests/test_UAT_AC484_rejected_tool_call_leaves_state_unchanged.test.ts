@@ -6,6 +6,7 @@ import {
   runChatTurn,
 } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT AC-484: rejected AI tool call leaves site state unchanged and records a structured error in the chat log", () => {
   afterEach(() => {
@@ -25,22 +26,19 @@ describe("UAT AC-484: rejected AI tool call leaves site state unchanged and reco
     // Stub /api/chat to return a set_module_dial whose value is outside the
     // declared enum — invalid per the catalog validator.
     const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          text: "Trying to make the hero huge.",
-          toolCalls: [
-            {
-              name: "set_module_dial",
-              input: {
-                instance_id: heroInstance.id,
-                dial: "size",
-                value: "huge",
-              },
+      makeChatSSEResponse({
+        text: "Trying to make the hero huge.",
+        toolCalls: [
+          {
+            name: "set_module_dial",
+            input: {
+              instance_id: heroInstance.id,
+              dial: "size",
+              value: "huge",
             },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+          },
+        ],
+      }),
     );
 
     const result = await runChatTurn("make the hero huge", {

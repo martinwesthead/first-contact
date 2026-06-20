@@ -3,6 +3,7 @@ import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeAnthropicSequenceFetch } from "./_helpers_REQ-13_anthropic.js";
+import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT FC REQ-13: a successful tool call produces a structured ok tool_result with a non-empty summary visible in the AI's next prompt", () => {
   it("emits a tool_result content block on the next turn containing {ok:true, applied:{tool, args, summary}} and feeds the working site state forward", async () => {
@@ -50,30 +51,30 @@ describe("UAT FC REQ-13: a successful tool call produces a structured ok tool_re
       { fetch: stubFetch },
     );
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      text: string;
-      toolCalls: Array<{
-        name: string;
-        input: Record<string, unknown>;
-        result: {
-          ok: true;
-          applied: { tool: string; args: Record<string, unknown>; summary: string };
-        };
-      }>;
-    };
+    const consumed = await consumeChatSSE(response);
+    expect(consumed.done).not.toBeNull();
+    const body = consumed.done!;
 
     expect(body.toolCalls).toHaveLength(1);
     const call = body.toolCalls[0]!;
     expect(call.name).toBe("set_module_dial");
-    expect(call.result.ok).toBe(true);
-    expect(call.result.applied.tool).toBe("set_module_dial");
-    expect(call.result.applied.args).toEqual({
+    const callResult = call.result as {
+      ok: true;
+      applied: {
+        tool: string;
+        args: Record<string, unknown>;
+        summary: string;
+      };
+    };
+    expect(callResult.ok).toBe(true);
+    expect(callResult.applied.tool).toBe("set_module_dial");
+    expect(callResult.applied.args).toEqual({
       instance_id: heroInstance.id,
       dial: "size",
       value: "lg",
     });
-    expect(call.result.applied.summary).toMatch(/size.*lg/);
-    expect(call.result.applied.summary.length).toBeGreaterThan(0);
+    expect(callResult.applied.summary).toMatch(/size.*lg/);
+    expect(callResult.applied.summary.length).toBeGreaterThan(0);
 
     // The second Anthropic call must include the tool_result content block.
     expect(calls.length).toBe(2);
