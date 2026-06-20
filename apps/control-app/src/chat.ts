@@ -29,6 +29,12 @@ export interface ChatHandlerEnv {
 export interface ChatHandlerDeps {
   fetch?: typeof fetch;
   log?: (event: string, detail: Record<string, unknown>) => void;
+  /**
+   * REQ-38: per-call result survivability. Injected so a UAT can deterministically
+   * force one call in a batch to throw and verify the surrounding calls still
+   * receive their own tool_result events. Production uses the imported default.
+   */
+  applyToolCall?: typeof applyToolCall;
 }
 
 export interface CatalogEntryShape {
@@ -145,6 +151,7 @@ export async function handleChatRequest(
     [...body.history].reverse().find((m) => m.role === "user")?.content ?? null;
 
   const fetchImpl = deps.fetch ?? globalThis.fetch;
+  const applyImpl = deps.applyToolCall ?? applyToolCall;
   const url = env.ANTHROPIC_API_URL ?? ANTHROPIC_DEFAULT_URL;
   const model = env.CLAUDE_MODEL ?? DEFAULT_MODEL;
 
@@ -264,11 +271,32 @@ export async function handleChatRequest(
               };
               allToolCalls.push({ name: callName, input: callInput, result });
             } else if (action.category === "state_edit") {
-              const applyResult = applyToolCall(
-                workingSite as Site,
-                catalog,
-                { name: callName as ToolName, input: callInput },
-              );
+              // REQ-38: a throw inside applyToolCall used to escape the
+              // for-loop, get caught by the outer stream-level handler, and
+              // collapse the whole batch to a single `error` event — the AI
+              // lost every other call's result in the same turn. Wrap it so
+              // a single thrower turns into one structured ok:false result
+              // and the surrounding calls keep producing their own results.
+              let applyResult: ReturnType<typeof applyToolCall>;
+              try {
+                applyResult = applyImpl(
+                  workingSite as Site,
+                  catalog,
+                  { name: callName as ToolName, input: callInput },
+                );
+              } catch (err) {
+                log("apply_tool_call_threw", {
+                  tool: callName,
+                  error: String(err),
+                });
+                applyResult = {
+                  ok: false,
+                  error: {
+                    tool: callName as ToolName,
+                    message: `tool '${callName}' threw: ${String(err)}`,
+                  },
+                };
+              }
               if (applyResult.ok) {
                 workingSite = applyResult.next;
                 result = {
