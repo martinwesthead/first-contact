@@ -6,9 +6,9 @@ title: 'Framework: markdown content fields accept inline string or R2 text-asset
   capture writes markdown'
 created_by: xgd
 created_at: '2026-06-20T00:32:32.584911+00:00'
-updated_at: '2026-06-20T00:32:32.584911+00:00'
+updated_at: '2026-06-20T01:05:30.213048+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -156,3 +156,5 @@ Regression scope: existing REQ-3 validator UATs, REQ-4 renderer UATs (must still
 
 - This REQ supersedes part of [[BUG-5]]'s fix scope: the doc-update to instruct AI on the correct format becomes "use `digest.copy` AssetRef refs verbatim." [[BUG-5]]'s image-side correction is independent and stays.
 - The renderer's markdown-to-HTML pass is new; the markdown library (`marked` or `markdown-it`) is the only new runtime dependency in `packages/framework`. Bundle-size budget is a concern for the public-site worker — pick the lighter library and lazy-load the markdown pipeline only when a markdown field is encountered if bundle creep matters.
+
+-
