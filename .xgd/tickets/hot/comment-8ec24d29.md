@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-38
 created_by: xgd
 created_at: '2026-06-20T21:10:59.668713+00:00'
-updated_at: '2026-06-20T21:39:29.415788+00:00'
+updated_at: '2026-06-20T21:41:23.549031+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -156,5 +156,11 @@ How would you like me to land this?
 My recommendation is **3** — it keeps the matrix coverage honest (each ticket maps to its own commit) and the REQ-36 work is large enough that bundling it under a different ticket ID would corrupt the matrix.
 
 The ticket body is already updated with the scope/diagnosis. The UAT file is on disk and passes. The chat.ts fix is on disk. Just say which option and I'll execute.
+
+<!-- xgd-turn id="a1c189df-78dd-43b8-96f5-8dbd3752ee8c-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T21:40:44.673Z" -->
+#### You
+REQ-36 is under development right now - why don't you revert and stage your changes and then we can reapply when it is complete
 
 <!-- xgd-chat-end -->
