@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:30:43.979405+00:00'
+updated_at: '2026-06-20T23:31:26.124711+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -167,5 +167,11 @@ I have **not** committed yet. Want me to:
 
 (a) commit step 1 now as a `[FREE-CODED]` commit on `xgd-working`, then continue to step 2 (Workers handler + registration with `DEV_TOOLS_ENABLED` gating + the five remaining UATs), or
 (b) hold off on the commit and continue to step 2 first, then commit everything together?
+
+<!-- xgd-turn id="8b5f417d-8677-4701-8c69-8ebbfc36632a-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:31:15.442Z" -->
+#### You
+yes
 
 <!-- xgd-chat-end -->
