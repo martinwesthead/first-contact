@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-47
 created_by: xgd
 created_at: '2026-06-20T22:50:50.457689+00:00'
-updated_at: '2026-06-20T22:52:17.487148+00:00'
+updated_at: '2026-06-20T23:11:37.096717+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -78,5 +78,13 @@ A few targeted questions so I scope this right:
 4. **Convert/instructions side** — should I just update the transcribe-site prompt to set `imageSize` when an `imageSize` dial is available, or is there a deeper change to image-extraction signals you want (e.g. detecting "this was 80vh tall in the source" and propagating it)?
 
 If you can answer 1 — especially whether markdown-embedded images are part of scope — I can draft the AC list and test plan against it.
+
+<!-- xgd-turn id="1567b6f2-c6d2-486c-bff0-ecf120f9a53a-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:01:56.295Z" -->
+#### You
+I'm seeing it on the current site sandbox - I am not sure which modules are being used can you audit them all please
+
+Lets go with your proposals and can you make sure the AI instructions are updated to include this feature
 
 <!-- xgd-chat-end -->
