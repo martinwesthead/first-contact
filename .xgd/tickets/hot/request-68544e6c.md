@@ -5,10 +5,10 @@ type: request
 title: 'Module: image-gallery@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:40.973991+00:00'
-updated_at: '2026-06-20T22:48:06.698570+00:00'
+updated_at: '2026-06-20T22:56:13.812804+00:00'
 completed_at: null
 last_field_updated: status
-status: free_coded
+status: ready_to_reconcile
 fields:
   auto_merge_back: true
   needs_review: false
