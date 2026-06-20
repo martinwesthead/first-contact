@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-41
 created_by: xgd
 created_at: '2026-06-20T21:13:52.055228+00:00'
-updated_at: '2026-06-20T23:11:37.216113+00:00'
+updated_at: '2026-06-20T23:11:37.385201+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -185,5 +185,13 @@ I left the commit alone (not my call to rewrite history that's already published
 **Drift caveat**
 
 The pre-existing REQ-30 byte-for-byte drift between the .md and .ts mirror (sections 1a / fallback paragraph in .md but not in .ts) was already failing before I started and remains failing — out of scope for REQ-41.
+
+<!-- xgd-turn id="44322a02-1f8a-4279-92ac-b7830392ea68-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:05:49.100Z" -->
+#### You
+please create a bug for the drift.
+
+It is very important that commits are associated with exactly one ticket that describes what they do otherwise reconcile of the behavioral identity will fail and they will get wiped by the regression system. Can you fix this?
 
 <!-- xgd-chat-end -->
