@@ -5,10 +5,10 @@ type: request
 title: Module:banner@v1
 created_by: xgd
 created_at: '2026-06-20T21:13:40.699509+00:00'
-updated_at: '2026-06-20T23:10:41.539909+00:00'
+updated_at: '2026-06-20T23:14:29.470062+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   auto_merge_back: true
   needs_review: false
