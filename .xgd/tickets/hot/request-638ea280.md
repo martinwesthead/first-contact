@@ -6,9 +6,9 @@ title: 'Convert flow: remove destructive-confirmation gate (defer copyright/robo
   concerns)'
 created_by: xgd
 created_at: '2026-06-20T18:25:57.452443+00:00'
-updated_at: '2026-06-20T18:25:57.452443+00:00'
+updated_at: '2026-06-20T18:26:16.126697+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -33,7 +33,7 @@ The operator just types "convert this URL" (or the equivalent) and the convert r
 The safety protocol introduced by [[REQ-28]] AC1-2 (`ConvertConfirmation` card + flag + `requires_confirmation` gate) has three problems in practice:
 
 1. **It's broken.** [[BUG-4]] documents that the Confirm button's click dispatches an event with no listener, and `registerConvertConfirmation()` is never called in `bootBuilder`. The card doesn't actually gate anything reliably — the operator types a confirmation in chat to work around it.
-2. **It's the wrong UX shape.** A confirmation modal on every convert attempt is friction in a flow where the user is iterating dozens of times. The risk it was protecting against (accidental destructive overwrite of the operator's draft) is better addressed by the Reset button ([[REQ-31]]) plus the clear-on-import behaviour ([[REQ-XX-clear-on-import]]) — the operator can always recover.
+2. **It's the wrong UX shape.** A confirmation modal on every convert attempt is friction in a flow where the user is iterating dozens of times. The risk it was protecting against (accidental destructive overwrite of the operator's draft) is better addressed by the Reset button ([[REQ-31]]) plus the clear-on-import behaviour ([[REQ-34]]) — the operator can always recover.
 3. **The copyright / robots concern it was conflating** (the "I own this site" checkbox folded a robots-override into the confirmation) is a real concern but deserves its own UX, not a piggyback on a destructive-action modal. We will come back to it as a separate ticket once the more fundamental convert-flow issues are settled.
 
 For testing iteration on the convert flow, this gate is the single biggest friction point. Removing it unblocks the testing cycle.
@@ -92,7 +92,7 @@ Add (minimal coverage of the new "no-gate" behaviour):
 - A replacement copyright / robots UX. Deferred — explicit follow-up ticket when we return to it.
 - Removal of the underlying `robotsOverrides` storage. The safety contract still uses it; we only remove the convert-flow path that wrote to it.
 - The `<TranscribeProgress>` chat-card. Keep it — operators still need to see convert progress; only the confirmation card goes.
-- Any change to the destructive-overwrite question for already-populated drafts. [[REQ-XX-clear-on-import]] addresses that by clearing before convert.
+- Any change to the destructive-overwrite question for already-populated drafts. [[REQ-34]] addresses that by clearing before convert.
 
 ## Dependencies
 
