@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-47
 created_by: xgd
 created_at: '2026-06-20T22:50:50.457689+00:00'
-updated_at: '2026-06-20T22:51:13.540478+00:00'
+updated_at: '2026-06-20T22:52:17.487148+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -45,5 +45,38 @@ Once you describe the intent, I'll draft the ticket body (status, requirements, 
 <!-- xgd-chat role="user" ts="2026-06-20T22:51:02.461Z" -->
 #### You
 Sorry try now
+
+<!-- xgd-turn id="f1ac4672-ccc5-4d89-aff8-c53920be996f-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T22:52:17.486Z" -->
+#### Claude
+Got it — body is populated now. Let me explore the framework to ground my questions in the actual modules.
+
+Let me check the remaining modules with potential image fields and the convert instructions.
+
+I've read the ticket and surveyed the modules. Important context before I propose a plan:
+
+**What's already constrained in the framework:**
+- `hero` bg-image variant: `position: absolute; object-fit: cover` (fills section)
+- `hero` bg-color variant: image field is **ignored entirely** (not rendered)
+- `image-gallery` grid variant: `aspect-ratio: 1/1; object-fit: cover`
+- `image-gallery` masonry variant: `width: 100%; height: auto` (flows natural aspect)
+- `services-grid` icon: 2.5rem fixed container
+- `header` logo: `max-height: 2rem`
+- `footer` logo: `max-height: 1.5rem`
+
+**Where images are NOT constrained:** `<img>` tags rendered inside markdown via `set:html` — that's `hero.subhead`, `text-block.body`, `services-grid.items[].body`, and `services-grid.items[].subhead`. Markdown-embedded images have zero scoping CSS, so a 4000px image renders at 4000px.
+
+A few targeted questions so I scope this right:
+
+1. **Where are you actually seeing the oversized images?** Is it (a) the structured `image` field on hero / `image-gallery` items, (b) inline images embedded in markdown body content, or (c) both? The fix shape differs significantly.
+
+2. **For the hero `bg-color` variant** — the `image` field exists in `contentSchema` but is never rendered. Is that intentional, or is the ticket implying it should render (e.g. as a foreground/side image), which would explain "oversized" since there's no CSS for it yet?
+
+3. **For image-gallery masonry** — natural aspect flow is the entire point of masonry. Should the default still get a max-height cap (e.g. `max-height: 80vh`), or do you want the new `imageSize` dial (`cover/contain/sm/md/lg`) to govern it without changing the default?
+
+4. **Convert/instructions side** — should I just update the transcribe-site prompt to set `imageSize` when an `imageSize` dial is available, or is there a deeper change to image-extraction signals you want (e.g. detecting "this was 80vh tall in the source" and propagating it)?
+
+If you can answer 1 — especially whether markdown-embedded images are part of scope — I can draft the AC list and test plan against it.
 
 <!-- xgd-chat-end -->
