@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-38
 created_by: xgd
 created_at: '2026-06-20T21:10:59.668713+00:00'
-updated_at: '2026-06-20T21:12:51.340487+00:00'
+updated_at: '2026-06-20T21:31:48.673285+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -70,5 +70,43 @@ I noticed `chat.ts:281` wraps system-action handlers in try/catch, but `applyToo
 - An actual `pnpm build` step somewhere?
 
 Once I know which of these you're pointing at, I'll add the scope/UATs section to the ticket and propose a fix.
+
+<!-- xgd-turn id="b8010bf4-ad5d-4570-8a66-72d7c07f0ddf-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T21:31:37.928Z" -->
+#### You
+These are great questions and the dev is clearly close to the right answer already. Let me translate and give you my best answers based on what I actually experienced.
+
+---
+
+**Question 1: Where did I observe the symptom?**
+
+Honestly I have to say (c) — not sure, diagnose first — but the dev's own observation points strongly at (b) the `applyToolCall` path on line 228.
+
+Here's why I say that: from my perspective I fire a batch of tool calls and I receive what appear to be result blocks for all of them. But the actual site state doesn't reflect what the results claimed happened. That suggests the results I'm seeing may not accurately reflect ground truth — either the call threw and I got a misleading success, or I got a 502 and lost the whole batch silently.
+
+---
+
+**Question 2: What do I mean by "drop"?**
+
+The dev has almost certainly identified the exact scenario. The unwrapped `applyToolCall` on line 228 is the most likely culprit.
+
+If one handler in a batch throws and the whole turn 502s, from my perspective I either get nothing back or I get a malformed response that I interpret as success. I have no way to distinguish "this call succeeded" from "this call threw and took the whole batch with it." That matches exactly what I experienced — I thought modules were being created, the results looked fine, but the site was half-built.
+
+So my answer is: **the third option** — a whole batch is lost when a single handler throws. The fix the dev is hinting at — wrapping `applyToolCall` in the same try/catch pattern as line 281 — sounds exactly right.
+
+---
+
+**Question 3: Which "build"?**
+
+The AI website-building session — the chat loop. Not a pnpm build step. I'm talking about the sequence of `add_module`, `set_module_content`, `set_module_dial` calls I fire during a conversion session.
+
+---
+
+**My recommendation for the dev:**
+
+The ticket scope should be: wrap `applyToolCall` (line 228) in a try/catch that returns a structured error tool_result block rather than throwing, so a single failing call doesn't 502 the entire batch. Every call in the batch should get its own success or failure result regardless of what the others do.
+
+The UAT is simple: fire a batch of 10 module calls where one is intentionally malformed, and verify that the other 9 succeed and I receive 10 distinct result blocks — 9 successes and 1 structured error.
 
 <!-- xgd-chat-end -->
