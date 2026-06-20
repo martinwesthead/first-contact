@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-48
 created_by: xgd
 created_at: '2026-06-20T22:52:54.724782+00:00'
-updated_at: '2026-06-20T22:53:22.833041+00:00'
+updated_at: '2026-06-20T23:11:37.101695+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -42,5 +42,13 @@ I'll wait for your guidance on those decisions before proceeding. The four open 
 2. **Contrast threshold** — WCAG AA (4.5:1 / 3:1 split), simplified 4.5:1 everywhere, or AAA?
 3. **AI verification mechanism** — instruct the AI to do it inline, add a `check_palette_contrast` tool, or bake it into `set_theme_token`?
 4. **Pairs to check** — all four surfaces, just the three named in the ticket, or surfaces + primary CTA?
+
+<!-- xgd-turn id="7569a9cc-c61a-43b7-8cd9-ff6010980584-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:02:22.382Z" -->
+#### You
+Enforcement should be a warning
+
+Lets go with your proposals and can you make sure the AI instructions are updated to include this feature
 
 <!-- xgd-chat-end -->
