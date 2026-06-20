@@ -25,7 +25,7 @@
     "@1stcontact/framework": "workspace:*",
     "@1stcontact/generate": "workspace:*",
     "@1stcontact/site-schema": "workspace:*",
-    "@cloudflare/workers-types": "^4.20250601.0",
+    "@cloudflare/workers-types": "^4.20260617.1",
     "@vitest/coverage-v8": "^2.1.9",
     "astro": "^4.16.0",
     "concurrently": "^9.0.1",
