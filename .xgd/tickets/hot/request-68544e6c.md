@@ -5,9 +5,9 @@ type: request
 title: 'Module: image-gallery@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:40.973991+00:00'
-updated_at: '2026-06-20T22:58:39.877022+00:00'
+updated_at: '2026-06-20T23:14:08.954511+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: commits
 status: ready_to_reconcile
 fields:
   auto_merge_back: true
@@ -16,6 +16,7 @@ fields:
   commits:
   - 6f3fa5a8bf752c6f358d6bef58ef641fa7f78b01
   - ff2c55d58257914ccbbe7202831029018835456c
+  - 0dcaa39a6d7c90dfc03606a80d8df290a4c07816
   version: 0.0.19
 ---
 
