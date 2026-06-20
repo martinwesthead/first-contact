@@ -5,9 +5,9 @@ type: request
 title: 'AI tool surface completion: nav editing, page management, duplicate_module'
 created_by: xgd
 created_at: '2026-06-16T22:12:07.916638+00:00'
-updated_at: '2026-06-16T22:12:07.916638+00:00'
+updated_at: '2026-06-20T19:21:25.996925+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: medium
@@ -18,10 +18,10 @@ fields:
 
 ## Scope
 
-Complete the v1 AI tool surface for site editing by adding the missing categories. Three groups of related tools:
+Complete the v1 AI tool surface for site editing by adding the missing categories. Originally three groups; the page-CRUD group landed under [[REQ-30]] (multi-page convert demo needed it sooner). Remaining work:
 
 1. **Nav editing** — `set_nav_pattern`, `set_nav_entries`. Promised in [[DOC-8]] §5.1 but never shipped.
-2. **Page management** — `add_page`, `remove_page`, `reorder_pages`, `set_page_metadata`. Deferred in [[REQ-8]] as "v1.5" — now needed for multi-page sites to be AI-editable.
+2. **Page metadata** — `set_page_metadata` (page-level title / seoMeta updates, optional slug rename). Sibling to REQ-30's add/remove/reorder.
 3. **Duplicate-module convenience** — `duplicate_module(instance_id, after_instance_id?)`. Not in §5.1; saves the AI from reconstructing identical module contents.
 
 After this REQ: the AI can drive every operator-level edit available on a single-page or multi-page site without the operator falling back to UI affordances. Parity is restored between what DOC-8 promises and what the API actually exposes.
@@ -37,6 +37,12 @@ Tool surface gap-filling. Architecture is settled (each tool is a state edit app
 - [[REQ-3]] — site-schema validator (each new tool's input is validated).
 - [[REQ-8]] — tool dispatch path through `/api/chat`.
 - [[REQ-9]] — OPERATOR_ACTIONS registry (each new tool is registered here per the parity principle).
+- [[REQ-30]] — closed the page-CRUD section (add/remove/reorder_pages); this REQ no longer ships those.
+
+## Page-CRUD scope clarification (post-REQ-30)
+
+`add_page`, `remove_page`, `reorder_pages` are **complete** as of REQ-30 commits `44c637a259abe504282c8bcb50b3994800f5b127` and `1d249b0884d37f0cc8eca955ae9ee98f789c7c50`. REQ-14 inherits only:
+- `set_page_metadata` (title / seoMeta / optional slug rename) — REQ-30 did not cover this.
 
 ## Deliverables
 
@@ -50,28 +56,19 @@ Tool surface gap-filling. Architecture is settled (each tool is a state edit app
 **`set_nav_entries(entries: NavEntry[])`**
 
 - Replaces `site.nav.entries` wholesale.
-- Each `NavEntry`: `{ label: string, target: PageRef | AnchorRef | UrlRef }` per [[REQ-3]] types.
-- Validator enforces: every `PageRef` resolves to an existing page; every `AnchorRef` resolves to an existing module ID; non-circular; no duplicate labels at the same level.
+- Each `NavEntry`: `{ label: string, target: NavTarget }` per the existing site-schema discriminated union.
+- Validator enforces (NEW in this REQ): every `kind=page` target's `pageId` resolves to an existing page id; every `kind=anchor` target's `pageId`+`moduleId` resolves to an existing module on that page. No duplicate labels at the same level.
+- This validation is added to `Site.superRefine` in `packages/site-schema/src/schema.ts` (catches the bad shape wherever it appears, not only via this tool).
 
-### Page management tools
+### Page metadata tool
 
-**`add_page(slug: string, title: string, after_slug?: string)`**
+**`set_page_metadata(slug: string, updates: { title?: string, new_slug?: string, seoMeta?: SeoMeta })`**
 
-- Inserts a new page after the named page (or at the end if `after_slug` omitted).
-- New page has empty `modules: []`. Default `seoMeta` synthesized from title.
-- Validator: slug unique within the site; matches the slug format rules from REQ-10's `isValidSlug`.
-
-**`remove_page(slug: string)`**
-
-- Removes the page. Validator: page must exist; cannot remove the only page (a site must have at least one page); nav entries targeting the page are removed atomically (or the call fails if the operator's site has nav entries pointing at it — implementation choice, lean: remove atomically and report what was removed in the tool result).
-
-**`reorder_pages(slugs: string[])`**
-
-- New order specified as the full list of slugs. Validator: list must contain every existing page slug exactly once.
-
-**`set_page_metadata(slug: string, updates: { title?: string, path?: string, seoMeta?: SeoMeta })`**
-
-- Updates page-level metadata. `path` changes trigger validation that the new path doesn't collide with existing paths.
+- Identifies the page by its current canonical slug (e.g. `'/'` or `'/menu'`, or bare segment `menu` — same normalization as REQ-30's `after_slug`).
+- `title` updates `page.title`.
+- `new_slug` renames the page (bare segment, validated against the slug RE). Uniqueness checked against existing pages. `page.id` is left unchanged so nav entries' `pageId` references survive the rename.
+- `seoMeta` patches the page's SEO meta object (partial — any field provided overwrites; omitted fields preserved).
+- Validator: at least one of `title|new_slug|seoMeta` must be supplied.
 
 ### Duplicate-module convenience tool
 
@@ -79,40 +76,33 @@ Tool surface gap-filling. Architecture is settled (each tool is a state edit app
 
 - Deep-clones a module instance: new UUID, identical `type`, `version`, `variant`, `dials`, `content`. Asset references duplicated by reference (same `AssetRef`); no asset copying.
 - Inserts after the named instance, or directly after the source instance if not specified.
-- Validator: source instance must exist on some page; insertion target (if specified) must exist on the same page; new IDs unique.
+- Validator: source instance must exist on some page; insertion target (if specified) must exist on the *same* page; new IDs unique.
 
 ### Registry entries (`OPERATOR_ACTIONS`)
 
 Each tool registered per REQ-9's pattern with:
 
 ```
-name:          (as above)
-plan_tier:     'trial'   (these are state edits; available to all plans)
-tool_spec:     Anthropic tool definition with typed args and finite enum descriptions
-ui_route:      null      (chat-only in v1; future REQ may add UI affordances)
-category:      'state-edit'  (per DOC-8 §5 — applied via state:diff event)
+plan_tier:     'trial'   (state edits; available to all plans)
+ui_route:      null      (chat-only in v1)
+category:      'state_edit'
 ```
 
-### UATs (`test_UAT_FC_<REQ-ID>_*`)
+### UATs (`test_UAT_FC_REQ-14_*`)
 
 **Nav editing:**
 - `set_nav_pattern_updates_site` — call sets `site.nav.pattern`; validator accepts allowed enum.
 - `set_nav_pattern_rejects_unknown` — call with invalid pattern value rejected with structured error.
 - `set_nav_entries_replaces_list` — call replaces nav entries; validator accepts; site reflects new list.
 - `set_nav_entries_rejects_orphan_anchor` — entry targeting a non-existent module ID rejected.
-- `set_nav_entries_rejects_orphan_page` — entry targeting a non-existent page slug rejected.
+- `set_nav_entries_rejects_orphan_page` — entry targeting a non-existent page id rejected.
+- `validate_site_rejects_orphan_nav_page` — Site.superRefine itself rejects, not just the tool.
 
-**Page management:**
-- `add_page_inserts_with_empty_modules` — new page has `modules: []` and synthesized SEO.
-- `add_page_rejects_duplicate_slug` — call with existing slug rejected.
-- `add_page_rejects_invalid_slug` — call with invalid format (uppercase, special chars) rejected.
-- `add_page_after_slug_inserts_in_position` — `after_slug` parameter places the new page in the right slot.
-- `remove_page_removes_referenced_nav_entries` — removing a page also removes nav entries that pointed at it; the affected nav entries are reported in the tool result.
-- `remove_page_rejects_last_page` — call to remove the only page is rejected (site must have at least one page).
-- `reorder_pages_requires_full_list` — call with a slug list missing an existing page is rejected.
-- `reorder_pages_applies_new_order` — call with a permuted list applies the new order to `site.pages`.
+**Page metadata:**
 - `set_page_metadata_updates_title_and_seo` — title and SEO fields update; validator accepts.
-- `set_page_metadata_rejects_path_collision` — changing path to one already in use rejected.
+- `set_page_metadata_renames_slug` — `new_slug` renames; nav entries pointing at the page (by id) still resolve.
+- `set_page_metadata_rejects_slug_collision` — renaming to an existing slug rejected.
+- `set_page_metadata_rejects_invalid_slug` — bad slug format rejected.
 
 **Duplicate module:**
 - `duplicate_module_clones_content_and_dials` — duplicated instance has identical type/version/variant/dials/content but new UUID.
@@ -125,9 +115,10 @@ category:      'state-edit'  (per DOC-8 §5 — applied via state:diff event)
 - Bulk operations (add multiple modules in one call, etc.) — single-instance only in v1.
 - Move-module-across-pages — not in this REQ; AI can `duplicate_module` + `remove_module` if needed.
 - Asset copying when duplicating a module — refs duplicated by reference; asset CRUD is a separate REQ.
+- Path changes (REQ-14 original spec mentioned `path` updates in `set_page_metadata`; `slug` IS the path in this schema, so renaming `slug` is the path-change mechanism — no separate `path` field).
 
 ## Risks / open items
 
-- **Validator-coupling churn** — each tool needs validator support for its input shape. If [[REQ-3]] doesn't already cover nav-entry validation in detail, this REQ adds it.
-- **Concurrency with revisions** — page reordering or removal during an active publish could create a snapshot inconsistency. Handled by REQ-11's snapshot-at-handler-entry semantic.
-- **Tool list size** — adding 7 tools to OPERATOR_ACTIONS plus the existing set approaches double-digit count. Token cost in system prompt is acceptable; monitor.
+- **Validator-coupling churn** — each tool needs validator support for its input shape. The nav cross-ref check is added to `Site.superRefine` (one place, broad coverage). Existing `remove_page` (from REQ-30) currently strips orphan nav entries eagerly; with the new validator that eager strip becomes redundant but harmless — leave it.
+- **Concurrency with revisions** — page renaming during an active publish could create a snapshot inconsistency. Handled by REQ-11's snapshot-at-handler-entry semantic.
+- **Tool list size** — adding 4 tools to OPERATOR_ACTIONS plus the existing set approaches double-digit count. Token cost in system prompt is acceptable; monitor.
