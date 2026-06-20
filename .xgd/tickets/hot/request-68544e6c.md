@@ -5,14 +5,18 @@ type: request
 title: 'Module: image-gallery@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:40.973991+00:00'
-updated_at: '2026-06-20T22:43:31.610668+00:00'
+updated_at: '2026-06-20T22:48:06.698570+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_implement
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - 6f3fa5a8bf752c6f358d6bef58ef641fa7f78b01
+  - ff2c55d58257914ccbbe7202831029018835456c
+  version: 0.0.19
 ---
 
 A grid of photos. Used for food photography, portfolio, before/after etc.
