@@ -7,6 +7,7 @@ import {
   runChatTurn,
 } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT FC REQ-34: chat-driver applies the cleared scaffold to the store before subsequent state_edit tool calls", () => {
   it("transcribe_site_done's clearedSiteDefinition replaces the populated 1stcontact draft; following set_theme_token lands on the cleared scaffold's defaults", async () => {
@@ -30,7 +31,7 @@ describe("UAT FC REQ-34: chat-driver applies the cleared scaffold to the store b
     //   1. transcribe_site (system_action) → returns transcribe_site_done with clearedSiteDefinition.
     //   2. set_theme_token (state_edit) → should land on the cleared scaffold.
     const fetchMock = vi.fn(async () =>
-      jsonResponse({
+      makeChatSSEResponse({
         text: "Converted https://acme.test/ — palette and content applied.",
         toolCalls: [
           {
@@ -84,9 +85,3 @@ describe("UAT FC REQ-34: chat-driver applies the cleared scaffold to the store b
   });
 });
 
-function jsonResponse(payload: unknown): Response {
-  return new Response(JSON.stringify(payload), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
-}

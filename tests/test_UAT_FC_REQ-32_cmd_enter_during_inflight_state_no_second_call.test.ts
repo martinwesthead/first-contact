@@ -3,12 +3,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BuilderStore, createChatPanel } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
-describe("UAT FC REQ-32: Cmd+Enter while a turn is in flight does not fire a second onSend call", () => {
+/**
+ * REQ-32 originally asserted that Cmd+Enter (the legacy submit shortcut)
+ * did not fire a second onSend while the previous turn was still in flight.
+ *
+ * REQ-36 (G8) flipped the keyboard contract: bare Enter now sends, and
+ * Cmd/Shift/Alt+Enter inserts a newline. The "no double-submit while busy"
+ * invariant is the same; this test simply uses the Send button to drive
+ * submission (modality-agnostic) so we don't need to round-trip TipTap's
+ * ProseMirror keymap through synthetic keydown events.
+ */
+describe("UAT FC REQ-32: clicking Send while a turn is in flight does not fire a second onSend call", () => {
   afterEach(() => {
     document.body.innerHTML = "";
   });
 
-  it("ignores Cmd+Enter submit while busy and resumes after the turn settles", async () => {
+  it("ignores Send clicks while busy and resumes after the turn settles", async () => {
     const store = new BuilderStore({
       siteDefinition: load1stContactSite(),
       chatHistory: [],
@@ -23,25 +33,12 @@ describe("UAT FC REQ-32: Cmd+Enter while a turn is in flight does not fire a sec
     const panel = createChatPanel(document.body, { store, onSend });
 
     panel.setInputMarkdown("first");
-    panel.editorRoot.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Enter",
-        metaKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    panel.sendButton.click();
     await Promise.resolve();
 
+    // Second click while the first onSend is still pending: must be ignored.
     panel.setInputMarkdown("second");
-    panel.editorRoot.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Enter",
-        ctrlKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    panel.sendButton.click();
     await Promise.resolve();
 
     expect(onSend).toHaveBeenCalledTimes(1);
@@ -50,14 +47,9 @@ describe("UAT FC REQ-32: Cmd+Enter while a turn is in flight does not fire a sec
     await Promise.resolve();
     await Promise.resolve();
 
-    panel.editorRoot.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Enter",
-        metaKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    // Once the turn settles, a fresh click submits again.
+    panel.setInputMarkdown("third");
+    panel.sendButton.click();
     await Promise.resolve();
     expect(onSend).toHaveBeenCalledTimes(2);
   });

@@ -7,6 +7,7 @@ import {
 } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
+import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT FC REQ-8: site definition persists across reloads via localStorage", () => {
   afterEach(() => {
@@ -27,32 +28,26 @@ describe("UAT FC REQ-8: site definition persists across reloads via localStorage
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            text: "Primary set to pink.",
-            toolCalls: [
-              {
-                name: "set_theme_token",
-                input: { name: "palette.primary", value: "#ff0099" },
-              },
-            ],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
+        makeChatSSEResponse({
+          text: "Primary set to pink.",
+          toolCalls: [
+            {
+              name: "set_theme_token",
+              input: { name: "palette.primary", value: "#ff0099" },
+            },
+          ],
+        }),
       )
       .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            text: "Business name updated.",
-            toolCalls: [
-              {
-                name: "set_site_config",
-                input: { field: "businessName", value: "Acme Caterers" },
-              },
-            ],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
+        makeChatSSEResponse({
+          text: "Business name updated.",
+          toolCalls: [
+            {
+              name: "set_site_config",
+              input: { field: "businessName", value: "Acme Caterers" },
+            },
+          ],
+        }),
       );
 
     await runChatTurn("make primary pink", {

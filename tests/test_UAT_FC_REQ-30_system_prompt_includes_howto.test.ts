@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
+import { encodeAnthropicSSE } from "./_helpers_REQ-36_chat_sse.js";
 import { REPRODUCING_A_WEBSITE_DOC } from "../apps/control-app/src/llm-context.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
@@ -42,8 +43,11 @@ describe("UAT FC REQ-30: chat system prompt includes the how-to doc (AC6)", () =
       const reqBody = JSON.parse(String(init?.body));
       capturedSystem = reqBody.system as string;
       return new Response(
-        JSON.stringify({ id: "msg_test", content: [{ type: "text", text: "ok" }] }),
-        { status: 200, headers: { "content-type": "application/json" } },
+        encodeAnthropicSSE({
+          id: "msg_test",
+          content: [{ type: "text", text: "ok" }],
+        }),
+        { status: 200, headers: { "content-type": "text/event-stream" } },
       );
     });
 

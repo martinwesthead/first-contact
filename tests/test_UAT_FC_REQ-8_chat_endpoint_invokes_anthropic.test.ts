@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import {
+  consumeChatSSE,
+  encodeAnthropicSSE,
+} from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns extracted tool calls", () => {
   it("POSTs to the Anthropic endpoint with the bound API key and forwards tool_use blocks back as toolCalls", async () => {
@@ -17,6 +21,8 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
       expect(headers.get("content-type")).toBe("application/json");
       const reqBody = JSON.parse(String(init?.body));
       expect(reqBody.model).toBe("claude-sonnet-4-6");
+      // REQ-36: handler uses Anthropic streaming.
+      expect(reqBody.stream).toBe(true);
       expect(Array.isArray(reqBody.tools)).toBe(true);
       expect(reqBody.tools.map((t: { name: string }) => t.name)).toEqual(
         expect.arrayContaining([
@@ -39,9 +45,8 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
         expect(reqBody.messages).toEqual([
           { role: "user", content: "Make the primary color pink." },
         ]);
-        // Return a mock Anthropic message with a text block + one tool_use block.
         return new Response(
-          JSON.stringify({
+          encodeAnthropicSSE({
             id: "msg_test",
             content: [
               { type: "text", text: "Updated the primary color." },
@@ -53,17 +58,16 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
               },
             ],
           }),
-          { status: 200, headers: { "content-type": "application/json" } },
+          { status: 200, headers: { "content-type": "text/event-stream" } },
         );
       }
-      // Second turn: post-tool_result follow-up. No more tool calls — just a
-      // confirmation. This terminates REQ-13's multi-turn loop.
+      // Second turn: post-tool_result follow-up — no more tool calls.
       return new Response(
-        JSON.stringify({
+        encodeAnthropicSSE({
           id: "msg_test_2",
           content: [{ type: "text", text: "Done." }],
         }),
-        { status: 200, headers: { "content-type": "application/json" } },
+        { status: 200, headers: { "content-type": "text/event-stream" } },
       );
     });
 
@@ -83,25 +87,16 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
     );
 
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      text: string;
-      toolCalls: Array<{
-        name: string;
-        input: Record<string, unknown>;
-        result?: unknown;
-      }>;
-    };
-    expect(body.text).toContain("Updated the primary color.");
-    expect(body.toolCalls).toHaveLength(1);
-    expect(body.toolCalls[0]).toMatchObject({
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    const consumed = await consumeChatSSE(response);
+    expect(consumed.done).not.toBeNull();
+    expect(consumed.text).toContain("Updated the primary color.");
+    expect(consumed.done!.toolCalls).toHaveLength(1);
+    expect(consumed.done!.toolCalls[0]).toMatchObject({
       name: "set_theme_token",
       input: { name: "palette.primary", value: "#ff0099" },
     });
 
-    // REQ-13 added the multi-turn tool_result loop. The stub returned a single
-    // tool call with no follow-up text turn, so the handler should call
-    // Anthropic at least once to dispatch, then a second time to read the
-    // post-tool-result response. Up to MAX_TOOL_TURNS (8) total.
     expect(upstreamFetch.mock.calls.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -121,7 +116,7 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
     expect(body.error).toMatch(/CLAUDE_API_KEY/);
   });
 
-  it("returns 502 when the upstream Anthropic call fails", async () => {
+  it("emits an error SSE event when the upstream Anthropic call fails", async () => {
     const upstreamFetch = vi.fn(async () => {
       throw new Error("network down");
     });
@@ -139,6 +134,12 @@ describe("UAT FC REQ-8: /api/chat invokes the Anthropic Messages API and returns
       { CLAUDE_API_KEY: "test-key-abc" },
       { fetch: upstreamFetch as unknown as typeof fetch },
     );
-    expect(response.status).toBe(502);
+    // The response is a streaming SSE response (200) carrying an error event
+    // — pre-stream errors before any byte has been written still flow through
+    // the SSE channel so the client gets a single consistent error path.
+    expect(response.status).toBe(200);
+    const consumed = await consumeChatSSE(response);
+    expect(consumed.error).toBe("upstream chat provider unreachable");
+    expect(consumed.done).toBeNull();
   });
 });

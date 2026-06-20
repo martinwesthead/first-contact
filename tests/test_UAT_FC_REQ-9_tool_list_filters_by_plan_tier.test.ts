@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { encodeAnthropicSSE } from "./_helpers_REQ-36_chat_sse.js";
 
 const STATE_EDIT_TOOLS = [
   "set_module_content",
@@ -22,9 +23,9 @@ describe("UAT FC REQ-9: /api/chat tool list is filtered by session plan_tier", (
     const capturedBodies: Array<{ tools: Array<{ name: string }> }> = [];
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       capturedBodies.push(JSON.parse(String(init?.body)));
-      return new Response(JSON.stringify({ id: "msg_x", content: [] }), {
+      return new Response(encodeAnthropicSSE({ id: "msg_x", content: [] }), {
         status: 200,
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "text/event-stream" },
       });
     });
     return { fetch: fetchMock, capturedBodies };

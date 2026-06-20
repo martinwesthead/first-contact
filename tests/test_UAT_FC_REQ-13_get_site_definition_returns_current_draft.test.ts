@@ -3,6 +3,7 @@ import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeAnthropicSequenceFetch } from "./_helpers_REQ-13_anthropic.js";
+import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT FC REQ-13: get_site_definition read tool returns the current draft site state", () => {
   it("returns the canonical draft definition the chat handler received so the AI can verify state after edits", async () => {
@@ -41,16 +42,16 @@ describe("UAT FC REQ-13: get_site_definition read tool returns the current draft
       { fetch: stubFetch },
     );
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      systemActions: Array<{
-        name: string;
-        result: { status: string; payload?: { site_definition?: unknown } };
-      }>;
-    };
+    const consumed = await consumeChatSSE(response);
+    expect(consumed.done).not.toBeNull();
+    const systemActions = consumed.done!.systemActions as Array<{
+      name: string;
+      result: { status: string; payload?: { site_definition?: unknown } };
+    }>;
 
     // The handler recorded the system action and its payload includes the
     // current draft site definition.
-    const recorded = body.systemActions.find(
+    const recorded = systemActions.find(
       (s) => s.name === "get_site_definition",
     );
     expect(recorded).toBeDefined();

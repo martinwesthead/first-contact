@@ -43,6 +43,7 @@
     "@1stcontact/framework": "workspace:*",
     "@1stcontact/site-schema": "workspace:*",
     "@tiptap/core": "^2.6.0",
+    "@tiptap/extension-placeholder": "^2.6.0",
     "@tiptap/pm": "^2.6.0",
     "@tiptap/starter-kit": "^2.6.0",
     "dompurify": "^3.1.6",

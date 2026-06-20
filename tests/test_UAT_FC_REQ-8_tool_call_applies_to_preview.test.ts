@@ -7,6 +7,7 @@ import {
   runChatTurn,
 } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
 
 describe("UAT FC REQ-8: a stubbed tool call updates the store and re-renders the preview iframe", () => {
   afterEach(() => {
@@ -28,7 +29,7 @@ describe("UAT FC REQ-8: a stubbed tool call updates the store and re-renders the
 
     // Stub /api/chat to return one set_theme_token call.
     const fetchMock = vi.fn(async () =>
-      jsonResponse({
+      makeChatSSEResponse({
         text: "Updated the primary color.",
         toolCalls: [
           {
@@ -56,9 +57,3 @@ describe("UAT FC REQ-8: a stubbed tool call updates the store and re-renders the
   });
 });
 
-function jsonResponse(payload: unknown): Response {
-  return new Response(JSON.stringify(payload), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
-}
