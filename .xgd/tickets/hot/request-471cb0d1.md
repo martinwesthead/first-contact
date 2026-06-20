@@ -5,14 +5,18 @@ type: request
 title: 'Chat loop: per-call results survive when one handler throws'
 created_by: xgd
 created_at: '2026-06-20T21:09:44.034527+00:00'
-updated_at: '2026-06-20T21:43:04.620019+00:00'
+updated_at: '2026-06-20T21:57:24.043057+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - 3a476353141abfd84e00af4c3f0ea94f57bfe5a0
+  - 395e2bc249b1d81b6a63ef329f8552915088b0a7
+  version: 0.0.18
 ---
 
 When I (the AI) fire multiple tool calls in a batch, if one fails or drops I currently have no reliable way to know. I need per-call success/failure results that are guaranteed to be returned before the next batch fires. This is partly a framework constraint and partly how the chat loop handles parallel calls.
