@@ -5,13 +5,13 @@ type: request
 title: 'AI tool surface completion: nav editing, page management, duplicate_module'
 created_by: xgd
 created_at: '2026-06-16T22:12:07.916638+00:00'
-updated_at: '2026-06-20T19:21:25.996925+00:00'
+updated_at: '2026-06-20T19:21:37.693576+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: story_points
 status: draft
 fields:
   priority: medium
-  story_points: 5
+  story_points: 3
   auto_merge_back: true
   needs_review: false
 ---
