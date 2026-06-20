@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-42
 created_by: xgd
 created_at: '2026-06-20T21:14:37.217897+00:00'
-updated_at: '2026-06-20T21:15:53.147625+00:00'
+updated_at: '2026-06-20T22:57:54.479435+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -50,5 +50,11 @@ A few questions before I scope the work:
    - New UATs under `tests/test_UAT_FC_REQ-42_*.test.ts`
 
 Want me to proceed with (1) markdown, (2) variant-as-visual, (3) 6/6 defaults — or tweak any of these?
+
+<!-- xgd-turn id="da84be82-9dcd-448d-b8a9-7030686d0fe8-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T22:57:34.061Z" -->
+#### You
+Lets go with your proposals and can you make sure the AI instructions are updated to include this feature
 
 <!-- xgd-chat-end -->
