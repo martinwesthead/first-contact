@@ -14,7 +14,6 @@ describe("UAT FC REQ-30: read_transcription_digest system_action (AC3)", () => {
   it("returns the digest JSON for a freshly written digest", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-read-test" });
     await h.seedDigest("https://acme.test/");
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const action = findAction("read_transcription_digest")!;

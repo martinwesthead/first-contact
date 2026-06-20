@@ -5,7 +5,6 @@ import { createBuilderLayout } from "./components/builder-layout.js";
 import { createChatPanel } from "./components/chat-panel.js";
 import { createPreviewPanel } from "./components/preview-panel.js";
 import { registerDigestReport } from "./components/digest-report.js";
-import { registerConvertConfirmation } from "./components/convert-confirmation.js";
 import { registerTranscribeProgress } from "./components/transcribe-progress.js";
 import { runChatTurn } from "./chat-driver.js";
 
@@ -81,7 +80,6 @@ export function bootBuilder(options: BootBuilderOptions): {
       : (globalThis.sessionStorage ?? null);
   const sessionId = resolveSessionId(options.sessionId, sessionStorageFacility);
   registerDigestReport();
-  registerConvertConfirmation();
   registerTranscribeProgress();
   const catalog = buildFrameworkCatalog();
   const store = new BuilderStore(
@@ -120,12 +118,12 @@ export function bootBuilder(options: BootBuilderOptions): {
   });
   preview.render(store.getState().siteDefinition);
 
-  // Convert-flow listener bridge. The DigestReport / ConvertConfirmation cards
-  // are side-effect free: they dispatch document-level CustomEvents rather than
-  // call APIs directly. These listeners translate each event into a synthetic
-  // user turn through runChatTurn, so the AI sees the operator's intent in chat
-  // history and re-invokes transcribe_site / confirm_convert as normal. Without
-  // them the convert UI is inert end-to-end.
+  // Convert-flow listener bridge. The DigestReport card is side-effect free:
+  // it dispatches a document-level CustomEvent rather than calling APIs
+  // directly. This listener translates the event into a synthetic user turn
+  // through runChatTurn, so the AI sees the operator's intent in chat history
+  // and re-invokes transcribe_site as normal. Without it the convert button is
+  // inert end-to-end.
   const doc = options.root.ownerDocument;
   const driveTurn = (text: string): void => {
     void runChatTurn(text, {
@@ -145,29 +143,10 @@ export function bootBuilder(options: BootBuilderOptions): {
       `Convert this reference into a fresh draft${url ? `: ${url}` : ""}.`,
     );
   };
-  const handleConvertConfirmed = (event: Event): void => {
-    const detail = (event as CustomEvent).detail as
-      | { url?: string; ownsSite?: boolean }
-      | null
-      | undefined;
-    const url = detail?.url ?? "";
-    const ownsClause = detail?.ownsSite === true ? " I own this site." : "";
-    driveTurn(`I confirm. Proceed with converting ${url}.${ownsClause}`);
-  };
-  const handleConvertCancelled = (event: Event): void => {
-    const detail = (event as CustomEvent).detail as
-      | { url?: string }
-      | null
-      | undefined;
-    const url = detail?.url ?? "";
-    driveTurn(`Cancel the conversion${url ? ` of ${url}` : ""}.`);
-  };
   doc.addEventListener(
     "fc:digest-convert-requested",
     handleDigestConvertRequested,
   );
-  doc.addEventListener("fc:convert-confirmed", handleConvertConfirmed);
-  doc.addEventListener("fc:convert-cancelled", handleConvertCancelled);
 
   return {
     store,
@@ -176,8 +155,6 @@ export function bootBuilder(options: BootBuilderOptions): {
         "fc:digest-convert-requested",
         handleDigestConvertRequested,
       );
-      doc.removeEventListener("fc:convert-confirmed", handleConvertConfirmed);
-      doc.removeEventListener("fc:convert-cancelled", handleConvertCancelled);
       unsubscribe();
       chat.destroy();
       layout.destroy();

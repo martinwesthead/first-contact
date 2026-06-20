@@ -56,7 +56,6 @@ describe("UAT FC REQ-33 AC13: end-to-end â€” source body text survives capture â
     await h.seedDigest("https://acme.test/", {
       screenshotKeys: { desktop: "references/c/t/desktop.png" },
     });
-    await h.invokeConfirm({ url: "https://acme.test/" });
     h.setAssetResponses({
       "https://acme.test/": {
         status: 200,

@@ -28,7 +28,6 @@ describe("UAT FC REQ-33 AC9/AC10: transcribe_site Stage 5 writes per-page copy m
     await h.seedDigest("https://acme.test/", {
       screenshotKeys: { desktop: "references/c/t/desktop.png" },
     });
-    await h.invokeConfirm({ url: "https://acme.test/" });
     h.setAssetResponses({
       "https://acme.test/": {
         status: 200,
@@ -55,7 +54,6 @@ describe("UAT FC REQ-33 AC9/AC10: transcribe_site Stage 5 writes per-page copy m
     await h.seedDigest("https://acme.test/", {
       screenshotKeys: { desktop: "references/c/t/desktop.png" },
     });
-    await h.invokeConfirm({ url: "https://acme.test/" });
     h.setAssetResponses({
       "https://acme.test/": {
         status: 200,
@@ -84,7 +82,6 @@ describe("UAT FC REQ-33 AC9/AC10: transcribe_site Stage 5 writes per-page copy m
     await h.seedDigest("https://acme.test/", {
       screenshotKeys: { desktop: "references/c/t/desktop.png" },
     });
-    await h.invokeConfirm({ url: "https://acme.test/" });
     h.setAssetResponses({
       "https://acme.test/": {
         status: 200,
