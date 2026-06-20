@@ -5,6 +5,7 @@ import { createBuilderLayout } from "./components/builder-layout.js";
 import { createChatPanel } from "./components/chat-panel.js";
 import { createPreviewPanel } from "./components/preview-panel.js";
 import { registerDigestReport } from "./components/digest-report.js";
+import { registerTranscribeProgress } from "./components/transcribe-progress.js";
 import { runChatTurn } from "./chat-driver.js";
 
 export interface BootBuilderOptions {
@@ -79,6 +80,7 @@ export function bootBuilder(options: BootBuilderOptions): {
       : (globalThis.sessionStorage ?? null);
   const sessionId = resolveSessionId(options.sessionId, sessionStorageFacility);
   registerDigestReport();
+  registerTranscribeProgress();
   const catalog = buildFrameworkCatalog();
   const store = new BuilderStore(
     { siteDefinition: options.initialSite, chatHistory: [] },
