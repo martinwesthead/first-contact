@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-34
 created_by: xgd
 created_at: '2026-06-20T18:26:42.904782+00:00'
-updated_at: '2026-06-20T18:26:43.020654+00:00'
+updated_at: '2026-06-20T18:36:17.830433+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -31,5 +31,11 @@ Please create tickets for these two
 Diagnosis for issue 1 (paste-on-top contamination): `transcribe_site` writes asset mirrors and a digest, then the AI calls `state_edit` tools against whatever's currently in the draft. With the 1stcontact starter as the default entry point, every convert is a destructive merge — some 1stcontact modules get mutated, some don't, theme tokens partially clobber. The result is structural contamination independent of the paraphrase issue REQ-33 already fixed.
 
 Decision shape: `transcribe_site` clears the draft to a minimal empty scaffold (one empty home page, default theme tokens, no modules, `config.businessName` populated from source title) before any mechanical work begins. Clear is unconditional — every convert clears, even on an empty draft. The Reset button + git/D1 history is the recovery net. Lives in the action handler, not as a separate AI tool call, so it's atomic and the AI can't forget. New Stage 0 emits an SSE event for the TranscribeProgress card to surface.
+
+<!-- xgd-turn id="68baf812-5ae5-42e5-9948-22df260822b1-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T18:31:44.767Z" -->
+#### You
+Please free code this
 
 <!-- xgd-chat-end -->
