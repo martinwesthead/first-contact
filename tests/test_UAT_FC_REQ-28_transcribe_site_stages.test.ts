@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
 
 describe("UAT FC REQ-28: 3-stage orchestration emits SSE progress in order (REQ-30 reshape)", () => {
-  it("AC3/AC4/AC5: emits stage 1 (screenshot) → stage 2 (theme tokens) → stage 3 (digest written)", async () => {
+  it("AC3/AC4/AC5: emits stage 1 (screenshot) → stage 2 (theme tokens) → stage 5 (copy capture) → stage 3 (digest written)", async () => {
     const h = makeTranscribeHarness();
     await h.seedDigest("https://acme.test/", {
       screenshotKeys: { desktop: "references/c/t/desktop.png" },
@@ -21,7 +21,8 @@ describe("UAT FC REQ-28: 3-stage orchestration emits SSE progress in order (REQ-
       )
       .map((e) => e.data.stage);
 
-    expect(stageEvents).toEqual([1, 2, 3]);
+    // REQ-33 inserts stage 5 (per-page copy capture) between stage 2 and stage 3.
+    expect(stageEvents).toEqual([1, 2, 5, 3]);
   });
 
   it("AC3: stage 1 carries a screenshot URL when digest has one", async () => {
