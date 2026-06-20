@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-36
 created_by: xgd
 created_at: '2026-06-20T20:23:05.811361+00:00'
-updated_at: '2026-06-20T20:26:24.838451+00:00'
+updated_at: '2026-06-20T20:51:11.651468+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -85,5 +85,17 @@ REQ-36 is now populated. Here's the audit summary:
 - **Q3**: Confirm 13px target
 
 Could you weigh in on Q1–Q3? Once confirmed I can scope the implementation and start coding under REQ-36.
+
+<!-- xgd-turn id="42e5b5af-c7a7-4f28-a77d-83dfb0981551-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T20:51:03.102Z" -->
+#### You
+Q1 keep both - they are not alternatives
+Q2 no only one windo they are not needed
+Q3 no try it
+
+I have two other concerns I don't know whether you have captured:
+1 - hitting enter should invoke "send" shift-enter aor alt-enter create a newline
+2 - xgd chat appears as a stream - this new chat arrives as a block on completion
 
 <!-- xgd-chat-end -->
