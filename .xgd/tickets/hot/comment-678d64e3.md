@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-4
 created_by: xgd
 created_at: '2026-06-19T23:44:28.241594+00:00'
-updated_at: '2026-06-20T00:11:55.146937+00:00'
+updated_at: '2026-06-20T00:16:19.227893+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -85,5 +85,42 @@ BUG-4 is at `free_coded` with the commit recorded. Summary:
 I just reloaded this and still do not see this working. Before I even got to the button I saw: ✗transcribe_site — rejected
 
 session_id required to track convert confirmation
+
+<!-- xgd-turn id="92d60f76-bccb-4ba1-829e-66382d97c696-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T00:16:19.196Z" -->
+#### Claude
+Let me investigate where this validation error comes from.
+
+Let me check how the chat driver POSTs and how we should source a session ID.
+
+The chat-driver never sends `x-session-id`, so `transcribe_site` rejects every call. I need to thread a session ID through `bootBuilder` → `runChatTurn`. Let me check existing tests and the chat driver shape, then extend.
+
+Let me extend BUG-4 scope (still the same convert-flow bug, deeper root cause) and update the ticket first, then code.
+
+Now thread sessionId through `bootBuilder`. I'll source it from `sessionStorage` (per-tab), generate one if absent.
+
+Re-export `SESSION_ID_STORAGE_KEY` for tests, then write the new UAT.
+
+Now extend the BUG-4 test file with session-id UATs.
+
+Let me run a broader test sweep to confirm nothing else broke.
+
+All 327 tests pass. Now let me commit and update the ticket.
+
+Now I'll update the ticket body to reflect the expanded scope, then re-promote with both commits.
+
+BUG-4 is back at `free_coded` with both commits recorded.
+
+**What I added on top of the first fix** (commit `502d741`):
+
+You uncovered a deeper wire missing. The `transcribe_site` handler requires `ctx.session.session_id` to track convert consent — it rejects with `session_id required to track convert confirmation` before any card even renders. The builder's chat driver was never sending `x-session-id`, so the rejection happened on the *first* transcribe attempt and the confirmation card never appeared.
+
+- `runChatTurn` now accepts an optional `sessionId` and sends it as the `x-session-id` header on every POST.
+- `bootBuilder` resolves a per-tab session ID (explicit option → `sessionStorage[SESSION_ID_STORAGE_KEY]` → `crypto.randomUUID()`), persists it for the tab lifetime, and threads it into the editor `onSend` and both convert-event listener turns.
+
+**Tests**: extended the BUG-4 UAT file to 8 tests covering the explicit option, auto-mint + persist, reuse across boots, and that the header is on the POST. Full suite passes (327/327).
+
+Try a reload now — convert should reach the confirmation card, and clicking Confirm should drive a follow-up turn that re-invokes `transcribe_site`.
 
 <!-- xgd-chat-end -->
