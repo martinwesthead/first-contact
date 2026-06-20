@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:39:14.161790+00:00'
+updated_at: '2026-06-20T23:45:06.762351+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -220,5 +220,11 @@ To smoke-test end-to-end locally (step 3 of the original plan, **not yet done** 
 3. `pnpm dev:control` — open the builder, ask the AI "list our tickets" and you should see the `xgd_ticket` tool call render in the chat panel.
 
 Want me to do the smoke test now, or is your local setup in a state where you'd rather drive it yourself?
+
+<!-- xgd-turn id="ade84627-0fe0-4477-a604-75ee2c52dbb8-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:44:54.972Z" -->
+#### You
+sure please complete this now
 
 <!-- xgd-chat-end -->
