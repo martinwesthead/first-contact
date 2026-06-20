@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-34
 created_by: xgd
 created_at: '2026-06-20T18:26:42.904782+00:00'
-updated_at: '2026-06-20T18:47:58.075671+00:00'
+updated_at: '2026-06-20T18:54:40.724348+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -84,5 +84,11 @@ Done. Summary:
 - Updated `test_UAT_FC_REQ-28_transcribe_progress_card.test.ts` for the 5-row stage list.
 
 The REQ-34 ticket body was extended with an "Implementation notes" section describing how the converged implementation maps onto the original IN/Decisions plan and how the work was split across the REQ-35 (58fce2b) and REQ-34 (c54359d) commits.
+
+<!-- xgd-turn id="f4ad95dd-4c64-45e7-9b27-77bdf9c9c05e-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T18:52:23.496Z" -->
+#### You
+After this change (and REQ-35) I am (1) no longer seeing the downloaded site content and (2) seeing blank page after conversion?
 
 <!-- xgd-chat-end -->
