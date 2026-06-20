@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-10
 created_by: xgd
 created_at: '2026-06-20T21:18:11.621144+00:00'
-updated_at: '2026-06-20T23:11:36.379346+00:00'
+updated_at: '2026-06-20T23:11:37.091850+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -61,5 +61,21 @@ Either way, the body should be updated to reflect that issue 1 is shipped (it cu
 <!-- xgd-chat role="user" ts="2026-06-20T23:00:10.683Z" -->
 #### You
 Plesae complete the free coding lifecycle, if the work is comeplete
+
+<!-- xgd-turn id="23c3b9c3-2b7d-42e6-98cf-6228a196e24a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:01:16.822Z" -->
+#### Claude
+The recorded work (issue 1) is complete; issue 2 is a separate deferred item. I'll close out the lifecycle for what landed: set `status=free_coded` and refresh the body to mark issue 1 as shipped and issue 2 as deferred. Per the session rule, I'll preserve the existing body content rather than rewrite wholesale.
+
+The status change needs the gating command. I'll split it: append the body first, then use `move-to-free-coded` with the recorded commit SHA.
+
+BUG-10 is closed out cleanly:
+
+- **Status**: `in_progress` → `free_coded` (via the gating command `move-to-free-coded`, which validated the commit SHA and version `0.0.14`)
+- **Body**: appended a "Landed (issue 1)" section documenting what shipped + the locking UAT, and a "Deferred (issue 2)" section recording the unresolved AI-doc / `applyAddModule` work for a follow-up session — original scope preserved above the `---` divider
+- **fields.commits**: already correctly populated with `65e79b6`
+
+Issue 2 (blank iframe / module-ID mismatch) is parked as documented deferred scope on this ticket. No new ticket created (per session rule). When that work resumes, it can be added as additional commits on this same ticket per the FREE-CODING iteration pattern.
 
 <!-- xgd-chat-end -->
