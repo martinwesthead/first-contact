@@ -7,4 +7,5 @@ export { meta as heroMeta } from "./hero/meta.js";
 export { meta as footerMeta } from "./footer/meta.js";
 export { meta as textBlockMeta } from "./text-block/meta.js";
 export { meta as servicesGridMeta } from "./services-grid/meta.js";
+export { meta as testimonialsMeta } from "./testimonials/meta.js";
 export { meta as contactFormMeta } from "./contact-form/meta.js";
