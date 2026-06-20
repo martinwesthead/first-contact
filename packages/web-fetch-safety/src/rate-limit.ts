@@ -1,3 +1,5 @@
+import type { KVNamespace } from "@cloudflare/workers-types";
+
 export type RateLimitConfig = {
   hourMax: number;
   dayMax: number;
