@@ -8,11 +8,13 @@ export {
   BuilderStore,
   DEFAULT_STORAGE_KEY,
   type BuilderState,
+  type BuilderStateInit,
   type BuilderStoreOptions,
   type ChatMessage,
   type ChatToolCallRecord,
   type ChatToolResultRecord,
   type Listener,
+  type PendingToolFailure,
 } from "./store.js";
 export {
   applyToolCall,
@@ -73,8 +75,8 @@ export {
 } from "./components/transcribe-progress.js";
 export {
   runChatTurn,
-  type ChatApiResponse,
   type ChatDriverOptions,
+  type ChatToolEvent,
   type ChatToolResult,
   type ChatTurnResult,
 } from "./chat-driver.js";

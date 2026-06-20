@@ -109,6 +109,13 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
   // REQ-34: every convert lands on an empty 1-page scaffold so the AI's
   // reconstruction is not contaminated by the previous draft (1stcontact
   // starter modules, or stale content from a prior convert).
+  // REQ-37: also evict any stale digest from a prior convert so
+  // read_transcription_digest reports `not_ready` while the new convert is
+  // mid-flight rather than handing back yesterday's data.
+  const digestKey = `sites/${accountId}/transcription/digest.json`;
+  if (env.ASSETS_BUCKET) {
+    await env.ASSETS_BUCKET.delete(digestKey);
+  }
   const sourceTitle = titleFromDigest(homeDigest);
   const clearedSiteDefinition = buildEmptyScaffold({ businessName: sourceTitle });
   ctx.emit({
@@ -229,13 +236,30 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
     capturedAt,
     pageCopyByUrl,
   });
-  const digestKey = `sites/${accountId}/transcription/digest.json`;
   if (!env.ASSETS_BUCKET) {
     return fail("ASSETS_BUCKET binding required to write transcription digest");
   }
   await env.ASSETS_BUCKET.put(digestKey, JSON.stringify(digest), {
     httpMetadata: { contentType: "application/json" },
   });
+  // REQ-37: read the freshly-written digest back and confirm the capturedAt
+  // sentinel matches what we put. Catches eventual-consistency drift, a racing
+  // writer beating us to the same key, or a put that silently dropped.
+  const verification = await env.ASSETS_BUCKET.get(digestKey);
+  if (!verification) {
+    return fail(`digest_write_unverified: ${digestKey} not retrievable after put`);
+  }
+  let roundTripped: Record<string, unknown>;
+  try {
+    roundTripped = (await verification.json()) as Record<string, unknown>;
+  } catch (err) {
+    return fail(`digest_write_unverified: round-tripped JSON did not parse: ${String(err)}`);
+  }
+  if (roundTripped.capturedAt !== capturedAt) {
+    return fail(
+      `digest_write_unverified: capturedAt drift at ${digestKey} (expected ${capturedAt}, got ${String(roundTripped.capturedAt)})`,
+    );
+  }
 
   ctx.emit({
     event: "action:notify",
@@ -258,6 +282,7 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
       assetCount: digest.assetInventory.length,
       mirrored: mirrorSummary.mirrored,
       mirrorFailures: mirrorSummary.failed,
+      assetFailures: mirrorSummary.failures,
     },
   });
 };

@@ -6,14 +6,25 @@ import type {
   ChatMessage,
   ChatToolCallRecord,
   ChatToolResultRecord,
+  PendingToolFailure,
 } from "./store.js";
-import { applyToolCall, type ToolCall, type ToolApplyError } from "./tools.js";
+import { applyToolCall, type ToolApplyError, type ToolName } from "./tools.js";
 
 export type ChatToolResult = ChatToolResultRecord;
 
 export interface ChatTurnResult {
   readonly assistantText: string;
   readonly toolCalls: ReadonlyArray<ChatToolCallRecord>;
+}
+
+/** Tool-call event surfaced to the chat panel's live tool-use pane. */
+export interface ChatToolEvent {
+  readonly name: string;
+  readonly input: Record<string, unknown>;
+  readonly toolUseId: string;
+  readonly status: "in_flight" | "accepted" | "rejected";
+  /** Error message for rejected calls. */
+  readonly error?: string;
 }
 
 export interface ChatDriverOptions {
@@ -29,28 +40,43 @@ export interface ChatDriverOptions {
    * correlation will reject the call.
    */
   sessionId?: string | null;
+  /** Optional AbortSignal so the panel's Stop button can cancel the turn. */
+  signal?: AbortSignal;
+  /** Called as each tool_call SSE event arrives, before server-side result. */
+  onToolCallStart?: (event: ChatToolEvent) => void;
+  /** Called when the server-side result for a tool_call arrives. */
+  onToolCallResolved?: (event: ChatToolEvent) => void;
+  /** Called once at the start of the turn so the panel can clear stale state. */
+  onTurnStart?: () => void;
 }
 
-export interface ChatApiResponse {
+/** Final aggregate payload of the streaming chat response. */
+interface ChatDonePayload {
   text: string;
-  /**
-   * Server may return either the legacy shape (just name + input) or the
-   * REQ-13 shape (name + input + server-side result). The driver tolerates
-   * both — the client-side validator is still the validator of record
-   * (REQ-8 §5.3); `result` is consumed only to surface tool_result cards.
-   */
-  toolCalls: Array<ToolCall & { result?: ChatToolResultRecord }>;
+  toolCalls: Array<{
+    name: string;
+    input: Record<string, unknown>;
+    result?: ChatToolResultRecord;
+  }>;
+  systemActions: unknown;
+  intentToken: string | null;
 }
 
 /**
- * One end-to-end chat turn:
- *   1. Append the user message to history.
- *   2. POST {history, siteDefinition, frameworkCatalog} to /api/chat.
- *   3. For each returned tool call, run applyToolCall() → validator → store.
- *   4. Append the assistant turn with structured tool-call summaries.
+ * One end-to-end chat turn (REQ-36 G9 streaming version):
+ *   1. Append the user message + an empty in-flight assistant bubble.
+ *   2. POST {history, siteDefinition, frameworkCatalog} to /api/chat (SSE).
+ *   3. As `token` events arrive, grow the in-flight assistant message.
+ *   4. As `tool_call` events arrive, fire onToolCallStart for the live
+ *      tool-use pane and locally apply the tool call to the working site
+ *      (mirrors the server's optimistic validation so the preview reacts
+ *      mid-turn).
+ *   5. As `tool_result` events arrive, fire onToolCallResolved.
+ *   6. On `done`, commit the final assistant message with structured tool
+ *      results so the inline ChatCard renderers fire.
  *
- * The driver never throws on a validator rejection — it records the failure on
- * the chat message so the user can see what the AI tried and why it was
+ * The driver never throws on a validator rejection — it records the failure
+ * on the chat message so the user can see what the AI tried and why it was
  * refused (DOC-8 §5.3).
  */
 export async function runChatTurn(
@@ -59,10 +85,33 @@ export async function runChatTurn(
 ): Promise<ChatTurnResult> {
   const endpoint = options.endpoint ?? "/api/chat";
   const fetchImpl = options.fetch ?? globalThis.fetch;
+
+  // REQ-37: if the prior turn left rejected tool calls, prepend a synthetic
+  // system message describing them so the AI can self-correct without the
+  // operator restating the failure. The note enters chatHistory so it
+  // persists in the transcript and survives reloads.
+  const carriedFailures = options.store.getState().pendingToolFailures;
+  if (carriedFailures.length > 0) {
+    options.store.appendChatMessage({
+      role: "system",
+      content: formatFailureNote(carriedFailures),
+    });
+    options.store.clearToolFailures();
+  }
+
   const userMessage: ChatMessage = { role: "user", content: userText };
   options.store.appendChatMessage(userMessage);
 
-  const history = options.store.getState().chatHistory;
+  // Place the in-flight assistant bubble so the streaming token loop has a
+  // slot to grow. Empty content until the first delta arrives.
+  const inflightAssistant: ChatMessage = { role: "assistant", content: "" };
+  options.store.appendChatMessage(inflightAssistant);
+
+  if (options.onTurnStart) options.onTurnStart();
+
+  const history = options.store
+    .getState()
+    .chatHistory.filter((m, i, all) => !(i === all.length - 1 && m.role === "assistant"));
   const siteDefinition = options.store.getState().siteDefinition;
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -76,73 +125,217 @@ export async function runChatTurn(
       siteDefinition,
       frameworkCatalog: options.catalog,
     }),
+    signal: options.signal,
   });
   if (!resp.ok) {
     const error = `chat endpoint returned ${resp.status}`;
-    const assistantMessage: ChatMessage = {
+    const failed: ChatMessage = {
       role: "assistant",
       content: `Sorry — ${error}.`,
     };
-    options.store.appendChatMessage(assistantMessage);
-    return { assistantText: assistantMessage.content, toolCalls: [] };
+    options.store.updateLastChatMessage(failed);
+    return { assistantText: failed.content, toolCalls: [] };
   }
-  const data = (await resp.json()) as ChatApiResponse;
 
-  const toolCallSummaries: ChatToolCallRecord[] = [];
   let workingSite: Site = siteDefinition;
-  for (const call of data.toolCalls ?? []) {
-    const serverResult = "result" in call ? call.result : undefined;
-    // REQ-34: transcribe_site_done carries a `clearedSiteDefinition` — the
-    // empty scaffold the server installed at Stage 0. Apply it to working
-    // state before any state_edit calls that follow in this turn, so the
-    // AI's reconstruction lands on a clean slate and the operator no longer
-    // sees the previous draft's modules mixed into the converted result.
-    const cleared = extractClearedSite(serverResult);
-    if (cleared) {
-      workingSite = cleared;
-      toolCallSummaries.push({
-        name: call.name,
-        input: call.input,
-        accepted: true,
-        ...(serverResult ? { result: serverResult } : {}),
-      });
-      continue;
+  const toolCallSummaries: ChatToolCallRecord[] = [];
+  // State object so closure mutations survive TS's let-narrowing across
+  // the reader.read() loop. Each field is widened via `as` at declaration.
+  const stream: {
+    text: string;
+    done: ChatDonePayload | null;
+    error: string | null;
+  } = { text: "", done: null, error: null };
+
+  if (!resp.body) {
+    const failed: ChatMessage = {
+      role: "assistant",
+      content: "Sorry — chat response carried no body.",
+    };
+    options.store.updateLastChatMessage(failed);
+    return { assistantText: failed.content, toolCalls: [] };
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const flushBuffer = (final: boolean): void => {
+    let sep = buffer.indexOf("\n\n");
+    while (sep !== -1) {
+      handleFrame(buffer.slice(0, sep));
+      buffer = buffer.slice(sep + 2);
+      sep = buffer.indexOf("\n\n");
     }
-    const applyResult = applyToolCall(workingSite, options.catalog, {
-      name: call.name,
-      input: call.input,
-    });
-    if (applyResult.ok) {
-      workingSite = applyResult.next;
-      toolCallSummaries.push({
-        name: call.name,
-        input: call.input,
-        accepted: true,
-        ...(serverResult ? { result: serverResult } : {}),
-      });
-    } else {
-      toolCallSummaries.push({
-        name: call.name,
-        input: call.input,
-        accepted: false,
-        error: formatError(applyResult.error),
-        ...(serverResult ? { result: serverResult } : {}),
-      });
+    if (final && buffer.trim().length > 0) {
+      handleFrame(buffer);
+      buffer = "";
     }
+  };
+
+  const handleFrame = (raw: string): void => {
+    const lines = raw.split("\n");
+    let event = "message";
+    const dataParts: string[] = [];
+    for (const line of lines) {
+      if (line.startsWith("event:")) {
+        event = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        dataParts.push(line.slice(5).replace(/^ /, ""));
+      }
+    }
+    if (dataParts.length === 0) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(dataParts.join("\n"));
+    } catch {
+      return;
+    }
+    switch (event) {
+      case "token": {
+        const delta = (parsed as { delta?: string }).delta ?? "";
+        stream.text += delta;
+        options.store.updateLastChatMessage({
+          role: "assistant",
+          content: stream.text,
+        });
+        return;
+      }
+      case "tool_call": {
+        const ev = parsed as {
+          name: string;
+          input: Record<string, unknown>;
+          toolUseId: string;
+        };
+        if (options.onToolCallStart) {
+          options.onToolCallStart({ ...ev, status: "in_flight" });
+        }
+        return;
+      }
+      case "tool_result": {
+        const ev = parsed as {
+          name: string;
+          input: Record<string, unknown>;
+          toolUseId: string;
+          result: ChatToolResultRecord;
+        };
+        // Mirror the server's tool execution on the working site so the
+        // preview reacts as the turn progresses. The server-side result is
+        // the source of truth; the local apply just keeps preview state
+        // consistent. Same code path as the legacy post-turn replay.
+        const serverResult = ev.result;
+        const cleared = extractClearedSite(serverResult);
+        if (cleared) {
+          workingSite = cleared;
+          toolCallSummaries.push({
+            name: ev.name,
+            input: ev.input,
+            accepted: true,
+            result: serverResult,
+          });
+        } else {
+          const applyResult = applyToolCall(workingSite, options.catalog, {
+            name: ev.name as ToolName,
+            input: ev.input,
+          });
+          if (applyResult.ok) {
+            workingSite = applyResult.next;
+            toolCallSummaries.push({
+              name: ev.name,
+              input: ev.input,
+              accepted: true,
+              result: serverResult,
+            });
+          } else {
+            toolCallSummaries.push({
+              name: ev.name,
+              input: ev.input,
+              accepted: false,
+              error: formatError(applyResult.error),
+              result: serverResult,
+            });
+          }
+        }
+        if (options.onToolCallResolved) {
+          const last = toolCallSummaries[toolCallSummaries.length - 1]!;
+          options.onToolCallResolved({
+            name: ev.name,
+            input: ev.input,
+            toolUseId: ev.toolUseId,
+            status: last.accepted ? "accepted" : "rejected",
+            ...(last.error ? { error: last.error } : {}),
+          });
+        }
+        return;
+      }
+      case "done":
+        stream.done = parsed as ChatDonePayload;
+        return;
+      case "error":
+        stream.error = (parsed as { error?: string }).error ?? "unknown error";
+        return;
+      default:
+        return;
+    }
+  };
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      flushBuffer(false);
+    }
+    flushBuffer(true);
+  } catch (err) {
+    stream.error = err instanceof Error ? err.message : String(err);
+  }
+
+  if (stream.error) {
+    const failed: ChatMessage = {
+      role: "assistant",
+      content: `Sorry — ${stream.error}.`,
+    };
+    options.store.updateLastChatMessage(failed);
+    return { assistantText: failed.content, toolCalls: [] };
   }
 
   if (workingSite !== siteDefinition) {
     options.store.setSiteDefinition(workingSite);
   }
 
-  const assistantMessage: ChatMessage = {
+  // Finalise the assistant bubble. Prefer the `done` text (server-side
+  // canonical) over the assembled stream; with our impl they should match
+  // but `done` survives intermediate parse failures.
+  const finalText = stream.done?.text ?? stream.text;
+  options.store.updateLastChatMessage({
     role: "assistant",
-    content: data.text ?? "",
+    content: finalText,
     toolCalls: toolCallSummaries,
-  };
-  options.store.appendChatMessage(assistantMessage);
+  });
 
-  return { assistantText: assistantMessage.content, toolCalls: toolCallSummaries };
+  // REQ-37: persist any rejected tool calls from this turn so the chat panel
+  // can surface them and the next outbound turn can reinject them.
+  const turnFailures: PendingToolFailure[] = toolCallSummaries
+    .filter((c) => !c.accepted)
+    .map((c) => ({
+      name: c.name,
+      input: c.input,
+      error: c.error ?? "rejected",
+    }));
+  options.store.recordToolFailures(turnFailures);
+
+  return { assistantText: finalText, toolCalls: toolCallSummaries };
+}
+
+function formatFailureNote(failures: ReadonlyArray<PendingToolFailure>): string {
+  const lines = [
+    `[system] The previous turn produced ${failures.length} failed tool call${failures.length === 1 ? "" : "s"}. Review the errors and retry where appropriate:`,
+  ];
+  for (const f of failures) {
+    const argsPreview = JSON.stringify(f.input);
+    lines.push(`- ${f.name}(${argsPreview}) → ${f.error}`);
+  }
+  return lines.join("\n");
 }
 
 function extractClearedSite(
@@ -169,3 +362,4 @@ function formatError(error: ToolApplyError): string {
   }
   return error.message;
 }
+
