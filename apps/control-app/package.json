@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 8788",
+    "dev": "concurrently -k -n bundle,wrangler -c yellow,magenta \"pnpm build:bundle:watch\" \"wrangler dev --port 8788\"",
     "build:bundle": "node scripts/build-builder-bundle.mjs",
+    "build:bundle:watch": "node scripts/build-builder-bundle.mjs --watch",
     "build": "pnpm build:bundle && tsc --noEmit",
     "deploy": "pnpm build:bundle && wrangler deploy",
     "dryrun": "pnpm build:bundle && wrangler deploy --dry-run --outdir=.wrangler/dryrun"
