@@ -4,6 +4,10 @@ import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { NOT_DETECTED, type ReferenceDigest } from "../packages/extractor/src/schema.js";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
+import {
+  consumeChatSSE,
+  encodeAnthropicSSE,
+} from "./_helpers_REQ-36_chat_sse.js";
 
 const pngBytes = new Uint8Array([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
@@ -92,7 +96,7 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
       if (turn === 1) {
         // First assistant turn: call read_transcription_digest.
         return new Response(
-          JSON.stringify({
+          encodeAnthropicSSE({
             id: "msg_t1",
             content: [
               { type: "text", text: "Reading the digest…" },
@@ -104,7 +108,7 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
               },
             ],
           }),
-          { status: 200, headers: { "content-type": "application/json" } },
+          { status: 200, headers: { "content-type": "text/event-stream" } },
         );
       }
       if (turn === 2) {
@@ -138,7 +142,7 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
             }
           : null;
         return new Response(
-          JSON.stringify({
+          encodeAnthropicSSE({
             id: "msg_t2",
             content: [
               { type: "text", text: "Applying source palette + hero." },
@@ -152,13 +156,16 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
               ...(heroText ? [heroText] : []),
             ],
           }),
-          { status: 200, headers: { "content-type": "application/json" } },
+          { status: 200, headers: { "content-type": "text/event-stream" } },
         );
       }
       // Final turn — no more tool calls.
       return new Response(
-        JSON.stringify({ id: "msg_t3", content: [{ type: "text", text: "Done." }] }),
-        { status: 200, headers: { "content-type": "application/json" } },
+        encodeAnthropicSSE({
+          id: "msg_t3",
+          content: [{ type: "text", text: "Done." }],
+        }),
+        { status: 200, headers: { "content-type": "text/event-stream" } },
       );
     });
 
@@ -185,7 +192,9 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
       { fetch: upstreamFetch as unknown as typeof fetch },
     );
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
+    const consumed = await consumeChatSSE(response);
+    expect(consumed.done).not.toBeNull();
+    const body = consumed.done! as {
       toolCalls: Array<{ name: string; input: Record<string, unknown>; result: { ok: boolean } }>;
       systemActions: Array<{ name: string; input: Record<string, unknown>; result: { status: string } }>;
     };

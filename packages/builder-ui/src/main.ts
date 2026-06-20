@@ -101,15 +101,41 @@ export function bootBuilder(options: BootBuilderOptions): {
       reloadPage();
     },
   });
+  let abortController: AbortController | null = null;
+  const formatToolArg = (
+    input: Record<string, unknown>,
+  ): string | undefined => {
+    for (const key of ["command", "file_path", "pattern", "query", "prompt", "field", "name"]) {
+      const v = input[key];
+      if (typeof v === "string") return v.length > 120 ? v.slice(0, 120) + "…" : v;
+    }
+    return undefined;
+  };
   const chat = createChatPanel(layout.chatPanel, {
     store,
     onSend: async (text: string) => {
+      abortController = new AbortController();
       await runChatTurn(text, {
         store,
         catalog,
         endpoint: options.chatEndpoint,
         sessionId,
+        signal: abortController.signal,
+        onTurnStart: () => chat.clearToolEvents(),
+        onToolCallStart: (event) => {
+          chat.expandToolPane();
+          chat.appendToolEvent({
+            name: event.name,
+            inputSummary: formatToolArg(event.input),
+            status: event.status,
+          });
+        },
       });
+      abortController = null;
+    },
+    onStop: () => {
+      abortController?.abort();
+      abortController = null;
     },
   });
 
