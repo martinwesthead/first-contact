@@ -1,0 +1,202 @@
+---
+import type { AssetRef } from "@1stcontact/site-schema";
+
+export interface ImageGalleryItem {
+  image: AssetRef;
+  caption?: string;
+}
+
+export interface Props {
+  variant: "grid" | "masonry";
+  heading?: string;
+  items: ImageGalleryItem[];
+  dials?: {
+    columns?: "2" | "3" | "4";
+    gap?: "tight" | "normal" | "loose";
+    spacingTop?: string;
+    spacingBottom?: string;
+    surface?: "default" | "subtle" | "inverse" | "accent";
+  };
+}
+
+const { variant, heading, items, dials = {} } = Astro.props;
+const columns = dials.columns ?? "3";
+const gap = dials.gap ?? "normal";
+const surface = dials.surface ?? "default";
+const spacingTop = dials.spacingTop ?? "12";
+const spacingBottom = dials.spacingBottom ?? "12";
+---
+
+<section
+  class:list={[
+    "fc-image-gallery",
+    `fc-image-gallery--variant-${variant}`,
+    `fc-image-gallery--cols-${columns}`,
+    `fc-image-gallery--gap-${gap}`,
+    `fc-image-gallery--surface-${surface}`,
+    `fc-image-gallery--space-top-${spacingTop}`,
+    `fc-image-gallery--space-bottom-${spacingBottom}`,
+  ]}
+  data-module="image-gallery"
+  data-variant={variant}
+>
+  <div class="fc-image-gallery__inner">
+    {heading && <h2 class="fc-image-gallery__heading">{heading}</h2>}
+    <ul class="fc-image-gallery__list" role="list">
+      {
+        items.map((item) => (
+          <li class="fc-image-gallery__item">
+            <figure class="fc-image-gallery__figure">
+              <img
+                class="fc-image-gallery__image"
+                src={item.image.src}
+                alt={item.image.alt}
+                loading="lazy"
+                decoding="async"
+              />
+              {item.caption && (
+                <figcaption class="fc-image-gallery__caption">{item.caption}</figcaption>
+              )}
+            </figure>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .fc-image-gallery {
+    color: var(--color-text);
+    background: var(--color-bg);
+  }
+  .fc-image-gallery--surface-subtle { background: var(--color-surface-subtle); }
+  .fc-image-gallery--surface-inverse {
+    background: var(--color-surface-inverse);
+    color: var(--color-bg);
+  }
+  .fc-image-gallery--surface-accent {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .fc-image-gallery--space-top-0 { padding-top: var(--space-0); }
+  .fc-image-gallery--space-top-1 { padding-top: var(--space-1); }
+  .fc-image-gallery--space-top-2 { padding-top: var(--space-2); }
+  .fc-image-gallery--space-top-3 { padding-top: var(--space-3); }
+  .fc-image-gallery--space-top-4 { padding-top: var(--space-4); }
+  .fc-image-gallery--space-top-6 { padding-top: var(--space-6); }
+  .fc-image-gallery--space-top-8 { padding-top: var(--space-8); }
+  .fc-image-gallery--space-top-12 { padding-top: var(--space-12); }
+  .fc-image-gallery--space-top-16 { padding-top: var(--space-16); }
+  .fc-image-gallery--space-top-24 { padding-top: var(--space-24); }
+  .fc-image-gallery--space-bottom-0 { padding-bottom: var(--space-0); }
+  .fc-image-gallery--space-bottom-1 { padding-bottom: var(--space-1); }
+  .fc-image-gallery--space-bottom-2 { padding-bottom: var(--space-2); }
+  .fc-image-gallery--space-bottom-3 { padding-bottom: var(--space-3); }
+  .fc-image-gallery--space-bottom-4 { padding-bottom: var(--space-4); }
+  .fc-image-gallery--space-bottom-6 { padding-bottom: var(--space-6); }
+  .fc-image-gallery--space-bottom-8 { padding-bottom: var(--space-8); }
+  .fc-image-gallery--space-bottom-12 { padding-bottom: var(--space-12); }
+  .fc-image-gallery--space-bottom-16 { padding-bottom: var(--space-16); }
+  .fc-image-gallery--space-bottom-24 { padding-bottom: var(--space-24); }
+
+  .fc-image-gallery__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .fc-image-gallery__heading {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-3xl);
+    line-height: var(--line-height-tight);
+    text-align: center;
+  }
+
+  .fc-image-gallery__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .fc-image-gallery__item { margin: 0; }
+
+  .fc-image-gallery__figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .fc-image-gallery__image {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+  }
+
+  .fc-image-gallery__caption {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    color: var(--color-muted);
+  }
+
+  /* Grid variant: locked 1:1 tiles. */
+  .fc-image-gallery--variant-grid .fc-image-gallery__list {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .fc-image-gallery--variant-grid .fc-image-gallery__image {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+
+  /* Masonry variant: CSS columns; natural aspect ratios flow. */
+  .fc-image-gallery--variant-masonry .fc-image-gallery__list {
+    column-count: 1;
+  }
+  .fc-image-gallery--variant-masonry .fc-image-gallery__item {
+    break-inside: avoid;
+    margin-bottom: var(--space-6);
+  }
+
+  /* Gap dial */
+  .fc-image-gallery--variant-grid.fc-image-gallery--gap-tight .fc-image-gallery__list { gap: var(--space-2); }
+  .fc-image-gallery--variant-grid.fc-image-gallery--gap-normal .fc-image-gallery__list { gap: var(--space-4); }
+  .fc-image-gallery--variant-grid.fc-image-gallery--gap-loose .fc-image-gallery__list { gap: var(--space-6); }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--gap-tight .fc-image-gallery__list { column-gap: var(--space-2); }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--gap-normal .fc-image-gallery__list { column-gap: var(--space-4); }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--gap-loose .fc-image-gallery__list { column-gap: var(--space-6); }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--gap-tight .fc-image-gallery__item { margin-bottom: var(--space-2); }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--gap-normal .fc-image-gallery__item { margin-bottom: var(--space-4); }
+  .fc-image-gallery--variant-masonry.fc-image-gallery--gap-loose .fc-image-gallery__item { margin-bottom: var(--space-6); }
+
+  /* Responsive column counts (mobile → md breakpoint). */
+  @media (min-width: 768px) {
+    .fc-image-gallery--variant-grid.fc-image-gallery--cols-2 .fc-image-gallery__list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .fc-image-gallery--variant-grid.fc-image-gallery--cols-3 .fc-image-gallery__list {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .fc-image-gallery--variant-grid.fc-image-gallery--cols-4 .fc-image-gallery__list {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .fc-image-gallery--variant-masonry.fc-image-gallery--cols-2 .fc-image-gallery__list {
+      column-count: 2;
+    }
+    .fc-image-gallery--variant-masonry.fc-image-gallery--cols-3 .fc-image-gallery__list {
+      column-count: 3;
+    }
+    .fc-image-gallery--variant-masonry.fc-image-gallery--cols-4 .fc-image-gallery__list {
+      column-count: 4;
+    }
+  }
+</style>

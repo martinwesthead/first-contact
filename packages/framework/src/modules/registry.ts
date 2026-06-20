@@ -6,6 +6,8 @@ import Header from "./header/index.astro";
 import { meta as headerMeta } from "./header/meta.js";
 import Hero from "./hero/index.astro";
 import { meta as heroMeta } from "./hero/meta.js";
+import ImageGallery from "./image-gallery/index.astro";
+import { meta as imageGalleryMeta } from "./image-gallery/meta.js";
 import ServicesGrid from "./services-grid/index.astro";
 import { meta as servicesGridMeta } from "./services-grid/meta.js";
 import TextBlock from "./text-block/index.astro";
@@ -36,6 +38,9 @@ const REGISTRY: Record<string, Record<number, ModuleEntry>> = {
   },
   [servicesGridMeta.id]: {
     [servicesGridMeta.version]: { meta: servicesGridMeta, Component: ServicesGrid },
+  },
+  [imageGalleryMeta.id]: {
+    [imageGalleryMeta.version]: { meta: imageGalleryMeta, Component: ImageGallery },
   },
   [contactFormMeta.id]: {
     [contactFormMeta.version]: { meta: contactFormMeta, Component: ContactForm },
