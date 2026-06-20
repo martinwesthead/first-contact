@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-10
 created_by: xgd
 created_at: '2026-06-20T21:18:11.621144+00:00'
-updated_at: '2026-06-20T21:19:23.333251+00:00'
+updated_at: '2026-06-20T23:11:36.379346+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -55,5 +55,11 @@ Two clean paths — your call:
 **Option B — Stay `in_progress` only if you intend to finish issue 2 in this session.** Otherwise B is wrong — it leaves a landed commit in an active state with nobody actively working.
 
 Either way, the body should be updated to reflect that issue 1 is shipped (it currently still reads as a pure scoping document, no "what landed" section). Want me to (a) move to `free_coded` and refresh the body, or (b) push forward on issue 2 now?
+
+<!-- xgd-turn id="23c3b9c3-2b7d-42e6-98cf-6228a196e24a-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:00:10.683Z" -->
+#### You
+Plesae complete the free coding lifecycle, if the work is comeplete
 
 <!-- xgd-chat-end -->
