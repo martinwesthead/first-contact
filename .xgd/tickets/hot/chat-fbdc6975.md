@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-20T00:17:45.896337+00:00'
+updated_at: '2026-06-20T00:33:40.072074+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -1058,6 +1058,34 @@ A few implications worth flagging before I scope:
 So the scope of the markdown-union REQ now also covers: HTML→markdown converter in extractor + renderer's markdown-to-HTML pass with HTML-passthrough sniffing + the union schema + the capture-side mechanical write to files. ~6 SP-ish. Still one ticket.
 
 Want me to scope it? Or any of the four implications above worth pushing back on first?
+
+
+<!-- xgd-turn id="06d373e2-8918-42bf-8105-ec72408b3720" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:33:40.016Z" -->
+#### You
+Yes please scope it
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T00:33:40.016Z" -->
+#### Claude
+Scoping now.
+
+Ticket is **REQ-33** (`request-7570e72d`) — the next REQ number, since REQ-32 was taken by something else. Capturing the design transcript now.
+
+Done.
+
+**REQ-33** (`request-7570e72d`) — Framework: markdown content fields accept inline string or R2 text-asset union; capture writes markdown.
+**Status:** `draft`. **Story points:** 6.
+
+**Body covers** schema (AssetRef gains `kind: 'image' | 'text'`; markdown fields accept `string | AssetRef-text` union), renderer (markdown-to-HTML pass with HTML-passthrough sniff for the existing inline `<p>` baseline; resolver pattern for text-AssetRefs), extractor (htmlToMarkdown via turndown), `transcribe_site` Stage 5 (mechanical per-section markdown writes), digest extension (each `extractedContent` entry gains a ready-made `copy` AssetRef plus `inlineMarkdown` fallback for short blocks), new `write_text_asset` state_edit tool, how-to doc update so the AI sets fields from `digest.copy` rather than authoring, and tools/generate bake-at-build-time for the public site.
+
+**14 ACs** including end-to-end character-equality on the verbatim body text after a chat-loop reconstruction against the killer-demo fixture.
+
+**Explicitly OUT** (each a future ticket): the popup click-to-edit modal; REQ-16's asset-manager UI implementation; internal-link rewriting; 1stcontact baseline migration to markdown; video refs in captured markdown; and BUG-3/4/5 which remain independent.
+
+**COMMENT-113** carries the design transcript: your discomfort about text location → trace to inline strings in `site.json` → 1/2/3 options → hybrid → union confirmation → capture-as-markdown → scope.
+
+Ready for the next issue when you are.
 
 
 <!-- xgd-chat-end -->
