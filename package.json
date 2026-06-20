@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@1stcontact/builder-ui": "workspace:*",
+    "@1stcontact/dev-tools-server": "workspace:*",
     "@1stcontact/framework": "workspace:*",
     "@1stcontact/generate": "workspace:*",
     "@1stcontact/site-schema": "workspace:*",
