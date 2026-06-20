@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-6
 created_by: xgd
 created_at: '2026-06-19T23:51:24.086361+00:00'
-updated_at: '2026-06-19T23:51:31.686946+00:00'
+updated_at: '2026-06-20T00:29:22.461153+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -113,5 +113,11 @@ This is the wrangler dev-registry stale-state bug — wrangler tracks running wo
 None of this is a code change in our repo — it's an environment / tooling issue with wrangler itself.
 
 Which would you like to do? If you want option 3 (the wrangler 4 upgrade), that *would* be a free-coded change (touches `package.json` and possibly `wrangler.toml`), and we should populate BUG-6 with that scope before I touch anything. Options 1 and 2 are just shell commands you can run directly.
+
+<!-- xgd-turn id="7cd4380b-5a67-4481-8359-1396a0cbf591-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:28:38.545Z" -->
+#### You
+Please put this in the ticket and mark won't fkix
 
 <!-- xgd-chat-end -->
