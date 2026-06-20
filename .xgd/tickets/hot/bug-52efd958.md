@@ -5,9 +5,9 @@ type: bug
 title: 'Convert flow: blank iframe + missing TranscribeProgress card after REQ-34/REQ-35'
 created_by: xgd
 created_at: '2026-06-20T19:23:27.055507+00:00'
-updated_at: '2026-06-20T19:25:28.389795+00:00'
+updated_at: '2026-06-20T23:00:56.414497+00:00'
 completed_at: null
-last_field_updated: commits
+last_field_updated: body
 status: in_progress
 fields:
   auto_merge_back: true
@@ -66,3 +66,23 @@ REQ-34's scope was "clear the draft before AI reconstruction". The clear itself 
 2. After a convert against a real URL with mirrorable assets, the iframe shows a populated home page (theme tokens applied, modules with content from the digest, hero image visible).
 3. Re-running convert against a different URL produces a similarly populated iframe (no contamination from the previous convert — REQ-34's behaviour preserved).
 4. New UATs lock in the wiring of `registerTranscribeProgress` and the AI's add_module-with-explicit-id path through mocked Anthropic responses.
+
+
+---
+
+## Landed (issue 1) — 2026-06-20
+
+Commit `65e79b6` wired `registerTranscribeProgress()` into `bootBuilder` alongside the existing `registerDigestReport()` call (`packages/builder-ui/src/main.ts:8,83`). The `transcribe_site_done` tool_result now routes to the multi-stage progress card (Stage 0..4 + mirrored assets + failures-to-mirror) instead of falling through to the plain summary fallback in `tool-result-renderers.ts`.
+
+Locked in by `tests/test_UAT_FC_BUG-10_bootbuilder_registers_transcribe_progress.test.ts`, which clears the renderer registry, runs `bootBuilder`, and asserts the `transcribe_site_done` dispatcher key resolves — a future refactor that removes the registration call fails loudly rather than silently degrading.
+
+Satisfies acceptance criterion 1 and the portion of criterion 4 covering `registerTranscribeProgress` wiring.
+
+## Deferred (issue 2) — blank iframe / module-ID mismatch
+
+Not addressed by this ticket's commits. Still outstanding:
+
+- `docs/llm-context/reproducing-a-website.md:20` ("walk each page's modules") does not instruct the AI to pass an explicit `id` to `add_module`. The example IDs (`hero-1`, `text-1`, `body-1`) only appear in downstream `set_module_content` calls.
+- `applyAddModule` (`packages/builder-ui/src/tools.ts:245-248`) still generates a random suffix when no `id` is supplied, and (`tools.ts:281`) returns only the validator result — the assigned id is not surfaced in the tool_result for the AI to read back.
+
+These need dev-server verification before the doc/structural fix so the actual failure mode is confirmed (the operator's later observation that the AI was already using `hero-1` etc. but the iframe was still blank suggests the explanation is incomplete). Acceptance criteria 2, 3, and the remainder of 4 remain unmet and will be picked up in a follow-up session.
