@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-45
 created_by: xgd
 created_at: '2026-06-20T22:33:51.414538+00:00'
-updated_at: '2026-06-20T23:11:36.957419+00:00'
+updated_at: '2026-06-20T23:11:37.039723+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -87,5 +87,15 @@ The next convert attempt should run end-to-end without the stop-and-confirm gap 
 <!-- xgd-chat role="user" ts="2026-06-20T23:00:47.328Z" -->
 #### You
 Can you update the ticket to say what was don and move it to legacy_done
+
+<!-- xgd-turn id="cb420c19-28b0-483f-bbca-85792002c065-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:01:10.881Z" -->
+#### Claude
+REQ-45 updated:
+
+- **Title**: "Update convert-flow instructions to forbid mid-flow pauses"
+- **Status**: `legacy_done`
+- **Body**: summary, motivation (the double-ask incident + digest expiry), the two specific section changes, and the file touched
 
 <!-- xgd-chat-end -->
