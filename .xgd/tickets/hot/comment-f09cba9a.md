@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-6
 created_by: xgd
 created_at: '2026-06-19T23:51:24.086361+00:00'
-updated_at: '2026-06-20T00:29:22.461153+00:00'
+updated_at: '2026-06-20T00:29:45.521839+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -119,5 +119,19 @@ Which would you like to do? If you want option 3 (the wrangler 4 upgrade), that 
 <!-- xgd-chat role="user" ts="2026-06-20T00:28:38.545Z" -->
 #### You
 Please put this in the ticket and mark won't fkix
+
+<!-- xgd-turn id="7cd4380b-5a67-4481-8359-1396a0cbf591-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T00:29:45.495Z" -->
+#### Claude
+Good, `wont_fix` was accepted. Now let me title it and write the body.
+
+BUG-6 updated:
+
+- **Title**: pnpm dev (control-app) crashes with ENOENT on wrangler dev-registry utime
+- **Status**: `wont_fix`
+- **Body**: symptom, root cause (wrangler 3.x bug, not ours), repro, three workarounds, and rationale for won't-fix (upstream bug; v4 upgrade should be its own ticket).
+
+No code changes, so no `[FREE-CODED]` commit needed.
 
 <!-- xgd-chat-end -->
