@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-33
 created_by: xgd
 created_at: '2026-06-20T00:33:26.408868+00:00'
-updated_at: '2026-06-20T00:33:26.515247+00:00'
+updated_at: '2026-06-20T00:42:42.335484+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -83,5 +83,11 @@ Yes please scope it
 <!-- xgd-chat role="assistant" ts="2026-06-20T00:33:24Z" -->
 #### Claude
 Scoped as REQ-33 (`request-7570e72d`) at status `draft`. Body covers: schema discriminator + markdown union; renderer's markdown-to-HTML with HTML-passthrough sniff; renderer resolver pattern for AssetRef-text; htmlToMarkdown in extractor with turndown; transcribe_site Stage 5 mechanical markdown writes; digest gains per-entry `copy` AssetRef and `inlineMarkdown` short-block fallback; write_text_asset state_edit action; chat-prompt how-to doc update; tools/generate bake-at-build-time for the public site. 14 ACs including end-to-end killer-demo character-equality check on verbatim body text. Explicitly OUT: popup editor (separate REQ), REQ-16 asset-manager UI, internal-link rewriting, baseline migration of 1stcontact, video markdown refs, all three BUG-3/4/5 fixes.
+
+<!-- xgd-turn id="037ea029-97ca-446f-91fa-344b46846f8e-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:42:34.076Z" -->
+#### You
+PLease can you fre code this change
 
 <!-- xgd-chat-end -->
