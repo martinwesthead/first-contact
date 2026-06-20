@@ -411,7 +411,8 @@ function renderServicesGrid(instance: ModuleInstance, ctx: RenderContext): strin
   const subhead = content<unknown>(instance, "subhead");
   const subheadHtml = renderMarkdownField(subhead, ctx);
   const items = (content<unknown[]>(instance, "items") ?? []) as Array<{
-    title: string;
+    image?: { src: string; alt: string };
+    heading: string;
     body: unknown;
     cta?: { label: string; href: string };
   }>;
@@ -419,7 +420,12 @@ function renderServicesGrid(instance: ModuleInstance, ctx: RenderContext): strin
     .map(
       (item) => `
     <div class="fc-services-grid__item">
-      <h3 class="fc-services-grid__item-title">${escapeHtml(item.title)}</h3>
+      ${
+        item.image
+          ? `<div class="fc-services-grid__item-image"><img src="${escapeAttr(item.image.src)}" alt="${escapeAttr(item.image.alt ?? "")}" /></div>`
+          : ""
+      }
+      <h3 class="fc-services-grid__item-title">${escapeHtml(item.heading)}</h3>
       <div class="fc-services-grid__item-body">${renderMarkdownField(item.body, ctx)}</div>
       ${
         item.cta
@@ -516,13 +522,22 @@ body { margin: 0; font-family: var(--font-family-body); color: var(--color-text)
 .fc-services-grid { padding: var(--space-8) var(--space-4); }
 .fc-services-grid__inner { max-width: var(--container-default); margin: 0 auto; }
 .fc-services-grid__heading { font-family: var(--font-family-heading); font-weight: var(--font-weight-bold); font-size: var(--font-size-3xl); margin: 0 0 var(--space-6); text-align: center; }
-.fc-services-grid__items { display: grid; gap: var(--space-6); }
+.fc-services-grid__items { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
 .fc-services-grid--variant-three-col .fc-services-grid__items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .fc-services-grid--variant-two-col .fc-services-grid__items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fc-services-grid--variant-one-col .fc-services-grid__items { grid-template-columns: minmax(0, 1fr); max-width: var(--container-narrow); margin: 0 auto; }
 @media (max-width: 767px) {
   .fc-services-grid__items { grid-template-columns: 1fr !important; }
 }
 .fc-services-grid__item { background: var(--color-surface); padding: var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+.fc-services-grid__item-image { overflow: hidden; border-radius: var(--radius-md); }
+.fc-services-grid__item-image img { display: block; width: 100%; height: auto; }
+.fc-services-grid--image-icon .fc-services-grid__item-image { width: 2.5rem; height: 2.5rem; border-radius: 0; }
+.fc-services-grid--image-icon .fc-services-grid__item-image img { width: 100%; height: 100%; object-fit: contain; }
+.fc-services-grid--image-thumb .fc-services-grid__item-image { width: 6rem; height: 6rem; }
+.fc-services-grid--image-thumb .fc-services-grid__item-image img { width: 100%; height: 100%; object-fit: cover; }
+.fc-services-grid--image-cover .fc-services-grid__item-image { margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0; border-radius: var(--radius-md) var(--radius-md) 0 0; aspect-ratio: 16 / 9; }
+.fc-services-grid--image-cover .fc-services-grid__item-image img { width: 100%; height: 100%; object-fit: cover; }
 .fc-services-grid__item-title { margin: 0 0 var(--space-2); font-family: var(--font-family-heading); font-weight: var(--font-weight-semibold); font-size: var(--font-size-xl); }
 
 .fc-footer { padding: var(--space-6) var(--space-4); border-top: 1px solid var(--color-border); background: var(--color-surface); }

@@ -9,8 +9,8 @@ describe("UAT FC REQ-5: services-grid two-col renders two cards", () => {
       props: {
         variant: "two-col",
         items: [
-          { title: "Consulting", body: "<p>Advisory work.</p>" },
-          { title: "Implementation", body: "<p>Build work.</p>" },
+          { heading: "Consulting", body: "<p>Advisory work.</p>" },
+          { heading: "Implementation", body: "<p>Build work.</p>" },
         ],
       },
     });
