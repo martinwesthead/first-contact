@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-34
 created_by: xgd
 created_at: '2026-06-20T18:26:42.904782+00:00'
-updated_at: '2026-06-20T19:11:52.696773+00:00'
+updated_at: '2026-06-20T19:11:59.438239+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -124,5 +124,25 @@ If you want me to ship the doc-only fix now (as a follow-up commit on REQ-34, ke
 <!-- xgd-chat role="user" ts="2026-06-20T19:11:46.066Z" -->
 #### You
 I think we lost your options (chat windo glitch) can you repeat them?
+
+<!-- xgd-turn id="61ffec8a-b8b9-463a-926a-a342b4fdcbe9-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T19:11:59.436Z" -->
+#### Claude
+Here are the four options from my last message — pick whichever fits:
+
+**1. File a bug ticket and fix (structural)**
+Scope `BUG-XX` for the `add_module`-without-id failure mode. Change `applyAddModule` to return the assigned id in the tool result (and update the how-to to read it back). The proper structural fix — works whether the AI passes an explicit id or not.
+
+**2. Update the how-to doc only (fast first cut — my recommendation)**
+Smallest change, pure prose. Extend `reproducing-a-website.md` to tell the AI to pass an explicit, deterministic id to `add_module` (e.g. `id: "hero-1"`) and reuse it in subsequent `set_module_content` / `set_module_dial` / `set_module_variant`. Add a worked example. Lands as a follow-up commit on REQ-34 (keeps the ticket at `free_coded`). Plus a UAT that exercises the add_module-with-explicit-id chain via mocked Anthropic responses.
+
+**3. Verify in dev first**
+Boot `wrangler dev`, run a convert against a real URL, capture the actual tool-call sequence (and rejection reasons) from the chat panel / wrangler logs before committing to a fix. Confirms my hypothesis is right (or surfaces a different root cause) before we spend tokens on it.
+
+**4. Different root cause likely**
+My hypothesis is wrong — you have context (what you saw in the chat panel, wrangler logs, the specific URL you converted) that points elsewhere. Share it and I'll re-diagnose.
+
+Which would you like?
 
 <!-- xgd-chat-end -->
