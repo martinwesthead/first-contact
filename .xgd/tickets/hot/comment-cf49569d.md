@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-36
 created_by: xgd
 created_at: '2026-06-20T20:23:05.811361+00:00'
-updated_at: '2026-06-20T20:53:06.430725+00:00'
+updated_at: '2026-06-20T21:24:39.727765+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -125,5 +125,11 @@ Captured. Both confirmed against the codebases:
 
 1. Split G9 into a follow-up ticket and start free-coding G1–G8 now, or
 2. Keep G9 in REQ-36 and tackle everything as one bundle?
+
+<!-- xgd-turn id="d9a8a066-73c9-4883-91e2-86bce2e12f42-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T21:24:27.657Z" -->
+#### You
+Keep everything together - please can you free code this ticket now?
 
 <!-- xgd-chat-end -->
