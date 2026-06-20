@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-14
 created_by: xgd
 created_at: '2026-06-16T22:13:21.328432+00:00'
-updated_at: '2026-06-20T19:32:39.889845+00:00'
+updated_at: '2026-06-20T19:35:11.953185+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -174,5 +174,11 @@ REQ-14 is shipped. Summary:
 **Notes:**
 - The `xgd quality run` earlier reverted my source edits when it failed on a coverage-tool issue (reports 0.0% with `lines_covered: 0`, `lines_total: 0` — instrumentation not running, not actual zero coverage). I redid the edits and committed before re-running quality. If the coverage instrumentation gap matters to reconcile, it's a separate fix.
 - Pre-existing `wrangler`/`workers-types` package.json bumps in the working tree were left untouched — not part of REQ-14.
+
+<!-- xgd-turn id="7f5955c4-0dfc-475e-84ea-43010ff43a41-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T19:35:03.035Z" -->
+#### You
+Have you updated the AI instruictions doc to expose the new capabilities to the prompts?
 
 <!-- xgd-chat-end -->
