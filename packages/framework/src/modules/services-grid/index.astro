@@ -1,16 +1,15 @@
 ---
 import type { AssetRef } from "@1stcontact/site-schema";
-import { isAssetRef } from "../shared.js";
 
 export interface ServicesGridItem {
-  icon?: AssetRef | string;
-  title: string;
+  image?: AssetRef;
+  heading: string;
   body: string;
   cta?: { label: string; href: string };
 }
 
 export interface Props {
-  variant: "three-col" | "two-col";
+  variant: "three-col" | "two-col" | "one-col";
   heading?: string;
   subhead?: string;
   items: ServicesGridItem[];
@@ -19,6 +18,7 @@ export interface Props {
     spacingTop?: string;
     spacingBottom?: string;
     surface?: "default" | "subtle" | "inverse" | "accent";
+    imageStyle?: "icon" | "cover" | "thumb";
   };
 }
 
@@ -27,6 +27,7 @@ const gap = dials.gap ?? "normal";
 const surface = dials.surface ?? "default";
 const spacingTop = dials.spacingTop ?? "12";
 const spacingBottom = dials.spacingBottom ?? "12";
+const imageStyle = dials.imageStyle ?? "icon";
 ---
 
 <section
@@ -37,6 +38,7 @@ const spacingBottom = dials.spacingBottom ?? "12";
     `fc-services-grid--surface-${surface}`,
     `fc-services-grid--space-top-${spacingTop}`,
     `fc-services-grid--space-bottom-${spacingBottom}`,
+    `fc-services-grid--image-${imageStyle}`,
   ]}
   data-module="services-grid"
   data-variant={variant}
@@ -49,16 +51,12 @@ const spacingBottom = dials.spacingBottom ?? "12";
         items.map((item) => (
           <li class="fc-services-grid__item">
             <article class="fc-services-grid__card">
-              {item.icon && (
-                <div class="fc-services-grid__icon">
-                  {isAssetRef(item.icon) ? (
-                    <img src={item.icon.src} alt={item.icon.alt} />
-                  ) : (
-                    <span aria-hidden="true">{item.icon}</span>
-                  )}
+              {item.image && (
+                <div class="fc-services-grid__image">
+                  <img src={item.image.src} alt={item.image.alt} />
                 </div>
               )}
-              <h3 class="fc-services-grid__title">{item.title}</h3>
+              <h3 class="fc-services-grid__title">{item.heading}</h3>
               <div class="fc-services-grid__body" set:html={item.body} />
               {item.cta && (
                 <a class="fc-services-grid__cta" href={item.cta.href}>
@@ -167,17 +165,50 @@ const spacingBottom = dials.spacingBottom ?? "12";
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
   }
-  .fc-services-grid__icon {
+
+  .fc-services-grid__image {
+    overflow: hidden;
+    border-radius: var(--radius-md);
+  }
+  .fc-services-grid__image img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .fc-services-grid--image-icon .fc-services-grid__image {
     width: 2.5rem;
     height: 2.5rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-2xl);
-    line-height: 1;
+    border-radius: 0;
     color: var(--color-primary);
   }
-  .fc-services-grid__icon img { max-width: 100%; max-height: 100%; }
+  .fc-services-grid--image-icon .fc-services-grid__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .fc-services-grid--image-thumb .fc-services-grid__image {
+    width: 6rem;
+    height: 6rem;
+  }
+  .fc-services-grid--image-thumb .fc-services-grid__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fc-services-grid--image-cover .fc-services-grid__image {
+    margin: calc(var(--space-6) * -1) calc(var(--space-6) * -1) 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    aspect-ratio: 16 / 9;
+  }
+  .fc-services-grid--image-cover .fc-services-grid__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   .fc-services-grid__title {
     margin: 0;
     font-family: var(--font-family-heading);

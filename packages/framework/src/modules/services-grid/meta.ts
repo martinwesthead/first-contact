@@ -2,13 +2,14 @@ import type { ModuleMeta } from "../types.js";
 
 export const meta = {
   id: "services-grid",
-  version: 1,
-  variants: ["three-col", "two-col"] as const,
+  version: 2,
+  variants: ["three-col", "two-col", "one-col"] as const,
   dials: {
     gap: ["tight", "normal", "loose"] as const,
     spacingTop: ["0", "1", "2", "3", "4", "6", "8", "12", "16", "24"] as const,
     spacingBottom: ["0", "1", "2", "3", "4", "6", "8", "12", "16", "24"] as const,
     surface: ["default", "subtle", "inverse", "accent"] as const,
+    imageStyle: ["icon", "cover", "thumb"] as const,
   },
   contentSchema: {
     heading: { type: "string", required: false },
@@ -19,8 +20,8 @@ export const meta = {
         of: {
           kind: "object",
           fields: {
-            icon: { type: "asset-ref-or-string", required: false },
-            title: { type: "string", required: true },
+            image: { type: "asset-ref", required: false },
+            heading: { type: "string", required: true },
             body: { type: "markdown", required: true },
             cta: {
               type: {
@@ -34,7 +35,7 @@ export const meta = {
             },
           },
         },
-        min: 2,
+        min: 1,
         max: 6,
       },
       required: true,

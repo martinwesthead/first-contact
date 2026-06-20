@@ -9,9 +9,9 @@ describe("UAT FC REQ-5: services-grid three-col renders three cards", () => {
       props: {
         variant: "three-col",
         items: [
-          { title: "Discover", body: "<p>One.</p>" },
-          { title: "Design", body: "<p>Two.</p>" },
-          { title: "Deliver", body: "<p>Three.</p>" },
+          { heading: "Discover", body: "<p>One.</p>" },
+          { heading: "Design", body: "<p>Two.</p>" },
+          { heading: "Deliver", body: "<p>Three.</p>" },
         ],
       },
     });
