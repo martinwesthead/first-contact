@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-44
 created_by: xgd
 created_at: '2026-06-20T21:16:33.203004+00:00'
-updated_at: '2026-06-20T21:16:48.046204+00:00'
+updated_at: '2026-06-20T23:11:36.384099+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -54,5 +54,11 @@ The current `services-grid@v1` already has:
 6. **Test/transcription/showcase impact.** Do I also need to update any showcase site definitions (e.g. `sites/1stcontact`) or transcription mapping that references the current `icon`/`title` field names? I'll grep, but flagging now in case you know of specific consumers.
 
 My recommended interpretation: rename `icon`→`image` (asset-ref only) and `title`→`heading`; keep `subhead`; add `one-col` variant with `min: 1`; add `imageStyle` dial; bump v1 in place. Want me to proceed on that?
+
+<!-- xgd-turn id="b1bf2951-2707-4a46-a510-b5f724f95eb0-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T22:58:42.744Z" -->
+#### You
+Lets go with your proposals and can you make sure the AI instructions are updated to include this feature
 
 <!-- xgd-chat-end -->
