@@ -293,6 +293,16 @@ export async function handleChatRequest(
             // the next turn can reason about the returned data.
             const surfacesData =
               callName === "get_site_definition" || hasKindPayload;
+            // REQ-34: transcribe_site clears the operator's draft to an empty
+            // scaffold before the AI reconstruction. Apply the cleared state
+            // to workingSite here so subsequent AI turns reason about the
+            // fresh draft (and the FE picks it up via the same payload).
+            if (
+              payload.kind === "transcribe_site_done" &&
+              payload.clearedSiteDefinition
+            ) {
+              workingSite = payload.clearedSiteDefinition;
+            }
             result = {
               ok: true,
               applied: {

@@ -20,7 +20,7 @@ describe("UAT FC REQ-28: <TranscribeProgress> chat-card variant (AC3-AC8)", () =
     document.body.innerHTML = "";
   });
 
-  it("renders a 4-row stage list pending by default", () => {
+  it("renders a 5-row stage list (Stage 0..4) pending by default", () => {
     const handle = createTranscribeProgressCard(document, {
       url: "https://acme.test/",
     });
@@ -29,7 +29,8 @@ describe("UAT FC REQ-28: <TranscribeProgress> chat-card variant (AC3-AC8)", () =
     const stages = document.querySelectorAll(
       "[data-fc-transcribe-stage]",
     );
-    expect(stages.length).toBe(4);
+    // REQ-34 introduced Stage 0 (Clearing draft).
+    expect(stages.length).toBe(5);
     stages.forEach((s) => {
       expect(s.getAttribute("data-fc-transcribe-stage-status")).toBe("pending");
     });

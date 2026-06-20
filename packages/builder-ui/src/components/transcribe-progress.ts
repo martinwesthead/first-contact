@@ -35,18 +35,28 @@ export interface TranscribeProgressPayload {
     readonly failures?: ReadonlyArray<{ readonly url: string; readonly reason: string }>;
   };
   readonly narrative?: string;
+  /**
+   * REQ-34: the empty-scaffold draft the server installed at Stage 0. The
+   * chat driver applies it before any state_edit tool calls that follow so
+   * the AI's reconstruction lands on a clean slate (not on top of the
+   * previous draft's modules). Carried in the payload so the FE can also
+   * read it for diagnostics; the runtime use is in chat-driver.ts.
+   */
+  readonly clearedSiteDefinition?: unknown;
 }
 
 /**
  * State held in DOM data-attributes so a sequence of action:notify events
  * can update one card without re-rendering.
  */
+export type TranscribeStage = 0 | 1 | 2 | 3 | 4;
+
 export interface TranscribeProgressHandle {
   readonly card: ChatCardHandle;
-  /** Mark a stage as completed (stage: 1|2|3|4, total: optional for stage 4). */
+  /** Mark a stage as cleared/completed/failed (stage: 0|1|2|3|4, total: optional for stage 4). */
   setStageStatus(args: {
-    stage: 1 | 2 | 3 | 4;
-    status: "started" | "completed" | "failed";
+    stage: TranscribeStage;
+    status: "started" | "completed" | "failed" | "cleared";
     total?: number;
   }): void;
   /** Stage 4 progress: bump the mirrored counter and (optionally) name the asset. */
@@ -57,7 +67,8 @@ export interface TranscribeProgressHandle {
   setNarrative(text: string): void;
 }
 
-const STAGE_LABELS: Record<1 | 2 | 3 | 4, string> = {
+const STAGE_LABELS: Record<TranscribeStage, string> = {
+  0: "Clearing draft",
   1: "Screenshot",
   2: "Theme",
   3: "Modules",
@@ -76,7 +87,7 @@ export function createTranscribeProgressCard(
   const list = doc.createElement("ol");
   list.className = "fc-transcribe-progress__stages";
   list.setAttribute("data-fc-transcribe-stages", "");
-  for (const stage of [1, 2, 3, 4] as const) {
+  for (const stage of [0, 1, 2, 3, 4] as const) {
     const li = doc.createElement("li");
     li.className = "fc-transcribe-progress__stage";
     li.setAttribute("data-fc-transcribe-stage", String(stage));
@@ -194,7 +205,8 @@ export function createTranscribeProgressCard(
           handle.recordAssetFailed({ url: f.url, reason: f.reason });
         }
       }
-      // Mark every stage as completed in the terminal state.
+      // Mark every stage as terminal: stage 0 → 'cleared'; rest → 'completed'.
+      handle.setStageStatus({ stage: 0, status: "cleared" });
       for (const stage of [1, 2, 3, 4] as const) {
         handle.setStageStatus({ stage, status: "completed" });
       }
@@ -253,7 +265,11 @@ export function applyTranscribeEvent(
     });
     return true;
   }
-  if (stage === 1 || stage === 2 || stage === 3 || stage === 4) {
+  if (stage === 0 && status === "cleared") {
+    handle.setStageStatus({ stage: 0, status: "cleared" });
+    return true;
+  }
+  if (stage === 0 || stage === 1 || stage === 2 || stage === 3 || stage === 4) {
     if (
       status === "started" ||
       status === "completed" ||
