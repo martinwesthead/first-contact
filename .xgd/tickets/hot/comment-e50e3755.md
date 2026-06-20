@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-37
 created_by: xgd
 created_at: '2026-06-20T21:10:31.892309+00:00'
-updated_at: '2026-06-20T21:28:42.350426+00:00'
+updated_at: '2026-06-20T21:44:27.398180+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -62,5 +62,105 @@ I've read the ticket and the relevant code. Before implementing, I want to clari
 2. Yes — read-back check before returning from transcribe_site
 3. Option (a) — delete old digest at Stage 0, return `not_ready` if none exists
 4. Option (c) — client-side failure panel, plus inject failures back into AI context for automatic retry
+
+<!-- xgd-turn id="4abc97c0-7c7c-4b19-b989-f9d2b08ca4eb-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T21:44:26.382Z" -->
+#### Claude
+Got it. Let me first update the ticket with the decisions, then survey the chat-driver/SSE plumbing for the panel + retry injection (req 4 is the part I have least visibility into).
+
+I'll preserve the existing ticket body and append the decisions.
+
+Surveyed. The plan is clear:
+
+**Server-side changes:**
+- `transcribe-site.ts` — Stage 0 delete prior digest; add `assetFailures` to `summary`; post-put read-back verification with `capturedAt` sentinel.
+- `read-transcription-digest.ts` — return `ok` with `kind: "transcription_digest_not_ready"` instead of generic failed.
+
+**Client-side changes:**
+- `store.ts` — add `pendingToolFailures` field with mutators.
+- `chat-driver.ts` — accumulate failed tool calls per turn; before next POST, prepend a system message describing failures, then clear.
+- `chat-panel.ts` — render dismissable banner above message list when pending failures exist.
+
+Now let me look at one more existing UAT for stage flow context, then write the new UATs.
+
+Now I have everything I need. Let me write the UAT tests for REQ-37.
+
+Now the chat-driver failure accumulator + reinjection UAT.
+
+Tests written. Let me confirm they fail (RED), then implement.
+
+7 failures (RED) as expected. 4 incidental passes match the no-op cases. Now I implement.
+
+Now the read handler.
+
+The existing REQ-30 test asserted the old `digest_not_found` failure shape — update it to match the new `not_ready` contract.
+
+Now let me run the server-side REQ-37 tests to confirm GREEN before moving on to the chat-driver work.
+
+All server-side GREEN. Now the chat-driver / store work.
+
+Now add the mutator methods on the store and chat-driver wiring.
+
+Now wire the chat-driver: accumulate failures after each turn, and reinject as a system message on the next outbound turn.
+
+I need to rewrite the chat-driver test to emit SSE frames the driver actually parses.
+
+Now wire the chat-driver to record failures and reinject them.
+
+Now reinject the system note before POST and accumulate failures after the turn finishes.
+
+Now accumulate failures after each turn finishes, and add the formatter.
+
+Let me run the chat-driver test to see if it passes.
+
+Now the UI panel — render a dismissable banner above the message list when pending failures exist.
+
+Now subscribe to pending failures and render the panel.
+
+Let me add a small UI UAT for the panel rendering and dismiss behavior.
+
+Run all the REQ-37 tests together to confirm they all pass.
+
+All 12 REQ-37 UATs pass. Now let me confirm nothing regressed in the broader test suite.
+
+Let me verify these failures are pre-existing (not from my changes) by checking the git baseline.
+
+Let me run the previously-failing tests against the stashed baseline to see if they were pre-existing.
+
+Let me quickly verify the pre-existing failures don't involve files I touched.
+
+Pre-existing SSE-refactor failures (10 tests across multiple files) are unrelated to my changes — they fail because tests stub `jsonResponse` against the streaming driver. My REQ-37 UATs (12) all pass.
+
+Let me run the FREE-CODING quality gates before committing.
+
+Pre-existing typecheck/test issues are inherited from in-flight working tree modifications (SSE chat-driver refactor, chat-panel spinner work) — they exist with or without my REQ-37 changes. My 12 UATs all pass. Time to commit.
+
+Now mark the ticket as `free_coded` with the commit SHA.
+
+My commit is `e5cec1a`. Now update the ticket fields.
+
+Ticket marked `free_coded`. Verifying state.
+
+REQ-37 is shipped and free-coded. Summary:
+
+**Changes (commit `e5cec1a` + version bump `a1ed699`):**
+
+| Concern | Change |
+|---|---|
+| Per-URL asset mirror failures | `transcribe_site` payload `summary.assetFailures: Array<{url, reason}>` |
+| Digest write confirmation | Post-put read-back; verifies `capturedAt` round-trips; `digest_write_unverified` on drift |
+| Stale digest at read time | Stage 0 deletes prior digest; `read_transcription_digest` returns `ok` + `kind: "transcription_digest_not_ready"` instead of generic failure |
+| Module-build failure summary | `BuilderStore.pendingToolFailures` accumulates rejected tool calls; chat-panel renders a dismissable banner; chat-driver prepends a synthetic system note on the next turn so the AI retries automatically |
+
+**12 new UATs pass:**
+- `test_UAT_FC_REQ-37_summary_includes_asset_failures.test.ts` (2)
+- `test_UAT_FC_REQ-37_stage0_deletes_prior_digest.test.ts` (2)
+- `test_UAT_FC_REQ-37_digest_write_readback_verified.test.ts` (3)
+- `test_UAT_FC_REQ-37_read_digest_not_ready.test.ts` (2)
+- `test_UAT_FC_REQ-37_chat_driver_failure_reinjection.test.ts` (2)
+- `test_UAT_FC_REQ-37_failure_panel.test.ts` (1)
+
+**Note:** 10 unrelated pre-existing test failures (REQ-13/REQ-30/REQ-34 chat-driver tests using `jsonResponse` stubs against the in-flight SSE refactor, plus REQ-32 spinner CSS) were present in the working tree before this session and are not affected by my changes.
 
 <!-- xgd-chat-end -->
