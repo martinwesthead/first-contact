@@ -5,21 +5,22 @@ type: request
 title: 'Dev tool: AI can run xgd ticket create/list/get in this project'
 created_by: xgd
 created_at: '2026-06-20T22:48:10.354985+00:00'
-updated_at: '2026-06-20T23:38:56.500323+00:00'
+updated_at: '2026-06-20T23:49:36.479306+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: version
 status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
   venv_path: /Users/martin/Projects/xgendev-main/.venv-working/bin/xgd
-  progress: step_1_sidecar_complete
+  progress: complete_with_e2e_smoke
   commits:
   - 3484fb12ab1426fa3e23084288ac586307a1b9da
   - 35eeb8de019afe89c8518564c2ca8d5a60568a84
   - f4724a302438258ec8083ad57964cb0be98ef166
-  version: 0.0.26
+  - cec9420d01987fcc7afbcbf9f62633680e0efeb5
+  version: 0.0.27
 ---
 
 ## Intent
