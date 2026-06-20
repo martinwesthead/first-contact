@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-36
 created_by: xgd
 created_at: '2026-06-20T20:23:05.811361+00:00'
-updated_at: '2026-06-20T20:51:11.651468+00:00'
+updated_at: '2026-06-20T20:53:06.430725+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -97,5 +97,33 @@ Q3 no try it
 I have two other concerns I don't know whether you have captured:
 1 - hitting enter should invoke "send" shift-enter aor alt-enter create a newline
 2 - xgd chat appears as a stream - this new chat arrives as a block on completion
+
+<!-- xgd-turn id="42e5b5af-c7a7-4f28-a77d-83dfb0981551-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T20:53:05.421Z" -->
+#### Claude
+Good additions. Let me verify both against the codebases before updating the ticket.
+
+Both gaps confirmed. Let me also verify our chat endpoint shape.
+
+Confirmed — our endpoint has no streaming at all. Let me append both concerns to REQ-36.
+
+Now I'll update the ticket with operator's decisions on Q1-Q3 and add G8/G9 for the new concerns. I'll rewrite the body since `xgd ticket update --body-file` replaces wholesale.
+
+Captured. Both confirmed against the codebases:
+
+**G8 — Enter-to-send.** XGD `index.html:16439` uses bare Enter → send, modifier-Enter → newline. Ours (`chat-panel.ts:209-215`) is **inverted** — only `Cmd/Ctrl+Enter` sends; bare Enter falls through to TipTap as a newline. Easy fix: invert the modifier check and update the placeholder.
+
+**G9 — Streaming.** XGD has `chat_api.py:generate_chat_sse()` streaming Claude tokens via SSE; client appends progressively. Ours (`apps/control-app/src/chat.ts` + `chat-driver.ts`) does a single `POST` → `await response.json()` → replace the assistant bubble in one shot. This is the largest change in the ticket — server switches to `messages.stream()`, client uses a `ReadableStream` reader, store needs an in-flight "streaming" message slot, and the Stop button (G3) finally has something to abort.
+
+**Operator decisions captured:**
+- Q1 → keep both tool-use pane (live "what the AI is doing") and inline ChatCard results (durable artefacts)
+- Q2 → no tab bar, no empty state, no draft persistence, no activity dots — single window only
+- Q3 → try 13px
+
+**Recommendation flagged in the ticket**: G9 is large enough to consider splitting into REQ-37 so G1–G8 can ship as a fast visual/UX pass. Want me to:
+
+1. Split G9 into a follow-up ticket and start free-coding G1–G8 now, or
+2. Keep G9 in REQ-36 and tackle everything as one bundle?
 
 <!-- xgd-chat-end -->
