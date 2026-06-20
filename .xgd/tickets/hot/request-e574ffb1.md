@@ -2,10 +2,10 @@
 uid: request-e574ffb1
 id: REQ-46
 type: request
-title: 'Headless-only Claude permissions: allow xgd ticket create/list/get'
+title: 'Dev tool: AI can run xgd ticket create/list/get in this project'
 created_by: xgd
 created_at: '2026-06-20T22:48:10.354985+00:00'
-updated_at: '2026-06-20T23:05:25.512926+00:00'
+updated_at: '2026-06-20T23:16:17.567553+00:00'
 completed_at: null
 last_field_updated: title
 status: draft
@@ -17,46 +17,71 @@ fields:
 
 ## Intent
 
-Configure a Claude Code permissions file that grants exactly three `xgd ticket` commands without a per-call prompt, but **only** when loaded by a deliberate headless invocation in this project. It must NOT apply to:
+Add a new system-action tool to the builder chat so the Anthropic-API-driven AI can run a constrained set of `xgd ticket` commands against this project (`~/Projects/first-contact`) using the xgd implementation at `~/Projects/xgendev-main`. The tool is **dev-only** and gated off in production.
 
-- interactive `claude` run from the command line in this project, or
-- the XGD-orchestrated headless Claude (`xgd claude` sessions), which has its own permission model.
+## What the AI sees
 
-## Mechanism
+One tool, `xgd_ticket`, with `input_schema`:
 
-Claude Code's settings hierarchy is driven by file location, not invocation mode. A file at `.claude/settings.json` is auto-loaded by every Claude invocation whose CWD is inside the project — which would catch both modes we want to exclude. So we use a **non-auto-loaded** file and require the headless invocation to opt in explicitly via the `--settings` flag.
-
-## What changes
-
-Create `/Users/martin/Projects/first-contact/.claude/headless-settings.json` with an allow-list of exactly three commands:
-
-- `Bash(xgd ticket create:*)`
-- `Bash(xgd ticket list:*)`
-- `Bash(xgd ticket get:*)`
-
-This file is *not* at any auto-loaded path (`.claude/settings.json` or `.claude/settings.local.json`). Interactive `claude` and `xgd claude` will ignore it. Any future headless launcher we build for this project loads it via:
-
-```
-claude --settings /Users/martin/Projects/first-contact/.claude/headless-settings.json \
-       --setting-sources project,local,user \
-       -p "..."
+```json
+{
+  "type": "object",
+  "properties": {
+    "command": { "type": "string", "enum": ["create", "list", "get"] },
+    "args":    { "type": "array",  "items": { "type": "string" } }
+  },
+  "required": ["command"]
+}
 ```
 
-Or to load *only* this file with no merge from user/global settings:
+Three commands only. Any other value of `command` → handler returns a structured error without invoking xgd. No raw shell pass-through; `args` is built into argv as `["ticket", command, ...args]`.
 
-```
-claude --settings .claude/headless-settings.json --setting-sources "" -p "..."
-```
+## Architecture (why this isn't a one-file change)
+
+The chat handler lives in Cloudflare Workers (`apps/control-app`, via `wrangler dev`/`wrangler deploy`). Workers has no `child_process`, so the handler cannot directly spawn `xgd`. The split:
+
+- **Sidecar** (new) — `tools/dev-tools-server/` — small Node HTTP server bound to `127.0.0.1`. Endpoint `POST /xgd-ticket` accepts `{command, args}`. It validates `command ∈ {create, list, get}` again (defence in depth), spawns the venv `xgd` with `cwd=~/Projects/first-contact`, and returns `{ok, stdout, stderr, exitCode}`.
+- **Handler** (new file in `apps/control-app/src/operator/`) — fetches `http://127.0.0.1:${PORT}/xgd-ticket`, surfaces the result through the existing `ActionResult` shape.
+- **Registration** — handler appended to `SYSTEM_ACTIONS` in `apps/control-app/src/operator/registry.ts`, **gated** so the spec is only included when `env.DEV_TOOLS_ENABLED === "true"`. `visibleToolSpecs(planTier)` will skip it otherwise.
+
+### Defaults (taking the recommended defaults since you didn't override)
+
+- **Venv**: `~/Projects/xgendev-main/.venv-xgendev-main/bin/xgd` (configurable via env var `XGD_BIN` on the sidecar; default to the venv path above).
+- **Project cwd**: `~/Projects/first-contact` (configurable via env var `XGD_CWD`; default to that path; sidecar refuses to run if cwd is outside `~/Projects/first-contact`).
+- **Sidecar port**: `127.0.0.1:7878` (configurable; never binds 0.0.0.0).
+- **Gating**: `env.DEV_TOOLS_ENABLED === "true"` on the Worker side.
+
+## Tests (FREE-CODING UAT names)
+
+All UATs named `test_UAT_FC_REQ-46_*.test.ts` under `tests/`:
+
+1. `test_UAT_FC_REQ-46_xgd_ticket_tool_invisible_in_prod` — DEV_TOOLS_ENABLED unset → `visibleToolSpecs("trial")` does not include `xgd_ticket`.
+2. `test_UAT_FC_REQ-46_xgd_ticket_tool_visible_when_dev_enabled` — DEV_TOOLS_ENABLED=true → tool appears in `visibleToolSpecs`.
+3. `test_UAT_FC_REQ-46_xgd_ticket_rejects_unknown_command` — handler called with `command: "delete"` returns `{status: "failed", error: <message naming the allowed set>}` and does NOT call the sidecar.
+4. `test_UAT_FC_REQ-46_xgd_ticket_create_routes_to_sidecar` — handler called with `{command:"create", args:["--type","note","--title","X"]}` issues a POST to the sidecar URL with the correct JSON body (injected `fetch` records it); returns the sidecar's parsed result as `ActionResult{status:"ok"}`.
+5. `test_UAT_FC_REQ-46_xgd_ticket_propagates_sidecar_failure` — sidecar returns non-2xx → handler returns `ActionResult{status:"failed"}` with the body surfaced.
+6. **Sidecar** (Node vitest) `test_UAT_FC_REQ-46_sidecar_refuses_command_outside_allowlist` — POST `{command:"delete"}` → 400 with explicit allowed list, no spawn.
+7. **Sidecar** `test_UAT_FC_REQ-46_sidecar_refuses_cwd_outside_first_contact` — XGD_CWD set to an outside path → POST returns 500 explaining cwd guard; no spawn.
+
+(Spawning real `xgd` is exercised by smoke test, not part of CI UAT coverage — the sidecar tests use an injected spawn fn.)
 
 ## Out of scope
 
-- No auto-loaded `.claude/settings.json` is created (the earlier one was removed).
-- No edits to `~/.claude/settings.json`.
-- No launcher script/wrapper is created in this ticket — that's a separate piece of work once you've decided the invocation pattern.
 - No grant for `xgd ticket update`, `xgd ticket comment`, or any non-ticket `xgd` subcommand.
+- No production deployment of the sidecar. The sidecar's only purpose is the developer's local machine.
+- No edits to global Claude Code settings (`~/.claude/settings.json`). The earlier `.claude/settings.json` and `.claude/headless-settings.json` attempts have been removed.
+- No wrapper CLI under `bin/`. The integration is purely "AI in the chat panel calls a tool".
 
 ## Acceptance
 
-- `.claude/headless-settings.json` exists with the three allow entries above.
-- Interactive `claude` in this project does NOT auto-load it (no `.claude/settings.json` exists).
-- A headless `claude --settings .claude/headless-settings.json -p "xgd ticket create ..."` runs without a permission prompt for those three commands.
+- With `DEV_TOOLS_ENABLED=true` and the sidecar running locally, the AI can call `xgd_ticket {command:"list"}` from the chat panel and receive structured output.
+- With `DEV_TOOLS_ENABLED` unset, the tool is invisible to the AI and the sidecar is irrelevant.
+- All seven UATs pass; quality gate passes; coverage threshold met.
+- Free-coding lifecycle observed: commits tagged `[FREE-CODED]`, ticket fields.commits populated, status moved to `free_coded`, body preserved.
+
+## Implementation order (so you can stop me at any step)
+
+1. **Sidecar skeleton + its UATs** (no Workers change yet).
+2. **Handler + registration + Workers UATs** (still no chat-flow change visible to users since gated off by default).
+3. **Local smoke test** (turn DEV_TOOLS_ENABLED=true in `.dev.vars`, hit the chat, observe end-to-end).
+4. **Commit + ticket lifecycle**.
