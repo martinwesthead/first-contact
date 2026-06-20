@@ -6,14 +6,18 @@ title: 'Builder chat: audit and align with XGD chat capability (look, feel, mark
   tool pane)'
 created_by: xgd
 created_at: '2026-06-20T20:18:17.764253+00:00'
-updated_at: '2026-06-20T21:50:14.580705+00:00'
+updated_at: '2026-06-20T21:52:32.374870+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: high
+  commits:
+  - be19e5f1408165a2323bc3d8e63b2b9d4077b2a6
+  - 9121fdddf9307de1f08a6a48d469a063206f788d
+  version: 0.0.17
 ---
 
 ## Status
