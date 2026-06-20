@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-19T23:57:53.387693+00:00'
+updated_at: '2026-06-20T00:08:38.179497+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -933,6 +933,76 @@ So after you ran convert, the words you saw on the page were the AI's paraphrase
 There is no copy of the original 1stcontact text preserved anywhere except in the file on disk (and git history). The Reset button I added gets you back to the on-disk version. There is no third "source" you might be unaware of.
 
 If that matches what you were trying to verify, say so and I'll stop. If you suspected text was coming from somewhere else (a database, a remote service, a server-rendered fragment) — it's not. It's only what's in that one file plus whatever the AI has written into your browser's localStorage.
+
+
+<!-- xgd-turn id="a3789798-f899-43b6-86c5-1c7959d32971" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:08:38.126Z" -->
+#### You
+OK good so at least it is in a configuration file. Let's pause for a second and talk about the architecture of what we are building here I am worried about what is going to be comprehensible to a naïve user. I don't want to build WYSIWYG website construction but we need to make it easy for the user to edit this content. If the content is stored in some directory in R2 with an internal configuration name it's not necessarily going to be easy for the user to find and modify it.
+
+I think the experience I would like is for the user to be able to click on an area of the text and have it pop up a model editor that will give them some simple editing capabilities at least allow them to change text and maybe basic tax properties like italics bold face bullet points etc. Likewise it would be good to be able to pop up the simple image editing capability that we discussed directly from the website representation.
+
+Assuming that's possible let's discuss where this content should live and how it should be represented. I think there are three solutions (1) Global configuration - seems to be what we have now (2) Per module configuration (3) text files referenced by either 1 or 2.
+
+I think (1) is wrong, modules should be self contained. So its (2) or (3)
+
+2 - keeps the number of files more managable
+3 - is consistent with text file upload/download and means our pop-up editor can be referencing a particular file not a fragment of a JSON doc
+
+What do you think?
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T00:08:38.126Z" -->
+#### Claude
+Hybrid — and the data-location question is actually orthogonal to the popup-editor UX. Let me explain why.
+
+## On (2) vs (3): I'd do both, split by content kind
+
+**Short structural strings → inline (Option 2 — per-module JSON):**
+- Headings, subheads, button labels, link labels, form field labels, menu entry text.
+- They're one phrase. Putting "Stop worrying about your website." in its own `.md` file is ceremony with no payoff — the user can't meaningfully edit *formatting* in a one-line label, and a file editor for a single phrase feels weird.
+
+**Longform body copy → referenced file (Option 3 — markdown file):**
+- text-block bodies, services-grid item descriptions, hero long-form subheads, FAQ answers — anything currently typed `"markdown"` in the module schema.
+- These benefit from a real WYSIWYG editor (bold/italic/lists), are big enough that having a file aids version-on-disk and download, and naturally flow through the asset-tab workflow you've already specced.
+
+This isn't actually a compromise of "modules should be self-contained" — the module instance owns the *reference*, and the file naming pins ownership: `sites/{siteId}/copy/{moduleId}-{field}.md`. Copy a module → its JSON content block and its referenced files travel together. The data is still per-module; some of it just lives in a file the module points at.
+
+The result, in module schema terms: the `"markdown"` content field type accepts either an inline string (current) or an `AssetRef { kind: 'text', src: '<key>' }` (new). Modules' own meta declares which fields are markdown — so the eligibility is already in the schema; we just teach those fields to also accept a file reference.
+
+## The popup editor is a separate concern, not a deciding factor
+
+Whether the data is inline or in a file, the inline editor's UX is the same:
+
+```
+User clicks rendered text in preview iframe
+  → renderer marks editable DOM nodes with data-fc-edit="<moduleId>:<field>"
+  → click handler in builder-ui opens a modal over the iframe
+  → modal type: simple input (short strings) | TipTap (markdown bodies) | image-crop (assets)
+  → save:
+       short string  →  set_module_content(...) which writes the JSON inline string
+       markdown body →  PUT /api/assets/put/<key> which writes the .md file
+                        (or set_module_content if the field is still inline-string mode)
+       image         →  PUT and update AssetRef in the module JSON
+  → preview re-renders, modal closes
+```
+
+The popup is wired off the rendered DOM and the modal-type comes from the module schema's field type — the question "is this stored inline or in a file?" is just which tool the modal calls on save. Either storage choice supports the click-to-edit UX equally well.
+
+## Why this matters for the convert-flow problem
+
+Going hybrid solves it cleanly:
+
+- During convert, `transcribe_site` writes verbatim source body text into `sites/{siteId}/copy/{moduleId}-{field}.md` files (mechanical, no LLM). The AI's job for body content is just to set the module field to the file ref — it never authors the words.
+- For short strings (headlines etc.), the AI does still set the inline value — but those are 1-phrase strings the source page provided directly. The risk of paraphrase is lower, and if it does happen, the doc and the worked-example digest entries can constrain it (BUG-5's fix already moves in that direction).
+
+## What's left to decide before I scope
+
+1. **The boundary** — `"markdown"`-typed fields become file-capable; everything else stays inline. OK?
+2. **The popup editor** is a separate ticket from the copy-storage change. Land the schema/convert-flow shift first (because that unblocks BUG-5 properly), then layer the click-to-edit modal on top. OK to split into two REQs?
+3. **For the existing 1stcontact baseline** — keep its current inline `subhead`/`body` strings as-is (the union allows it), or migrate them to copy files as part of this REQ? Inline-keep is smaller; migration makes the site "use the new system" everywhere. I lean inline-keep — converted sites use files, the baseline keeps its inline strings, no dual-update during the schema change.
+
+Tell me yea/nay on those three and I'll scope. The combined story-points feel like ~5 for the schema/convert-flow REQ and another ~4-5 for the click-to-edit modal REQ — two independent landing steps.
 
 
 <!-- xgd-chat-end -->
