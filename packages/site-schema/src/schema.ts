@@ -299,5 +299,44 @@ export const Site = z
       }
       slugs.add(p.slug);
     });
+    const pageIds = new Set(site.pages.map((p) => p.id));
+    const moduleIdsByPage = new Map<string, Set<string>>(
+      site.pages.map((p) => [p.id, new Set(p.modules.map((m) => m.id))]),
+    );
+    const seenLabels = new Set<string>();
+    site.nav.entries.forEach((entry, idx) => {
+      if (seenLabels.has(entry.label)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["nav", "entries", idx, "label"],
+          message: `duplicate nav entry label '${entry.label}'`,
+        });
+      }
+      seenLabels.add(entry.label);
+      if (entry.target.kind === "page") {
+        if (!pageIds.has(entry.target.pageId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["nav", "entries", idx, "target", "pageId"],
+            message: `nav entry references unknown page id '${entry.target.pageId}'`,
+          });
+        }
+      } else if (entry.target.kind === "anchor") {
+        const modules = moduleIdsByPage.get(entry.target.pageId);
+        if (!modules) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["nav", "entries", idx, "target", "pageId"],
+            message: `nav anchor references unknown page id '${entry.target.pageId}'`,
+          });
+        } else if (!modules.has(entry.target.moduleId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["nav", "entries", idx, "target", "moduleId"],
+            message: `nav anchor references unknown module id '${entry.target.moduleId}' on page '${entry.target.pageId}'`,
+          });
+        }
+      }
+    });
   });
 export type Site = z.infer<typeof Site>;

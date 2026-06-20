@@ -421,6 +421,22 @@ function summarizeStateEdit(
       return `removed module ${stringy(input.instance_id)}`;
     case "reorder_modules":
       return `reordered modules on page ${stringy(input.page_id)}`;
+    case "duplicate_module":
+      return `duplicated module ${stringy(input.instance_id)}`;
+    case "add_page":
+      return `added page '${stringy(input.slug)}'`;
+    case "remove_page":
+      return `removed page '${stringy(input.slug)}'`;
+    case "reorder_pages":
+      return `reordered pages`;
+    case "set_page_metadata":
+      return `updated metadata for page '${stringy(input.slug)}'`;
+    case "set_nav_pattern":
+      return `set nav pattern to '${stringy(input.pattern)}'`;
+    case "set_nav_entries": {
+      const entries = Array.isArray(input.entries) ? input.entries.length : 0;
+      return `replaced nav entries (${entries} entr${entries === 1 ? "y" : "ies"})`;
+    }
     default:
       return `applied ${name}`;
   }

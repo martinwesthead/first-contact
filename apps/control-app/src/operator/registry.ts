@@ -284,6 +284,115 @@ const STATE_EDIT_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
       },
     },
   },
+  {
+    name: "set_page_metadata",
+    category: "state_edit",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Patches a page's title, slug (rename), or seoMeta. Page id is preserved across slug renames so nav references survive.",
+    tool_spec: {
+      name: "set_page_metadata",
+      description:
+        "Update a page's metadata. Identify the page by 'slug' (canonical '/', '/menu', or bare 'menu'). At least one of 'title', 'new_slug', 'seoMeta' must be provided. 'new_slug' must be a bare segment (e.g. 'about'); the page id stays the same so existing nav references still resolve.",
+      input_schema: {
+        type: "object",
+        properties: {
+          slug: { type: "string" },
+          title: { type: "string" },
+          new_slug: { type: "string" },
+          seoMeta: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              ogImage: { type: "string" },
+            },
+          },
+        },
+        required: ["slug"],
+      },
+    },
+  },
+  {
+    name: "set_nav_pattern",
+    category: "state_edit",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects: "Sets the site-wide nav pattern.",
+    tool_spec: {
+      name: "set_nav_pattern",
+      description:
+        "Set the site-wide nav pattern. Allowed values: 'in-page-anchors', 'top-tabs', 'top-tabs-dropdown', 'hamburger', 'footer-only'. v1 framework renders 'in-page-anchors' and 'top-tabs' best; the others validate but may render with degraded fidelity.",
+      input_schema: {
+        type: "object",
+        properties: {
+          pattern: {
+            type: "string",
+            enum: [
+              "in-page-anchors",
+              "top-tabs",
+              "top-tabs-dropdown",
+              "hamburger",
+              "footer-only",
+            ],
+          },
+        },
+        required: ["pattern"],
+      },
+    },
+  },
+  {
+    name: "set_nav_entries",
+    category: "state_edit",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Wholesale-replaces site.nav.entries. Each entry's target is validated to resolve (page id / module id) and labels must be unique.",
+    tool_spec: {
+      name: "set_nav_entries",
+      description:
+        "Replace the nav entries wholesale. Each entry is { label, target }. target is one of: { kind: 'page', pageId } | { kind: 'anchor', pageId, moduleId } | { kind: 'url', href }. Page and anchor targets must reference existing page / module ids. Labels must be unique.",
+      input_schema: {
+        type: "object",
+        properties: {
+          entries: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                label: { type: "string" },
+                target: { type: "object" },
+              },
+              required: ["label", "target"],
+            },
+          },
+        },
+        required: ["entries"],
+      },
+    },
+  },
+  {
+    name: "duplicate_module",
+    category: "state_edit",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Deep-clones a module instance on the same page. New id, identical type/version/variant/dials/content. AssetRefs are duplicated by reference.",
+    tool_spec: {
+      name: "duplicate_module",
+      description:
+        "Duplicate a module instance. Inserts the clone after the source by default, or after 'after_instance_id' when supplied (must be on the same page as the source). New module id is generated.",
+      input_schema: {
+        type: "object",
+        properties: {
+          instance_id: { type: "string" },
+          after_instance_id: { type: "string" },
+        },
+        required: ["instance_id"],
+      },
+    },
+  },
 ];
 
 const publishStubHandler: ActionHandler = async (input, ctx) => {
