@@ -176,7 +176,7 @@
         {
           "id": "services",
           "type": "services-grid",
-          "version": 1,
+          "version": 2,
           "variant": "three-col",
           "dials": {
             "gap": "normal",
@@ -188,15 +188,15 @@
             "heading": "Build. Maintain. Operate.",
             "items": [
               {
-                "title": "Build",
+                "heading": "Build",
                 "body": "<p>A modern, responsive site shaped to your business. Fast, accessible, mobile-first. No template feel — your voice, your brand.</p>"
               },
               {
-                "title": "Maintain",
+                "heading": "Maintain",
                 "body": "<p>We watch availability, broken links, SSL, forms, SEO. When something drifts, we fix it before you notice. Your site stays sharp.</p>"
               },
               {
-                "title": "Operate",
+                "heading": "Operate",
                 "body": "<p>Leads land in one inbox. Quotes and invoices go out through Stripe. You stay focused on the work; we run the digital plumbing.</p>"
               }
             ]
