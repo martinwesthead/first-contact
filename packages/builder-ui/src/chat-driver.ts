@@ -1,16 +1,19 @@
 import type { Site } from "@1stcontact/site-schema";
+import { validateSite } from "@1stcontact/site-schema";
 import type { FrameworkCatalog } from "./catalog.js";
-import type { BuilderStore, ChatMessage } from "./store.js";
+import type {
+  BuilderStore,
+  ChatMessage,
+  ChatToolCallRecord,
+  ChatToolResultRecord,
+} from "./store.js";
 import { applyToolCall, type ToolCall, type ToolApplyError } from "./tools.js";
+
+export type ChatToolResult = ChatToolResultRecord;
 
 export interface ChatTurnResult {
   readonly assistantText: string;
-  readonly toolCalls: ReadonlyArray<{
-    readonly name: string;
-    readonly input: Record<string, unknown>;
-    readonly accepted: boolean;
-    readonly error?: string;
-  }>;
+  readonly toolCalls: ReadonlyArray<ChatToolCallRecord>;
 }
 
 export interface ChatDriverOptions {
@@ -30,7 +33,13 @@ export interface ChatDriverOptions {
 
 export interface ChatApiResponse {
   text: string;
-  toolCalls: ToolCall[];
+  /**
+   * Server may return either the legacy shape (just name + input) or the
+   * REQ-13 shape (name + input + server-side result). The driver tolerates
+   * both — the client-side validator is still the validator of record
+   * (REQ-8 §5.3); `result` is consumed only to surface tool_result cards.
+   */
+  toolCalls: Array<ToolCall & { result?: ChatToolResultRecord }>;
 }
 
 /**
@@ -79,28 +88,45 @@ export async function runChatTurn(
   }
   const data = (await resp.json()) as ChatApiResponse;
 
-  const toolCallSummaries: Array<{
-    name: string;
-    input: Record<string, unknown>;
-    accepted: boolean;
-    error?: string;
-  }> = [];
+  const toolCallSummaries: ChatToolCallRecord[] = [];
   let workingSite: Site = siteDefinition;
   for (const call of data.toolCalls ?? []) {
-    const result = applyToolCall(workingSite, options.catalog, call);
-    if (result.ok) {
-      workingSite = result.next;
+    const serverResult = "result" in call ? call.result : undefined;
+    // REQ-34: transcribe_site_done carries a `clearedSiteDefinition` — the
+    // empty scaffold the server installed at Stage 0. Apply it to working
+    // state before any state_edit calls that follow in this turn, so the
+    // AI's reconstruction lands on a clean slate and the operator no longer
+    // sees the previous draft's modules mixed into the converted result.
+    const cleared = extractClearedSite(serverResult);
+    if (cleared) {
+      workingSite = cleared;
       toolCallSummaries.push({
         name: call.name,
         input: call.input,
         accepted: true,
+        ...(serverResult ? { result: serverResult } : {}),
+      });
+      continue;
+    }
+    const applyResult = applyToolCall(workingSite, options.catalog, {
+      name: call.name,
+      input: call.input,
+    });
+    if (applyResult.ok) {
+      workingSite = applyResult.next;
+      toolCallSummaries.push({
+        name: call.name,
+        input: call.input,
+        accepted: true,
+        ...(serverResult ? { result: serverResult } : {}),
       });
     } else {
       toolCallSummaries.push({
         name: call.name,
         input: call.input,
         accepted: false,
-        error: formatError(result.error),
+        error: formatError(applyResult.error),
+        ...(serverResult ? { result: serverResult } : {}),
       });
     }
   }
@@ -117,6 +143,19 @@ export async function runChatTurn(
   options.store.appendChatMessage(assistantMessage);
 
   return { assistantText: assistantMessage.content, toolCalls: toolCallSummaries };
+}
+
+function extractClearedSite(
+  result: ChatToolResultRecord | undefined,
+): Site | null {
+  if (!result || !result.ok) return null;
+  if (result.applied.kind !== "transcribe_site_done") return null;
+  const data = result.applied.data as
+    | { clearedSiteDefinition?: unknown }
+    | undefined;
+  if (!data || data.clearedSiteDefinition === undefined) return null;
+  const validation = validateSite(data.clearedSiteDefinition);
+  return validation.ok ? validation.value : null;
 }
 
 function formatError(error: ToolApplyError): string {

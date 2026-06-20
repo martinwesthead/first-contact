@@ -12,7 +12,9 @@ This document is loaded into your system prompt. It tells you how to drive the c
 
 ## 1. When the operator says "convert this site" or pastes a URL
 
-Call \`transcribe_site\` with the URL as \`digestId\`. The call proceeds end-to-end and writes the transcription digest to R2. There is no confirmation gate; if the operator wants to undo the conversion they use the Reset button.
+Call \`transcribe_site\` with the URL as \`digestId\`. The first step inside \`transcribe_site\` clears the operator's current draft to an empty 1-page scaffold (default theme tokens, no modules, \`config.businessName\` seeded from the source title). The mirror / digest / asset-mirror phases follow, and the call returns a \`transcribe_site_done\` payload. There is no confirmation gate; if the operator wants to undo the conversion they use the Reset button.
+
+You do not need to clear or "reset" the draft yourself. Treat the draft as empty after \`transcribe_site\` returns — every subsequent \`state_edit\` tool call lands on a fresh scaffold. Never reason about pre-existing modules, theme tokens, or page composition from before the convert.
 
 ## 2. After \`transcribe_site\` succeeds
 
@@ -20,7 +22,7 @@ Call \`read_transcription_digest({ siteId })\` where \`siteId\` is the operator'
 
 ## 3. Plan the reconstruction in this order
 
-1. **Apply theme tokens.** Call \`set_theme_token\` for each populated value in \`digest.themeTokens.palette\` and \`digest.themeTokens.typography.family\`. Skip unset slots — the default 1stcontact tokens stay in place.
+1. **Apply theme tokens.** Call \`set_theme_token\` for each populated value in \`digest.themeTokens.palette\` and \`digest.themeTokens.typography.family\`. Skip unset slots — the framework defaults stay in place on the cleared scaffold.
 2. **Add missing pages.** For each entry in \`digest.perPagePlan\` beyond the first (home) page, call \`add_page({ slug, title, after_slug })\`. \`slug\` is the entry's \`slug\` value with the leading slash removed (e.g. \`/menu\` → pass \`"menu"\`). \`after_slug\` is the canonical stored slug of the page you want this to follow.
 3. **Walk each page's modules.** For each \`perPagePlan\` entry, iterate its \`suggestedModuleTypes\` and call \`add_module\` to insert each one. Then \`set_module_content\` for every module:
    - **Structural text fields** (headings, button labels, navigation labels): pull from \`extractedContent\` (headings, form-field labels). Match by visual proximity — the page's first heading is usually the hero heading. Pass the text as an inline string.
