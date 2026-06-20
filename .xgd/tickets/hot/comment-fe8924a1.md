@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-43
 created_by: xgd
 created_at: '2026-06-20T21:15:48.272700+00:00'
-updated_at: '2026-06-20T22:58:23.987787+00:00'
+updated_at: '2026-06-20T23:11:36.375491+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -75,5 +75,11 @@ Following the existing pattern (`services-grid/`, `split-section/`, `testimonial
 When `heading` is present, should it follow the same heading treatment as other modules (e.g., `services-grid`'s heading), or is there a specific size/weight intent for this module?
 
 Once you answer these I'll scope the ticket body accordingly and proceed with implementation.
+
+<!-- xgd-turn id="ff65fff5-308d-4e27-bbd7-9f017a61deab-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T22:59:23.261Z" -->
+#### You
+Lets go with your proposals and can you make sure the AI instructions are updated to include this feature
 
 <!-- xgd-chat-end -->
