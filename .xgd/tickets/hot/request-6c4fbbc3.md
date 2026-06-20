@@ -5,9 +5,9 @@ type: request
 title: 'Convert flow: clear existing draft to empty scaffold before AI reconstruction'
 created_by: xgd
 created_at: '2026-06-20T18:25:53.585952+00:00'
-updated_at: '2026-06-20T18:25:53.585952+00:00'
+updated_at: '2026-06-20T18:26:15.600192+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: high
@@ -48,7 +48,7 @@ Behaviour-only change inside `transcribe_site`'s orchestration. No new schema, n
   - Constructs the empty scaffold `Site` object (per Decisions).
   - Calls the same persistence path used by `state_edit` actions to write it into the draft state (in-memory for the demo, D1 for the persisted case).
   - Emits an SSE `transcribe_progress` event with `{ stage: 0, status: 'cleared' }` so the operator UX surfaces the action.
-- In the orchestration handler, run `clearDraftToEmptyScaffold` immediately after the destructive-confirmation gate succeeds (or immediately on entry, if [[REQ-XX-remove-safety-gate]] has removed that gate). Then run mirror / digest / etc.
+- In the orchestration handler, run `clearDraftToEmptyScaffold` immediately after the destructive-confirmation gate succeeds (or immediately on entry, if [[REQ-35]] has removed that gate). Then run mirror / digest / etc.
 
 ### `packages/builder-ui/src/components/transcribe-progress.ts`
 
