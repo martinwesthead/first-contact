@@ -1,4 +1,5 @@
 import type { Site } from "@1stcontact/site-schema";
+import { validateSite } from "@1stcontact/site-schema";
 import type { FrameworkCatalog } from "./catalog.js";
 import type {
   BuilderStore,
@@ -91,6 +92,22 @@ export async function runChatTurn(
   let workingSite: Site = siteDefinition;
   for (const call of data.toolCalls ?? []) {
     const serverResult = "result" in call ? call.result : undefined;
+    // REQ-34: transcribe_site_done carries a `clearedSiteDefinition` — the
+    // empty scaffold the server installed at Stage 0. Apply it to working
+    // state before any state_edit calls that follow in this turn, so the
+    // AI's reconstruction lands on a clean slate and the operator no longer
+    // sees the previous draft's modules mixed into the converted result.
+    const cleared = extractClearedSite(serverResult);
+    if (cleared) {
+      workingSite = cleared;
+      toolCallSummaries.push({
+        name: call.name,
+        input: call.input,
+        accepted: true,
+        ...(serverResult ? { result: serverResult } : {}),
+      });
+      continue;
+    }
     const applyResult = applyToolCall(workingSite, options.catalog, {
       name: call.name,
       input: call.input,
@@ -126,6 +143,19 @@ export async function runChatTurn(
   options.store.appendChatMessage(assistantMessage);
 
   return { assistantText: assistantMessage.content, toolCalls: toolCallSummaries };
+}
+
+function extractClearedSite(
+  result: ChatToolResultRecord | undefined,
+): Site | null {
+  if (!result || !result.ok) return null;
+  if (result.applied.kind !== "transcribe_site_done") return null;
+  const data = result.applied.data as
+    | { clearedSiteDefinition?: unknown }
+    | undefined;
+  if (!data || data.clearedSiteDefinition === undefined) return null;
+  const validation = validateSite(data.clearedSiteDefinition);
+  return validation.ok ? validation.value : null;
 }
 
 function formatError(error: ToolApplyError): string {
