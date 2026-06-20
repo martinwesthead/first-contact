@@ -24,6 +24,39 @@ export interface BootBuilderOptions {
   reloadPage?: () => void;
   /** Override the storage key the Reset button clears. Defaults to DEFAULT_STORAGE_KEY. */
   storageKey?: string;
+  /**
+   * Per-tab session ID sent on every chat POST as `x-session-id`. Operator
+   * actions that track per-session state (e.g. transcribe_site convert
+   * consent) require it. When omitted the builder reads/writes a stable ID
+   * from `sessionStorage` under SESSION_ID_STORAGE_KEY, generating a fresh
+   * UUID on first boot.
+   */
+  sessionId?: string;
+  /**
+   * sessionStorage facility used to persist the auto-generated sessionId for
+   * the lifetime of the tab. Defaults to window.sessionStorage when present.
+   * Set to null to disable persistence (a fresh ID is minted each boot).
+   */
+  sessionStorageFacility?: Storage | null;
+}
+
+export const SESSION_ID_STORAGE_KEY = "fc.builder.sessionId";
+
+function resolveSessionId(
+  explicit: string | undefined,
+  store: Storage | null,
+): string {
+  if (typeof explicit === "string" && explicit.length > 0) return explicit;
+  if (store) {
+    const existing = store.getItem(SESSION_ID_STORAGE_KEY);
+    if (typeof existing === "string" && existing.length > 0) return existing;
+  }
+  const fresh =
+    typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID()
+      : `sess-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  if (store) store.setItem(SESSION_ID_STORAGE_KEY, fresh);
+  return fresh;
 }
 
 /**
@@ -41,6 +74,11 @@ export function bootBuilder(options: BootBuilderOptions): {
     options.resetPrompt ?? ((msg: string) => globalThis.confirm?.(msg) ?? false);
   const reloadPage =
     options.reloadPage ?? (() => globalThis.location?.reload?.());
+  const sessionStorageFacility =
+    options.sessionStorageFacility !== undefined
+      ? options.sessionStorageFacility
+      : (globalThis.sessionStorage ?? null);
+  const sessionId = resolveSessionId(options.sessionId, sessionStorageFacility);
   registerDigestReport();
   registerConvertConfirmation();
   const catalog = buildFrameworkCatalog();
@@ -70,6 +108,7 @@ export function bootBuilder(options: BootBuilderOptions): {
         store,
         catalog,
         endpoint: options.chatEndpoint,
+        sessionId,
       });
     },
   });
@@ -92,6 +131,7 @@ export function bootBuilder(options: BootBuilderOptions): {
       store,
       catalog,
       endpoint: options.chatEndpoint,
+      sessionId,
     });
   };
   const handleConvertCancelled = (event: Event): void => {
@@ -105,6 +145,7 @@ export function bootBuilder(options: BootBuilderOptions): {
       store,
       catalog,
       endpoint: options.chatEndpoint,
+      sessionId,
     });
   };
   doc.addEventListener("fc:convert-confirmed", handleConvertConfirmed);

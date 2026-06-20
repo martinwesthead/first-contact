@@ -20,6 +20,14 @@ export interface ChatDriverOptions {
   catalog: FrameworkCatalog;
   endpoint?: string;
   fetch?: typeof fetch;
+  /**
+   * Builder session ID. Sent as the `x-session-id` header on every POST so
+   * the operator-action handlers (e.g. transcribe_site convert-consent
+   * tracking) can correlate requests within a single browser session. When
+   * absent the header is omitted and any tool that requires session
+   * correlation will reject the call.
+   */
+  sessionId?: string | null;
 }
 
 export interface ChatApiResponse {
@@ -55,9 +63,13 @@ export async function runChatTurn(
 
   const history = options.store.getState().chatHistory;
   const siteDefinition = options.store.getState().siteDefinition;
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (options.sessionId) headers["x-session-id"] = options.sessionId;
   const resp = await fetchImpl(endpoint, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers,
     body: JSON.stringify({
       history: history.map((m) => ({ role: m.role, content: m.content })),
       siteDefinition,

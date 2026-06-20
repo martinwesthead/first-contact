@@ -4,9 +4,48 @@ import {
   bootBuilder,
   clearToolResultRenderers,
   getRegisteredToolResultRenderer,
+  SESSION_ID_STORAGE_KEY,
 } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
+
+function captureFetch(): {
+  stub: ReturnType<typeof vi.fn>;
+  calls: Array<{ url: string; body: unknown; headers: Record<string, string> }>;
+} {
+  const calls: Array<{
+    url: string;
+    body: unknown;
+    headers: Record<string, string>;
+  }> = [];
+  const stub = vi.fn(async (input: unknown, init?: unknown) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : (input as Request).url;
+    const initObj = init as { body?: string; headers?: HeadersInit } | undefined;
+    const headers: Record<string, string> = {};
+    if (initObj?.headers) {
+      const h = new Headers(initObj.headers);
+      h.forEach((v, k) => {
+        headers[k] = v;
+      });
+    }
+    calls.push({
+      url,
+      headers,
+      body:
+        typeof initObj?.body === "string" ? JSON.parse(initObj.body) : null,
+    });
+    return new Response(JSON.stringify({ text: "ok", toolCalls: [] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  });
+  return { stub, calls };
+}
 
 describe("UAT FC BUG-4: bootBuilder wires ConvertConfirmation card + listener bridge", () => {
   beforeEach(() => {
@@ -153,6 +192,85 @@ describe("UAT FC BUG-4: bootBuilder wires ConvertConfirmation card + listener br
     expect(lastUser.role).toBe("user");
     expect(lastUser.content).toMatch(/Cancel the conversion/i);
     expect(lastUser.content).toContain("https://acme.test/");
+
+    destroy();
+  });
+
+  it("chat POSTs include an x-session-id header so transcribe_site can track convert consent", async () => {
+    const { stub, calls } = captureFetch();
+    globalThis.fetch = stub as unknown as typeof fetch;
+
+    const { destroy } = bootBuilder({
+      root: document.body,
+      initialSite: load1stContactSite(),
+      storage: new MemoryStorage(),
+      sessionStorageFacility: new MemoryStorage(),
+      sessionId: "session-uat-explicit",
+    });
+
+    document.dispatchEvent(
+      new CustomEvent("fc:convert-confirmed", {
+        detail: { url: "https://acme.test/", ownsSite: false },
+        bubbles: true,
+      }),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.headers["x-session-id"]).toBe("session-uat-explicit");
+
+    destroy();
+  });
+
+  it("auto-generates a sessionId and persists it in sessionStorage when none is provided", async () => {
+    const sessionStore = new MemoryStorage();
+    const { stub, calls } = captureFetch();
+    globalThis.fetch = stub as unknown as typeof fetch;
+
+    const { destroy } = bootBuilder({
+      root: document.body,
+      initialSite: load1stContactSite(),
+      storage: new MemoryStorage(),
+      sessionStorageFacility: sessionStore,
+    });
+
+    document.dispatchEvent(
+      new CustomEvent("fc:convert-cancelled", {
+        detail: { url: "https://acme.test/" },
+        bubbles: true,
+      }),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    const persisted = sessionStore.getItem(SESSION_ID_STORAGE_KEY);
+    expect(persisted).toBeTruthy();
+    expect(calls[0]!.headers["x-session-id"]).toBe(persisted);
+
+    destroy();
+  });
+
+  it("reuses the existing sessionId from sessionStorage across boots in the same tab", async () => {
+    const sessionStore = new MemoryStorage();
+    sessionStore.setItem(SESSION_ID_STORAGE_KEY, "session-existing");
+    const { stub, calls } = captureFetch();
+    globalThis.fetch = stub as unknown as typeof fetch;
+
+    const { destroy } = bootBuilder({
+      root: document.body,
+      initialSite: load1stContactSite(),
+      storage: new MemoryStorage(),
+      sessionStorageFacility: sessionStore,
+    });
+
+    document.dispatchEvent(
+      new CustomEvent("fc:convert-confirmed", {
+        detail: { url: "https://acme.test/", ownsSite: false },
+        bubbles: true,
+      }),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(calls[0]!.headers["x-session-id"]).toBe("session-existing");
 
     destroy();
   });
