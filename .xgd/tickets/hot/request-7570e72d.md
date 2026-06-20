@@ -6,9 +6,9 @@ title: 'Framework: markdown content fields accept inline string or R2 text-asset
   capture writes markdown'
 created_by: xgd
 created_at: '2026-06-20T00:32:32.584911+00:00'
-updated_at: '2026-06-20T01:06:56.126073+00:00'
+updated_at: '2026-06-20T01:07:04.350133+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_points
 status: free_coded
 fields:
   priority: high
