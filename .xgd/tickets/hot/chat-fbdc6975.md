@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-20T00:13:57.629715+00:00'
+updated_at: '2026-06-20T00:17:45.896337+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -1024,6 +1024,40 @@ What that simplifies:
 - **Existing 1stcontact baseline** stays untouched — all its markdown fields are currently inline strings, which is still valid.
 
 Want me to scope this as the next request ticket now? I'd name it something like "Markdown content fields accept inline string or text-AssetRef union" and scope the schema change + renderer resolver + transcribe_site mechanical-write + minimal AI tool surface (so the AI can create/update text assets). The popup editor lands as a separate follow-up REQ — it doesn't depend on this one's specifics beyond the union type being in place.
+
+
+<!-- xgd-turn id="74f646f8-83c3-478d-add7-3bc4e502bd0c" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:17:45.836Z" -->
+#### You
+The website download tool should create some version of this, right? It seems a stretch for it to get the formatting exactly right, but the output of the web capture should be compatible (a subset?) of the web representation
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T00:17:45.836Z" -->
+#### Claude
+Yes — and this is the cleanest framing yet. The capture tool's job is **source HTML → simplified markdown**, where "simplified" means we keep the structurally-meaningful semantic elements and throw away everything else:
+
+| Capture keeps | Capture drops |
+|---|---|
+| Heading levels (h1–h6 → `#`–`######`) | CSS classes, computed styles, inline `style=""` |
+| Paragraphs | Custom data attributes |
+| Lists (ul/ol/li → `-`/`1.`) | `<div>` / `<span>` wrappers without semantic meaning |
+| Emphasis (b/strong → `**`, i/em → `*`) | Scripts, iframes, embeds |
+| Links (`<a href>` → `[text](href)`) | Layout-only tables |
+| Images (`<img>` → `![alt](src)`) | Inline SVG, video controls |
+| Inline code (`<code>` → `` ` ``) | Author-specific class hooks |
+
+Markdown is the lingua franca and the union value works either way — inline string or `.md` file, the bytes are markdown. Same content the TipTap editor will produce when the user edits. Same content the AI emits when the user says "rewrite this paragraph." So the system has one text format end-to-end, not three.
+
+A few implications worth flagging before I scope:
+
+1. **The renderer must actually render markdown to HTML at render time.** Currently `site.json`'s subhead/body fields contain raw HTML (`"<p>We build it…</p>"`) and the renderer almost certainly passes that through as trusted HTML. After this change, the renderer takes markdown and runs it through a markdown-to-HTML pass before emitting. The existing inline HTML strings either get migrated to markdown, or the renderer sniffs (`starts-with-<` → trusted HTML; else markdown) — sniffing is cheaper and keeps the baseline working without a migration. I'd go with sniffing.
+2. **The capture tool needs an HTML→markdown converter.** Turndown is the standard choice in the JS ecosystem; small library, configurable for which elements to preserve. Goes into `packages/extractor`.
+3. **Imperfect capture is fine.** If the source has a fancy custom widget the converter doesn't understand, the captured markdown for that region just contains the readable text without the styling. The user (or AI when directed) edits to tighten it. The goal is "reasonable structural fidelity," not pixel-perfect reproduction.
+4. **Image references in captured markdown** — `![alt](src)` where `src` is the R2 key from the asset inventory (`/assets/{r2Key}`). This dovetails with BUG-5's fix; images in body copy are markdown image refs, top-level image fields are AssetRefs.
+
+So the scope of the markdown-union REQ now also covers: HTML→markdown converter in extractor + renderer's markdown-to-HTML pass with HTML-passthrough sniffing + the union schema + the capture-side mechanical write to files. ~6 SP-ish. Still one ticket.
+
+Want me to scope it? Or any of the four implications above worth pushing back on first?
 
 
 <!-- xgd-chat-end -->
