@@ -5,9 +5,9 @@ type: request
 title: 'Convert flow: clear existing draft to empty scaffold before AI reconstruction'
 created_by: xgd
 created_at: '2026-06-20T18:25:53.585952+00:00'
-updated_at: '2026-06-20T18:46:37.358184+00:00'
+updated_at: '2026-06-20T18:47:40.917646+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -101,3 +101,12 @@ Regression scope: REQ-28 and REQ-30 transcribe-site UATs — update assertions t
 
 - REQ-28's `test_UAT_FC_REQ-28_transcribe_site_stages.test.ts` currently asserts that the AI's `set_module_content` calls overlay onto the 1stcontact baseline. Those assertions need to flip to "calls onto an empty scaffold."
 - REQ-30's killer-demo UAT assertions should pass unchanged — the test fixture exercises the AI reconstruction independently of whether the starting state was populated.
+
+
+## Implementation notes (session 2026-06-20)
+
+- The Stage 0 clear ships as part of the same `transcribe_site` handler invocation; REQ-35 had already removed the destructive-confirmation gate, so the clear runs immediately on entry to the handler, before any mirror / digest / asset-mirror work.
+- The empty-scaffold constructor lives in `packages/builder-ui/src/empty-scaffold.ts` as a reusable `buildEmptyScaffold({ businessName? })` (rather than `clearDraftToEmptyScaffold` inside transcribe-site.ts). This keeps the Site-shape knowledge in the package that already imports `defaultThemeTokens` from `@1stcontact/framework/tokens` and re-uses it for both the server-side action handler and the FE chat-driver's local-store update.
+- The "same persistence path used by state_edit actions" maps to two mirroring updates: (a) `chat.ts` sets `workingSite = payload.clearedSiteDefinition` after the transcribe_site system action so subsequent AI turns in the same chat loop reason about the cleared draft; (b) `chat-driver.ts` (the FE driver) reads `clearedSiteDefinition` from the `transcribe_site_done` result and replaces `workingSite` before processing any state_edit tool calls — so the operator's `BuilderStore.setSiteDefinition` lands on the cleared scaffold and the subsequent state_edit calls produced by the AI overlay onto that, not onto the previous draft.
+- `titleFromDigest(homeDigest)` supplies the source title; `buildEmptyScaffold` falls back to "Untitled" if the title is empty/missing.
+- The transcribe-site.ts changes (Stage 0 emit, `clearedSiteDefinition` in the return payload, `titleFromDigest`/`buildEmptyScaffold` imports) shipped in commit `58fce2b` alongside REQ-35's confirmation-gate removal so the gate could be removed safely. This REQ's commit (`c54359d`) fills in the missing pieces: the `empty-scaffold.ts` module that 58fce2b's import depended on, the chat.ts / chat-driver.ts workingSite mutations, the TranscribeProgress Stage 0 row, the how-to-doc updates, and the UATs.
