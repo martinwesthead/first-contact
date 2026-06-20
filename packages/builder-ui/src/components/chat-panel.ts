@@ -80,7 +80,15 @@ export function createChatPanel(
   sendButton.type = "button";
   sendButton.className = "fc-chat__send";
   sendButton.setAttribute("data-fc-chat-send", "");
-  sendButton.textContent = "Send";
+
+  const sendLabel = doc.createElement("span");
+  sendLabel.className = "fc-chat__send-label";
+  sendLabel.textContent = "Send";
+  const sendSpinner = doc.createElement("span");
+  sendSpinner.className = "fc-chat__send-spinner";
+  sendSpinner.setAttribute("aria-hidden", "true");
+  sendButton.appendChild(sendLabel);
+  sendButton.appendChild(sendSpinner);
 
   inputRow.appendChild(editorRoot);
   inputRow.appendChild(sendButton);
@@ -163,21 +171,50 @@ export function createChatPanel(
     renderMessages(state.chatHistory);
   });
 
+  let busy = false;
+  const setBusy = (next: boolean): void => {
+    busy = next;
+    sendButton.disabled = next;
+    if (next) {
+      sendButton.setAttribute("aria-busy", "true");
+      sendButton.setAttribute("data-fc-chat-send-busy", "");
+    } else {
+      sendButton.removeAttribute("aria-busy");
+      sendButton.removeAttribute("data-fc-chat-send-busy");
+    }
+  };
+
   const submit = async (): Promise<void> => {
+    if (busy) return;
     const text = getInputMarkdown();
     if (!text) return;
     editor.commands.clearContent();
-    await options.onSend(text);
+    setBusy(true);
+    try {
+      await options.onSend(text);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runSubmit = (): void => {
+    submit().catch(() => {
+      // Errors from onSend are surfaced via the store / chat-driver; the busy
+      // state has already been cleared in submit()'s finally. Swallow here so
+      // a rejected onSend does not become an unhandled promise rejection on
+      // the page.
+    });
   };
 
   const onKeyDown = (event: KeyboardEvent): void => {
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-      void submit();
+      if (busy) return;
+      runSubmit();
     }
   };
 
-  const sendHandler = (): void => void submit();
+  const sendHandler = (): void => runSubmit();
   sendButton.addEventListener("click", sendHandler);
   editorRoot.addEventListener("keydown", onKeyDown);
 
