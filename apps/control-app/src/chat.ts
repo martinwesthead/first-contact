@@ -24,6 +24,10 @@ export interface ChatHandlerEnv {
   BROWSER_BUDGET_KV?: KVNamespace;
   BROWSER?: unknown;
   ASSETS_BUCKET?: R2Bucket;
+  /** REQ-46: when "true", exposes the dev-only xgd_ticket tool to the AI. */
+  DEV_TOOLS_ENABLED?: string;
+  /** REQ-46: localhost URL of the dev-tools-server sidecar. Defaults to http://127.0.0.1:7878/xgd-ticket. */
+  DEV_TOOLS_URL?: string;
 }
 
 export interface ChatHandlerDeps {
@@ -145,7 +149,9 @@ export async function handleChatRequest(
   }
 
   const session = extractSession(request);
-  const tools = visibleToolSpecs(session.plan_tier);
+  const tools = visibleToolSpecs(session.plan_tier, {
+    devToolsEnabled: env.DEV_TOOLS_ENABLED === "true",
+  });
   const intentToken = await maybeMintIntentToken(env, session, body.history);
   const operatorLastMessage =
     [...body.history].reverse().find((m) => m.role === "user")?.content ?? null;
