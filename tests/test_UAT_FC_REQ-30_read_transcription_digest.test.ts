@@ -31,17 +31,17 @@ describe("UAT FC REQ-30: read_transcription_digest system_action (AC3)", () => {
     expect(digest.sourceUrl).toBe("https://acme.test/");
   });
 
-  it("returns a digest_not_found failure when the key is missing", async () => {
+  it("returns ok with kind=transcription_digest_not_ready when the key is missing (REQ-37)", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-missing" });
     const action = findAction("read_transcription_digest")!;
     const result = await action.handler!(
       { siteId: "acct-missing" },
       h.ctx,
     );
-    expect(result.status).toBe("failed");
-    if (result.status === "failed") {
-      expect(result.error).toMatch(/digest_not_found/);
-    }
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    const payload = result.payload as Record<string, unknown>;
+    expect(payload.kind).toBe("transcription_digest_not_ready");
   });
 
   it("rejects an invalid input (missing siteId)", async () => {
