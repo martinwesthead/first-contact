@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-38
 created_by: xgd
 created_at: '2026-06-20T21:10:59.668713+00:00'
-updated_at: '2026-06-20T21:41:23.549031+00:00'
+updated_at: '2026-06-20T21:43:20.296418+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -162,5 +162,30 @@ The ticket body is already updated with the scope/diagnosis. The UAT file is on 
 <!-- xgd-chat role="user" ts="2026-06-20T21:40:44.673Z" -->
 #### You
 REQ-36 is under development right now - why don't you revert and stage your changes and then we can reapply when it is complete
+
+<!-- xgd-turn id="a1c189df-78dd-43b8-96f5-8dbd3752ee8c-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T21:43:19.283Z" -->
+#### Claude
+Good plan. Let me save my REQ-38 changes as a patch, revert chat.ts to the pre-REQ-38 (REQ-36 WIP-only) state, and update the ticket to reflect the dependency.
+
+Now revert my three hunks in chat.ts.
+
+Now generate and save the patch.
+
+Now move the UAT file out of `tests/` (it would fail in CI without the fix) and save it next to the patch.
+
+Clean revert confirmed. Now update the ticket to reflect the blocked state and the saved artifacts.
+
+Done. Working tree is clean — no REQ-38 traces in `tests/` or `chat.ts`. The fix and UAT are stashed under `.xgd/tmp/` (gitignored), the ticket body documents what to do when REQ-36 lands.
+
+**To re-apply when REQ-36 ships:**
+```bash
+mv .xgd/tmp/test_UAT_FC_REQ-38_one_throw_does_not_drop_batch.test.ts tests/
+patch apps/control-app/src/chat.ts < .xgd/tmp/req-38-fix.patch  # may need -R depending on direction
+pnpm test tests/test_UAT_FC_REQ-38_one_throw_does_not_drop_batch.test.ts
+```
+
+REQ-38 ticket stays in `draft` status (no commits yet, nothing to attribute under the free-coding protocol).
 
 <!-- xgd-chat-end -->
