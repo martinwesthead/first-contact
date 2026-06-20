@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-34
 created_by: xgd
 created_at: '2026-06-20T18:26:42.904782+00:00'
-updated_at: '2026-06-20T18:58:11.272949+00:00'
+updated_at: '2026-06-20T19:11:52.696773+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -118,5 +118,11 @@ Would you like me to:
 My recommendation: option 2 (update the how-to doc) as a fast first cut, since it's pure prose and doesn't need a new ticket — REQ-34's own how-to update was an IN scope item, and tightening the instructions to make the AI's `add_module` → `set_module_content` chain actually work is part of "the AI lands on a cleared scaffold and reconstructs from it." If that doesn't fix it, option 1 (return the assigned id from `add_module`) is the proper structural fix and warrants its own bug ticket.
 
 If you want me to ship the doc-only fix now (as a follow-up commit on REQ-34, keeping the ticket open at `free_coded`), say the word and I'll: pass an explicit `id` recipe to the AI (`add_module({ ..., id: "hero-1" })`), reuse it in subsequent `set_module_content`, add a worked example, and add a UAT that exercises the add_module-with-explicit-id path end-to-end via mocked Anthropic responses.
+
+<!-- xgd-turn id="61ffec8a-b8b9-463a-926a-a342b4fdcbe9-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T19:11:46.066Z" -->
+#### You
+I think we lost your options (chat windo glitch) can you repeat them?
 
 <!-- xgd-chat-end -->
