@@ -1,5 +1,6 @@
 import type { PaletteTokens, ThemeTokens } from "@1stcontact/site-schema";
 import { defaultThemeTokens } from "./defaults.js";
+import { evaluateSurfaceContrast } from "./contrast.js";
 
 export type DeepPartial<T> = T extends object
   ? { [K in keyof T]?: DeepPartial<T[K]> }
@@ -14,9 +15,24 @@ export function generateThemeCss(
   options: GenerateThemeCssOptions = {},
 ): string {
   const merged = mergeTokens(defaultThemeTokens, tokens);
+  const warnings = emitContrastWarnings(merged.palette);
   const root = emitRoot(merged);
   const dark = options.dark ? emitDark(options.dark) : "";
-  return [root, dark].filter(Boolean).join("\n\n") + "\n";
+  return [warnings, root, dark].filter(Boolean).join("\n\n") + "\n";
+}
+
+function emitContrastWarnings(palette: PaletteTokens): string {
+  const failures = evaluateSurfaceContrast(palette).filter((p) => !p.pass);
+  if (failures.length === 0) return "";
+  const lines = failures.map((f) => {
+    const ratio = f.ratio.toFixed(2);
+    return `/* fc-contrast-warning: ${f.surface} surface — ${f.foreground} on ${f.background} = ${ratio}:1 (below WCAG AA ${f.threshold}:1) */`;
+  });
+  const surfaces = failures.map((f) => f.surface).join(", ");
+  console.warn(
+    `[1stcontact] theme contrast below WCAG AA on surface(s): ${surfaces}`,
+  );
+  return lines.join("\n");
 }
 
 function emitRoot(t: ThemeTokens): string {
