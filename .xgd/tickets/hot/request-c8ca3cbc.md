@@ -5,9 +5,9 @@ type: request
 title: 'Module: testimonials@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:02.247298+00:00'
-updated_at: '2026-06-20T23:14:09.946973+00:00'
+updated_at: '2026-06-20T23:14:33.410108+00:00'
 completed_at: null
-last_field_updated: commits
+last_field_updated: body
 status: ready_to_reconcile
 fields:
   auto_merge_back: true
@@ -79,3 +79,15 @@ REQ-40's own commits cleanly add the registry/exports wiring and the version bum
 - `d4c5e4b` — version bump 0.0.20 → 0.0.21
 
 All 9 REQ-40 UAT tests (`test_UAT_FC_REQ-40_*`) pass after the registration commit.
+
+
+
+## SHA remap (2026-06-20)
+
+Body references the original SHAs `3f6cb5e` (split-section + testimonials combined commit), `ab0035a` (testimonials registry registration), and `d4c5e4b` (version bump). These were rewritten via `git filter-branch` to fix an unrelated REQ-41 commit-message misattribution upstream in the same chain. New SHAs:
+
+- `3f6cb5e` → `38a7320100a35ed2d003ad774f4d959301b7448e`
+- `ab0035a` → `36d7728eaf1deb2c66ac8fc568dede51f4d7c5ea`
+- `d4c5e4b` → `41bb985fc5a98996c891b29a59689c5b22b18934`
+
+The `fields.commits` array has been updated accordingly.
