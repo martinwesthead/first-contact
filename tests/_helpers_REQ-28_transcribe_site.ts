@@ -5,10 +5,7 @@ import {
   type ReferenceDigest,
 } from "../packages/extractor/src/index.js";
 import { __resetForTests as resetChatMetadata } from "../apps/control-app/src/operator/chat-metadata.js";
-import {
-  confirmConvertHandler,
-  transcribeSiteHandler,
-} from "../apps/control-app/src/operator/transcribe-site.js";
+import { transcribeSiteHandler } from "../apps/control-app/src/operator/transcribe-site.js";
 import type {
   ActionContext,
   ActionResult,
@@ -32,7 +29,6 @@ export interface TranscribeHarness {
   setAssetResponses(map: Record<string, { status: number; contentType: string; body: Uint8Array }>): void;
   setAssetFailures(map: Record<string, { reason: string; detail?: string }>): void;
   seedDigest(url: string, digest?: Partial<ReferenceDigest>): Promise<ReferenceDigest>;
-  invokeConfirm(input: Record<string, unknown>): Promise<ActionResult>;
   invokeTranscribe(input: Record<string, unknown>): Promise<ActionResult>;
 }
 
@@ -192,14 +188,6 @@ export function makeTranscribeHarness(opts?: {
       for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, "0");
       await env.FETCH_CACHE_KV.put(`digest:${hex}`, JSON.stringify(digest));
       return digest;
-    },
-    async invokeConfirm(input): Promise<ActionResult> {
-      const unstub = stubGlobalFetch();
-      try {
-        return await confirmConvertHandler(input, ctx);
-      } finally {
-        unstub();
-      }
     },
     async invokeTranscribe(input): Promise<ActionResult> {
       const unstub = stubGlobalFetch();

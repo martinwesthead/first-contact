@@ -7,16 +7,14 @@ import {
   htmlToMarkdown,
   mirrorAssetBatchToR2,
   rewriteMarkdownImageRefs,
+  titleFromDigest,
   type MirrorAssetResult,
   type PageCopyResult,
   type ReferenceDigest,
 } from "@1stcontact/extractor";
+import { buildEmptyScaffold } from "@1stcontact/builder-ui";
 import { safeFetch } from "@1stcontact/web-fetch-safety";
 import type { ActionHandler, ActionResult } from "./registry.js";
-import {
-  isConvertConfirmed,
-  markConvertConfirmed,
-} from "./chat-metadata.js";
 
 export interface TranscribeSiteEnv {
   readonly FETCH_CACHE_KV?: KVNamespace;
@@ -98,10 +96,6 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
     return fail("'digestId' must be a non-empty string (URL the digest was built for)");
   }
 
-  if (!ctx.session.session_id) {
-    return fail("session_id required to track convert confirmation");
-  }
-
   const lookup = await loadDigest(env, digestId);
   if (!lookup) {
     return fail(
@@ -109,31 +103,23 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
     );
   }
   const homeDigest = lookup.digest;
-
   const accountId = ctx.session.account_id;
-  const confirmed = isConvertConfirmed({
-    sessionId: ctx.session.session_id,
-    accountId,
-    url: homeDigest.sourceUrl,
-  });
 
-  if (!confirmed) {
-    const confirmationPrompt = `Convert will replace your current draft with a transcription of ${homeDigest.sourceUrl}. This cannot be automatically undone. Continue?`;
-    ctx.emit({
-      event: "action:notify",
-      data: {
-        tool: "transcribe_site",
-        kind: "convert_confirmation_required",
-        url: homeDigest.sourceUrl,
-        prompt: confirmationPrompt,
-      },
-    });
-    return ok({
-      kind: "convert_confirmation",
-      url: homeDigest.sourceUrl,
-      prompt: confirmationPrompt,
-    });
-  }
+  // ── Stage 0: clear the operator's draft to a fresh empty scaffold ───────
+  // REQ-34: every convert lands on an empty 1-page scaffold so the AI's
+  // reconstruction is not contaminated by the previous draft (1stcontact
+  // starter modules, or stale content from a prior convert).
+  const sourceTitle = titleFromDigest(homeDigest);
+  const clearedSiteDefinition = buildEmptyScaffold({ businessName: sourceTitle });
+  ctx.emit({
+    event: "action:notify",
+    data: {
+      tool: "transcribe_site",
+      stage: 0,
+      status: "cleared",
+      businessName: clearedSiteDefinition.config.businessName,
+    },
+  });
 
   // ── Stage 1: screenshot preview ─────────────────────────────────────────
   const screenshotUrl = homeDigest.screenshotKeys.desktop
@@ -266,42 +252,13 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
   return ok({
     kind: "transcribe_site_done",
     digestKey,
+    clearedSiteDefinition,
     summary: {
       pageCount: digest.perPagePlan.length,
       assetCount: digest.assetInventory.length,
       mirrored: mirrorSummary.mirrored,
       mirrorFailures: mirrorSummary.failed,
     },
-  });
-};
-
-/**
- * Companion handler the FE invokes when the operator clicks Confirm on the
- * ConvertConfirmation card. Records consent in the chat-metadata store and
- * optionally registers a robots.txt override for the origin.
- */
-export const confirmConvertHandler: ActionHandler = async (input, ctx) => {
-  const url = typeof input.url === "string" ? input.url : null;
-  if (!url) return fail("'url' required");
-  if (!ctx.session.session_id) return fail("session_id required");
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return fail(`'url' is not a valid URL: ${url}`);
-  }
-  const ownsSite = input.ownsSite === true;
-  markConvertConfirmed({
-    sessionId: ctx.session.session_id,
-    accountId: ctx.session.account_id,
-    url,
-    ownsSite,
-  });
-  return ok({
-    confirmed: true,
-    url,
-    origin: parsed.origin,
-    ownsSite,
   });
 };
 

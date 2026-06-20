@@ -67,7 +67,6 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
         ],
       },
     } as Partial<ReferenceDigest>);
-    await h.invokeConfirm({ url: "https://acme.test/" });
     const transcribeResult = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect(transcribeResult.status).toBe("ok");
 

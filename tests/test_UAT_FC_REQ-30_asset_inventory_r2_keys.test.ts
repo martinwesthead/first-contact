@@ -45,7 +45,6 @@ describe("UAT FC REQ-30: digest.assetInventory references R2 keys (AC8)", () => 
         ],
       },
     } as Partial<ReferenceDigest>);
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const obj = await h.env.ASSETS_BUCKET.get(
@@ -95,7 +94,6 @@ describe("UAT FC REQ-30: digest.assetInventory references R2 keys (AC8)", () => 
         ],
       },
     } as Partial<ReferenceDigest>);
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const obj = await h.env.ASSETS_BUCKET.get(

@@ -12,7 +12,7 @@ This document is loaded into your system prompt. It tells you how to drive the c
 
 ## 1. When the operator says "convert this site" or pastes a URL
 
-Call \`transcribe_site\` with the URL as \`digestId\`. The first call returns a \`convert_confirmation\` payload — the FE will render a confirmation card. Wait for the operator to confirm. Do not retry on your own. Once they confirm, calling \`transcribe_site\` again proceeds to write the digest.
+Call \`transcribe_site\` with the URL as \`digestId\`. The call proceeds end-to-end and writes the transcription digest to R2. There is no confirmation gate; if the operator wants to undo the conversion they use the Reset button.
 
 ## 2. After \`transcribe_site\` succeeds
 

@@ -7,7 +7,6 @@ describe("UAT FC REQ-28: 3-stage orchestration emits SSE progress in order (REQ-
     await h.seedDigest("https://acme.test/", {
       screenshotKeys: { desktop: "references/c/t/desktop.png" },
     });
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     const result = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect(result.status).toBe("ok");
@@ -30,7 +29,6 @@ describe("UAT FC REQ-28: 3-stage orchestration emits SSE progress in order (REQ-
     await h.seedDigest("https://acme.test/", {
       screenshotKeys: { desktop: "references/c/t/desktop.png" },
     });
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
@@ -44,7 +42,6 @@ describe("UAT FC REQ-28: 3-stage orchestration emits SSE progress in order (REQ-
   it("AC4: stage 2 emits applied ThemeTokens with confidence band", async () => {
     const h = makeTranscribeHarness();
     await h.seedDigest("https://acme.test/");
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
@@ -61,7 +58,6 @@ describe("UAT FC REQ-28: 3-stage orchestration emits SSE progress in order (REQ-
   it("AC5 (REQ-30 relaxed): stage 3 carries digestKey and summary instead of module synthesis", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-stage3" });
     await h.seedDigest("https://acme.test/");
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
@@ -99,7 +95,6 @@ describe("UAT FC REQ-28: 3-stage orchestration emits SSE progress in order (REQ-
         assetInventory: [],
       },
     });
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     const result = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect(result.status).toBe("ok");

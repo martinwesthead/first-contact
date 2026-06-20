@@ -1,9 +1,6 @@
 import { analyzePageHandler } from "./analyze-page.js";
 import { readTranscriptionDigestHandler } from "./read-transcription-digest.js";
-import {
-  confirmConvertHandler,
-  transcribeSiteHandler,
-} from "./transcribe-site.js";
+import { transcribeSiteHandler } from "./transcribe-site.js";
 import { writeTextAssetHandler } from "./write-text-asset.js";
 import type { ChatHandlerEnv } from "../chat.js";
 import type { SseEvent } from "./events.js";
@@ -406,11 +403,11 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
     plan_tier: "trial",
     ui_route: null,
     side_effects:
-      "Layer B transcription: maps a Reference Digest into 1st Contact module instances + theme tokens, then mirrors referenced visual assets into R2. Destructive — replaces the current draft. Gated behind a one-shot per-chat confirmation; on first invocation returns {kind: convert_confirmation} so the FE renders <ConvertConfirmation>. After the operator clicks Confirm (which calls confirm_convert), re-invoking transcribe_site proceeds through Stages 1–4 with progressive-reveal SSE events.",
+      "Layer B transcription: maps a Reference Digest into 1st Contact module instances + theme tokens, then mirrors referenced visual assets into R2. Destructive — replaces the current draft. Proceeds end-to-end on every invocation (Stages 1–5 with progressive-reveal SSE events). Operators recover from accidental invocations via the Reset button.",
     tool_spec: {
       name: "transcribe_site",
       description:
-        "Layer B transcription — convert an analyzed reference site into a 1st Contact draft. Pass the digestId (which is the source URL the operator pasted). First call returns a confirmation request; once the operator confirms via the convert_confirmation chat card, calling transcribe_site again applies the transcription end-to-end (screenshot preview → theme tokens → module instances → R2-mirrored assets). Cost: one Opus call + per-asset safeFetch + R2 writes — only call when the operator has clearly requested a conversion of the analyzed site.",
+        "Layer B transcription — convert an analyzed reference site into a 1st Contact draft. Pass the digestId (which is the source URL the operator pasted). Applies the transcription end-to-end (screenshot preview → theme tokens → module instances → R2-mirrored assets). Cost: per-asset safeFetch + R2 writes — only call when the operator has clearly requested a conversion of the analyzed site.",
       input_schema: {
         type: "object",
         properties: {
@@ -424,28 +421,6 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
       },
     },
     handler: transcribeSiteHandler,
-  },
-  {
-    name: "confirm_convert",
-    category: "system_action",
-    plan_tier: "trial",
-    ui_route: null,
-    side_effects:
-      "Marks the convert flow as authorized for {url} on the current chat session. Also registers a per-origin robots.txt override when ownsSite=true (AC14). Invoked by the <ConvertConfirmation> chat card's Confirm button — operators do not call this directly.",
-    tool_spec: {
-      name: "confirm_convert",
-      description:
-        "Record operator confirmation for a convert_site action. Set ownsSite=true to also register a per-origin robots.txt override for the URL's origin.",
-      input_schema: {
-        type: "object",
-        properties: {
-          url: { type: "string" },
-          ownsSite: { type: "boolean" },
-        },
-        required: ["url"],
-      },
-    },
-    handler: confirmConvertHandler,
   },
   {
     name: "read_transcription_digest",

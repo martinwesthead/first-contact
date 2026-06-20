@@ -5,7 +5,6 @@ describe("UAT FC REQ-30: transcribe_site writes a TranscriptionDigest to R2 (AC1
   it("AC1: after a successful transcribe_site, sites/{siteId}/transcription/digest.json exists in ASSETS_BUCKET", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-r2-test" });
     await h.seedDigest("https://acme.test/");
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     const result = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect(result.status).toBe("ok");
@@ -28,7 +27,6 @@ describe("UAT FC REQ-30: transcribe_site writes a TranscriptionDigest to R2 (AC1
   it("AC2: handler payload is {kind: 'transcribe_site_done', digestKey, summary} with no synthesized site fields", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-payload-test" });
     await h.seedDigest("https://acme.test/");
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     const result = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect(result.status).toBe("ok");

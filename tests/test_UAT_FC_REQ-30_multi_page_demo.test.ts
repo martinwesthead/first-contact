@@ -40,7 +40,6 @@ describe("UAT FC REQ-30: multi-page killer demo with mocked LLM (AC10)", () => {
     await h.seedDigest("https://acme.test/", minimalDigest("Acme", navLinks, []));
     await h.seedDigest("https://acme.test/menu", minimalDigest("Menu", [], []));
     await h.seedDigest("https://acme.test/contact", minimalDigest("Contact", [], [{ name: "email", kind: "email" }]));
-    await h.invokeConfirm({ url: "https://acme.test/" });
     const transcribeResult = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect(transcribeResult.status).toBe("ok");
 
