@@ -6,15 +6,18 @@ title: 'Framework: markdown content fields accept inline string or R2 text-asset
   capture writes markdown'
 created_by: xgd
 created_at: '2026-06-20T00:32:32.584911+00:00'
-updated_at: '2026-06-20T01:05:30.213048+00:00'
+updated_at: '2026-06-20T01:06:56.126073+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: high
   story_points: 6
   auto_merge_back: true
   needs_review: false
+  commits:
+  - ee886078120fdbde5c2daae5964e61003f8af50c
+  version: 0.14.1236
 ---
 
 ## Problem
