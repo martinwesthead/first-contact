@@ -10,6 +10,8 @@ import ImageGallery from "./image-gallery/index.astro";
 import { meta as imageGalleryMeta } from "./image-gallery/meta.js";
 import ServicesGrid from "./services-grid/index.astro";
 import { meta as servicesGridMeta } from "./services-grid/meta.js";
+import SplitSection from "./split-section/index.astro";
+import { meta as splitSectionMeta } from "./split-section/meta.js";
 import TextBlock from "./text-block/index.astro";
 import { meta as textBlockMeta } from "./text-block/meta.js";
 import type { ModuleEntry } from "./types.js";
@@ -38,6 +40,9 @@ const REGISTRY: Record<string, Record<number, ModuleEntry>> = {
   },
   [servicesGridMeta.id]: {
     [servicesGridMeta.version]: { meta: servicesGridMeta, Component: ServicesGrid },
+  },
+  [splitSectionMeta.id]: {
+    [splitSectionMeta.version]: { meta: splitSectionMeta, Component: SplitSection },
   },
   [imageGalleryMeta.id]: {
     [imageGalleryMeta.version]: { meta: imageGalleryMeta, Component: ImageGallery },
