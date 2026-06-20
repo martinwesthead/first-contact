@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-44
 created_by: xgd
 created_at: '2026-06-20T21:16:33.203004+00:00'
-updated_at: '2026-06-20T23:33:19.829510+00:00'
+updated_at: '2026-06-20T23:44:38.842958+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -188,5 +188,11 @@ REQ-44 is complete. Summary:
 **Tests:** 34 passing — 4 new REQ-44 UATs (registration, item validation including no-string-fallback, one-col rendering, imageStyle dial classes) + 3 updated REQ-5 tests + collapse-below-md + registry + starter-site loader.
 
 One housekeeping note: my first bump commit accidentally swept in unrelated REQ-46 dev-tools-server files that became staged between my `git status` and `git commit` (probably a concurrent session). I soft-reset and re-committed the bump cleanly; REQ-46 files remain untracked for whoever owns that ticket.
+
+<!-- xgd-turn id="e0ff4e0c-05bd-4852-983c-d5e965be0962-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:44:13.678Z" -->
+#### You
+Please note this in your ticket so reconciliation can take it into account
 
 <!-- xgd-chat-end -->
