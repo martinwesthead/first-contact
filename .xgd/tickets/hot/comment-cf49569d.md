@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-36
 created_by: xgd
 created_at: '2026-06-20T20:23:05.811361+00:00'
-updated_at: '2026-06-20T21:24:39.727765+00:00'
+updated_at: '2026-06-20T21:52:52.089944+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -131,5 +131,100 @@ Captured. Both confirmed against the codebases:
 <!-- xgd-chat role="user" ts="2026-06-20T21:24:27.657Z" -->
 #### You
 Keep everything together - please can you free code this ticket now?
+
+<!-- xgd-turn id="d9a8a066-73c9-4883-91e2-86bce2e12f42-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T21:52:52.087Z" -->
+#### Claude
+Will do. Let me create a task list and start with reconnaissance, then implement gap-by-gap.
+
+Reconnaissance first: read store, chat-driver, server chat handler, and one existing UAT test to understand fixtures.
+
+Let me check the test infrastructure before writing tests.
+
+Now I'll rewrite the CSS in builder.html and chat-panel.ts together. Let me start with the larger CSS overhaul.
+
+Now rewrite chat-panel.ts. Major changes: user-message markdown (G5), tool-use pane (G6), Send/Stop round buttons (G3), Enter-to-send (G8), placeholder, tool-event API for streaming (G9 prep).
+
+Now mark G2/G3/G5/G6/G8 done since chat-panel.ts covers them all in one rewrite, then move to G9.
+
+Now the streaming server. Strategy: switch upstream to Anthropic streaming (`stream: true`), parse Anthropic SSE in the worker, forward our own SSE events.
+
+Now I'll rewrite the chat handler as a streaming SSE endpoint. This requires significant restructuring.
+
+Now the test helper that consumes our SSE so tests can stay clean, and the Anthropic-streaming stub helper.
+
+Now the client driver. It needs to: stream tokens into an in-flight assistant message, push tool calls to the tool-pane via callbacks, commit the final state from `done`.
+
+Now rewrite chat-driver to consume SSE.
+
+Now wire chat-panel's tool events + stop button into the driver via main.ts.
+
+Now update tests that depend on the old JSON shape. Let me check the failing tests systematically.
+
+Fix the chat-driver type errors:
+
+Now fix the closure-narrowing on donePayload using a state object:
+
+Linter already fixed it. Let me check the rest of the build.
+
+The DOM-type errors are pre-existing in the control-app build. My changes don't add new errors. Let me run only the chat-related tests to validate my work.
+
+Now run tests that depended on old JSON shape so I know what to update.
+
+Now check what other tests use the chat endpoint or driver.
+
+Now bulk-update the failing tests. Let me check the patterns more concisely first.
+
+Now check the REQ-13 tests and REQ-34.
+
+Now check REQ-21, REQ-30, REQ-34 tests.
+
+Now REQ-34.
+
+Now let me look at the REQ-37 chat driver test (newly created concurrent work).
+
+Good — that test already uses SSE. Let me also check the REQ-22 test.
+
+Now let me run the tests to see progress.
+
+Now REQ-21.
+
+Now let me check what other things might be using JSON-shape responses. Run a broader set.
+
+Now let me write the REQ-36 UAT tests.
+
+All 17 REQ-36 UAT tests pass. Now run the full suite again to see what's left.
+
+Confirmed — both pre-existing, not my problem. Now let me try `xgd quality run` for the proper free-coding gate.
+
+Update REQ-36 body with implementation summary, then commit.
+
+Now stage and commit. The `apps/control-app/src/operator/*.ts` changes are NOT mine — they're concurrent REQ-37 work. Let me commit only my files.
+
+My chat-panel/chat-driver/store/index changes were rolled into the concurrent REQ-37 commit. The remaining diff has the rest of my REQ-36 work. Let me stage and commit.
+
+Update REQ-36 ticket with status=free_coded and the commit SHA.
+
+REQ-36 shipped. Status `free_coded`, commits recorded, version bumped to 0.0.17.
+
+### Summary of what's in HEAD
+
+**Visible chat changes the operator will see:**
+
+- **Font 13px** (was 16px page default) across the chat
+- **Rounded pill input** (`border-radius: 24px`) with accent-on-focus single border
+- **Round Send button** (▶) inside the input wrapper, accent colour; **round Stop button** (■, red) replaces it while a turn streams
+- **Editor markdown rendering** — pasted headings/lists/code/blockquote/tables now display formatted
+- **User messages render as markdown** (REQ-13 had only done assistant)
+- **Tool-use pane** at top with ▶/▼ chevron header — collapsed by default, opens automatically when the AI starts using tools; inline ChatCard tool-result cards remain in the message list (operator: keep both)
+- **Enter sends, Shift/Alt/Meta/Ctrl+Enter = newline** — placeholder advertises the contract
+- **End-to-end streaming** — text appears progressively, tool calls surface in the live pane as they happen; clicking Stop aborts the SSE stream and upstream Anthropic call
+
+**Files touched (commit `be19e5f`):** `apps/control-app/public/builder.html`, `apps/control-app/src/chat.ts`, `packages/builder-ui/src/main.ts`, `packages/builder-ui/package.json`, plus the streaming SSE test helper and 5 new `test_UAT_FC_REQ-36_*` files (17 tests, all passing). My `chat-panel.ts` / `chat-driver.ts` / `store.ts` / `index.ts` edits were already in HEAD via the concurrent REQ-37 commit `e5cec1a`.
+
+**Test status:** 475/477 in the suite pass. The 2 failures (`BUG-5` and `REQ-30 howto`) are pre-existing doc-drift from concurrent REQ-37 work, not from this change.
+
+Recommend a quick browser smoke once you pull — the visual restyle wants eyeballs.
 
 <!-- xgd-chat-end -->
