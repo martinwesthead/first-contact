@@ -5,9 +5,9 @@ type: request
 title: Robust transcription pipeline with error reporting
 created_by: xgd
 created_at: '2026-06-20T21:08:41.521098+00:00'
-updated_at: '2026-06-20T22:54:03.785172+00:00'
+updated_at: '2026-06-20T22:54:09.532605+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: ready_to_reconcile
 fields:
   auto_merge_back: true
@@ -38,6 +38,9 @@ The `transcribe_site` + `read_transcription_digest` flow needs to surface failur
 3. **Stale/partial digest** — at Stage 0 of `transcribe_site`, delete the previous digest from R2 before anything else runs. `read_transcription_digest` returns a distinct `not_ready` status (not the generic `digest_not_found` error) when nothing is present, so the AI can poll without it looking like a hard failure.
 
 4. **Module-building failure summary** — client-side panel + AI context reinjection:
-   - `chat-driver` accumulates `action:failed` events (and any `action:notify` events carrying `status === "failed"`) for actions invoked after `transcribe_site` returns.
-   - Failures are surfaced in a builder-UI panel the user can dismiss/retry.
-   - On the next AI turn, the accumulated failures are appended to the chat context as a system note ("Previous turn had N failed module-building tool calls: …") so the AI can retry without the user manually prompting.
+
+- `chat-driver` accumulates `action:failed` events (and any `action:notify` events carrying `status === "failed"`) for actions invoked after `transcribe_site` returns.
+
+- Failures are surfaced in a builder-UI panel the user can dismiss/retry.
+
+- On the next AI turn, the accumulated failures are appended to the chat context as a system note ("Previous turn had N failed module-building tool calls: …") so the AI can retry without the user manually prompting.
