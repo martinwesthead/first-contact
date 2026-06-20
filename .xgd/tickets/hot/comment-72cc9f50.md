@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:11:37.381255+00:00'
+updated_at: '2026-06-20T23:15:24.256612+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -92,5 +92,11 @@ claude --settings .claude/headless-settings.json --setting-sources "" -p "..."
 ```
 
 I haven't built a wrapper script — you mentioned the headless launcher exists or will be defined separately. If you want me to add a `bin/project/ai-ticket` (or similar) that bakes the flag in, say the word and I'll spec a follow-up ticket for it.
+
+<!-- xgd-turn id="b9eabe81-c5cb-413b-9aa2-732a840cee1d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:13:31.121Z" -->
+#### You
+Ok I would like you to remove anything that applies to command line Claude and listen carefully. The project in this workspace is a web builder that invokes Claude via API. Today it has the ability to modifyu the web settings and a tool for downloading website content. I want you to give it another tool specifically for dev, it neets to run xgd ticket per the constraints we discussed. It needs to use the implementation in ~martin/Projects/xgendev-main/.venv-workspace and it needs to run in ~martin/Projects/first-contact - got it?
 
 <!-- xgd-chat-end -->
