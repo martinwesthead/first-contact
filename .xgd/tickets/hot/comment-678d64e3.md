@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-4
 created_by: xgd
 created_at: '2026-06-19T23:44:28.241594+00:00'
-updated_at: '2026-06-19T23:50:00.401375+00:00'
+updated_at: '2026-06-20T00:11:55.146937+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -77,5 +77,13 @@ BUG-4 is at `free_coded` with the commit recorded. Summary:
 **Tests** (`tests/test_UAT_FC_BUG-4_convert_confirmation_listener.test.ts`): 5 UATs covering renderer registration, both event paths, ownsSite clause, and listener cleanup. Regression scope (REQ-28 confirmation-card tests + REQ-31 boot tests) all pass — 13/13 green.
 
 **Next**: ticket parked at `free_coded`; promote to `ready_to_reconcile` when you're ready for reconcile.
+
+<!-- xgd-turn id="92d60f76-bccb-4ba1-829e-66382d97c696-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:11:44.723Z" -->
+#### You
+I just reloaded this and still do not see this working. Before I even got to the button I saw: ✗transcribe_site — rejected
+
+session_id required to track convert confirmation
 
 <!-- xgd-chat-end -->
