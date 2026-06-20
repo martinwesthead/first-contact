@@ -5,9 +5,9 @@ type: request
 title: 'Module: image-gallery@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:40.973991+00:00'
-updated_at: '2026-06-20T22:56:13.812804+00:00'
+updated_at: '2026-06-20T22:58:39.877022+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: ready_to_reconcile
 fields:
   auto_merge_back: true
@@ -72,3 +72,16 @@ Decisions made before implementation:
    - `caption` renders only when provided.
    - `columns` dial maps to the corresponding modifier class.
    - Validates rejection when `items[]` length is outside `2..24`.
+
+
+
+## Follow-up (2026-06-20): LLM context doc
+
+Updated the AI's convert-flow how-to (`docs/llm-context/reproducing-a-website.md` and its byte-for-byte mirror `apps/control-app/src/llm-context.ts`) to:
+
+- Name `image-gallery` explicitly as the catalog target for "sequential images" during visual-proximity matching.
+- Note that image-gallery's `items[]` is populated one entry per asset, each with `image` (asset-ref) and optional `caption`.
+
+UAT added: `test_UAT_FC_REQ-41_llm_context_doc_mentions_image_gallery` asserts the doc names the module so future drift removes the hint deliberately rather than silently.
+
+Pre-existing drift on the doc/mirror pair (sections 1a / section 6 fallback paragraph) is out of scope for this ticket.
