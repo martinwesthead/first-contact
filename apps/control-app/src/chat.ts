@@ -697,6 +697,13 @@ function summarizeSystemAction(
     }
     case "report_validation_rejection":
       return `logged validation rejection`;
+    case "xgd_ticket": {
+      const cmd = typeof payload.command === "string" ? payload.command : "?";
+      const args = Array.isArray(payload.args) ? payload.args : [];
+      const exit = typeof payload.exitCode === "number" ? payload.exitCode : -1;
+      const tail = args.length > 0 ? ` ${args.join(" ")}` : "";
+      return `ran xgd ticket ${cmd}${tail} (exit ${exit})`;
+    }
     default:
       return `ran ${name}`;
   }

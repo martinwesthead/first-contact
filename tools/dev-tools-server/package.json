@@ -30,6 +30,10 @@
   "scripts": {
     "build": "echo 'dev-tools-server: no build step (vite-node executes TS at runtime)'"
   },
+  "dependencies": {
+    "vite": "^5.0.0",
+    "vite-node": "^2.1.0"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.6.0"
