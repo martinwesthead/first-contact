@@ -12,3 +12,9 @@ export {
   type FontCategory,
   type FontSpec,
 } from "./fonts.js";
+export {
+  contrastRatio,
+  evaluateSurfaceContrast,
+  type ContrastPair,
+  type SurfaceVariant,
+} from "./contrast.js";

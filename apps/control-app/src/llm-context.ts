@@ -31,6 +31,21 @@ Call \`read_transcription_digest({ siteId })\` where \`siteId\` is the operator'
 ## 3. Plan the reconstruction in this order
 
 1. **Apply theme tokens.** Call \`set_theme_token\` for each populated value in \`digest.themeTokens.palette\` and \`digest.themeTokens.typography.family\`. Skip unset slots — the framework defaults stay in place on the cleared scaffold.
+1a. **Verify text/background contrast (REQ-48).** After theme tokens are applied, mentally evaluate the WCAG AA contrast of each surface pair the framework renders. The four pairs are:
+
+   | Surface | Background token | Foreground token | Threshold |
+   |---|---|---|---|
+   | \`default\` | \`palette.bg\` | \`palette.text\` | 4.5:1 |
+   | \`subtle\` | \`palette.surfaceSubtle\` | \`palette.text\` | 4.5:1 |
+   | \`inverse\` | \`palette.surfaceInverse\` | \`palette.bg\` | 4.5:1 |
+   | \`accent\` | \`palette.accent\` | \`palette.bg\` | 3.0:1 (CTA / large text) |
+
+   For each pair, use the WCAG relative-luminance formula (channel-linearised sRGB, weighted 0.2126 / 0.7152 / 0.0722) to compute the ratio \`(L_lighter + 0.05) / (L_darker + 0.05)\`. If a pair falls below threshold, fix it before moving on:
+   - **Preferred fix**: re-issue \`set_theme_token\` for the offending background or foreground role with a darker/lighter value from the source palette (e.g. swap a too-light \`surfaceSubtle\` for a slightly darker neutral, or substitute the framework default).
+   - **Fallback**: revert that role to its framework default by issuing \`set_theme_token\` with an empty patch for that key (the cleared scaffold's default value re-applies).
+
+   Do **not** silently accept a failing pair — the framework will emit a \`/* fc-contrast-warning: ... */\` comment in the generated stylesheet at render time, but the AI is the first line of defence at convert time.
+
 2. **Add missing pages.** For each entry in \`digest.perPagePlan\` beyond the first (home) page, call \`add_page({ slug, title, after_slug })\`. \`slug\` is the entry's \`slug\` value with the leading slash removed (e.g. \`/menu\` → pass \`"menu"\`). \`after_slug\` is the canonical stored slug of the page you want this to follow.
 3. **Wire up the nav.** If you added more than one page, call \`set_nav_entries\` with one \`{ label, target: { kind: 'page', pageId } }\` entry per page so the new pages are reachable. Use the page's stable \`id\` (returned by \`get_site_definition\`) as \`pageId\`, not the slug. For single-page sites, skip this step — the framework renders in-page anchors automatically. If the source's nav pattern is obviously different from the framework default (e.g. a hamburger menu rather than top tabs), call \`set_nav_pattern\` first.
 4. **Walk each page's modules.** For each \`perPagePlan\` entry, iterate its \`suggestedModuleTypes\` and call \`add_module\` to insert each one. Then \`set_module_content\` for every module:
