@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-14
 created_by: xgd
 created_at: '2026-06-16T22:13:21.328432+00:00'
-updated_at: '2026-06-20T19:35:11.953185+00:00'
+updated_at: '2026-06-20T19:37:18.527053+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -180,5 +180,26 @@ REQ-14 is shipped. Summary:
 <!-- xgd-chat role="user" ts="2026-06-20T19:35:03.035Z" -->
 #### You
 Have you updated the AI instruictions doc to expose the new capabilities to the prompts?
+
+<!-- xgd-turn id="7f5955c4-0dfc-475e-84ea-43010ff43a41-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T19:37:17.520Z" -->
+#### Claude
+Good catch — let me check what's actually documented for the AI.
+
+No — the tool *specs* are exposed via the registry (so Claude can call them), but the how-to doc and system-prompt rules still describe the pre-REQ-14 tool set. Let me check the full doc and update.
+
+You're right — the how-to doc walks through `add_page` but never wires up nav after, and there's no mention of the other new tools. Let me patch it.
+
+Let me also tighten the system-prompt rules section to nudge the AI toward the new tools when appropriate.
+
+Now let me verify tests still pass (the chat.ts change is in the system prompt builder) and commit.
+
+Done. Two follow-up updates committed and recorded against REQ-14:
+
+- **`docs/llm-context/reproducing-a-website.md`** — added §3 step "Wire up the nav" so multi-page converts use `set_nav_entries` (and optionally `set_nav_pattern`) after `add_page`; added §8 listing `duplicate_module`, `set_page_metadata`, the nav tools, `remove_page`, and `reorder_pages` as beyond-convert editing tools.
+- **`apps/control-app/src/chat.ts` system-prompt Rules** — two new lines: prefer `duplicate_module` over rebuilding similar modules, and keep nav consistent when pages change.
+
+Tool *specs* were always visible to Claude via the `OPERATOR_ACTIONS` registry (they're sent in the Anthropic tools array), but the workflow doc and rule list were still pre-REQ-14. Now both reflect the full surface. Commit `c3f5924`, appended to REQ-14's commit list.
 
 <!-- xgd-chat-end -->
