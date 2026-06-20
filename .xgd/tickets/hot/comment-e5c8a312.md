@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-41
 created_by: xgd
 created_at: '2026-06-20T21:13:52.055228+00:00'
-updated_at: '2026-06-20T22:48:27.863312+00:00'
+updated_at: '2026-06-20T22:56:59.286885+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -113,5 +113,11 @@ Free-coded protocol complete. Here's the summary:
 - All `<img>` tags get `loading="lazy"` + `decoding="async"`; no client JS
 
 Pre-existing unrelated working-tree changes (`docs/llm-context/reproducing-a-website.md`, `apps/control-app/.dev.vars`) were left untouched.
+
+<!-- xgd-turn id="5b0e165f-cd2c-4b15-b542-14cd18d92f1a-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T22:56:54.830Z" -->
+#### You
+Can you make sure the AI instructions are updated to include this feature
 
 <!-- xgd-chat-end -->
