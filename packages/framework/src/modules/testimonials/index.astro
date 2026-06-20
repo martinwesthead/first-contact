@@ -1,0 +1,213 @@
+---
+import type { AssetRef } from "@1stcontact/site-schema";
+
+export interface TestimonialItem {
+  quote: string;
+  name: string;
+  title?: string;
+  avatar?: AssetRef;
+}
+
+export interface Props {
+  variant: "single" | "grid";
+  heading?: string;
+  items: TestimonialItem[];
+  dials?: {
+    spacingTop?: string;
+    spacingBottom?: string;
+    surface?: "default" | "subtle" | "inverse" | "accent";
+    align?: "left" | "center";
+  };
+}
+
+const { variant, heading, items, dials = {} } = Astro.props;
+const surface = dials.surface ?? "default";
+const spacingTop = dials.spacingTop ?? "12";
+const spacingBottom = dials.spacingBottom ?? "12";
+const align = dials.align ?? "center";
+const visibleItems = variant === "single" ? items.slice(0, 1) : items;
+---
+
+<section
+  class:list={[
+    "fc-testimonials",
+    `fc-testimonials--variant-${variant}`,
+    `fc-testimonials--surface-${surface}`,
+    `fc-testimonials--align-${align}`,
+    `fc-testimonials--space-top-${spacingTop}`,
+    `fc-testimonials--space-bottom-${spacingBottom}`,
+  ]}
+  data-module="testimonials"
+  data-variant={variant}
+>
+  <div class="fc-testimonials__inner">
+    {heading && <h2 class="fc-testimonials__heading">{heading}</h2>}
+    <ul class="fc-testimonials__list" role="list">
+      {
+        visibleItems.map((item) => (
+          <li class="fc-testimonials__item">
+            <figure class="fc-testimonials__card">
+              <blockquote class="fc-testimonials__quote" set:html={item.quote} />
+              <figcaption class="fc-testimonials__attribution">
+                {item.avatar && (
+                  <img
+                    class="fc-testimonials__avatar"
+                    src={item.avatar.src}
+                    alt={item.avatar.alt}
+                    width="64"
+                    height="64"
+                  />
+                )}
+                <div class="fc-testimonials__attribution-text">
+                  <span class="fc-testimonials__name">{item.name}</span>
+                  {item.title && (
+                    <span class="fc-testimonials__title">{item.title}</span>
+                  )}
+                </div>
+              </figcaption>
+            </figure>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .fc-testimonials {
+    color: var(--color-text);
+    background: var(--color-bg);
+  }
+  .fc-testimonials--surface-subtle { background: var(--color-surface-subtle); }
+  .fc-testimonials--surface-inverse {
+    background: var(--color-surface-inverse);
+    color: var(--color-bg);
+  }
+  .fc-testimonials--surface-accent {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .fc-testimonials--space-top-0 { padding-top: var(--space-0); }
+  .fc-testimonials--space-top-1 { padding-top: var(--space-1); }
+  .fc-testimonials--space-top-2 { padding-top: var(--space-2); }
+  .fc-testimonials--space-top-3 { padding-top: var(--space-3); }
+  .fc-testimonials--space-top-4 { padding-top: var(--space-4); }
+  .fc-testimonials--space-top-6 { padding-top: var(--space-6); }
+  .fc-testimonials--space-top-8 { padding-top: var(--space-8); }
+  .fc-testimonials--space-top-12 { padding-top: var(--space-12); }
+  .fc-testimonials--space-top-16 { padding-top: var(--space-16); }
+  .fc-testimonials--space-top-24 { padding-top: var(--space-24); }
+  .fc-testimonials--space-bottom-0 { padding-bottom: var(--space-0); }
+  .fc-testimonials--space-bottom-1 { padding-bottom: var(--space-1); }
+  .fc-testimonials--space-bottom-2 { padding-bottom: var(--space-2); }
+  .fc-testimonials--space-bottom-3 { padding-bottom: var(--space-3); }
+  .fc-testimonials--space-bottom-4 { padding-bottom: var(--space-4); }
+  .fc-testimonials--space-bottom-6 { padding-bottom: var(--space-6); }
+  .fc-testimonials--space-bottom-8 { padding-bottom: var(--space-8); }
+  .fc-testimonials--space-bottom-12 { padding-bottom: var(--space-12); }
+  .fc-testimonials--space-bottom-16 { padding-bottom: var(--space-16); }
+  .fc-testimonials--space-bottom-24 { padding-bottom: var(--space-24); }
+
+  .fc-testimonials__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .fc-testimonials__heading {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-3xl);
+    line-height: var(--line-height-tight);
+  }
+  .fc-testimonials--align-center .fc-testimonials__heading { text-align: center; }
+  .fc-testimonials--align-left .fc-testimonials__heading { text-align: left; }
+
+  .fc-testimonials__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+  .fc-testimonials--variant-single .fc-testimonials__list {
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+  }
+
+  @media (min-width: 768px) {
+    .fc-testimonials--variant-grid .fc-testimonials__list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .fc-testimonials--variant-grid .fc-testimonials__list {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .fc-testimonials__item { margin: 0; }
+  .fc-testimonials__card {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    height: 100%;
+    padding: var(--space-6);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  .fc-testimonials--align-center .fc-testimonials__card { text-align: center; }
+  .fc-testimonials--align-left .fc-testimonials__card { text-align: left; }
+
+  .fc-testimonials__quote {
+    margin: 0;
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-relaxed);
+    color: inherit;
+    flex: 1;
+  }
+  .fc-testimonials__quote > :first-child { margin-top: 0; }
+  .fc-testimonials__quote > :last-child { margin-bottom: 0; }
+
+  .fc-testimonials__attribution {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .fc-testimonials--align-center .fc-testimonials__attribution {
+    justify-content: center;
+  }
+
+  .fc-testimonials__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .fc-testimonials__attribution-text {
+    display: flex;
+    flex-direction: column;
+    line-height: var(--line-height-tight);
+  }
+  .fc-testimonials__name {
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+  }
+  .fc-testimonials__title {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+  }
+</style>
