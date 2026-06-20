@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-10
 created_by: xgd
 created_at: '2026-06-20T21:18:11.621144+00:00'
-updated_at: '2026-06-20T23:11:37.091850+00:00'
+updated_at: '2026-06-20T23:11:37.503376+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -77,5 +77,26 @@ BUG-10 is closed out cleanly:
 - **fields.commits**: already correctly populated with `65e79b6`
 
 Issue 2 (blank iframe / module-ID mismatch) is parked as documented deferred scope on this ticket. No new ticket created (per session rule). When that work resumes, it can be added as additional commits on this same ticket per the FREE-CODING iteration pattern.
+
+<!-- xgd-turn id="83d75fab-7425-434f-8a5b-781c9b92fa55-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:06:24.784Z" -->
+#### You
+But you haven't moved it to free_coded?
+
+<!-- xgd-turn id="83d75fab-7425-434f-8a5b-781c9b92fa55-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T23:07:34.793Z" -->
+#### Claude
+It is at `free_coded`. Let me re-verify with a fresh read so we're looking at the same thing.
+
+Confirmed — `Status: free_coded`. The `move-to-free-coded` call in the previous turn succeeded (CLI output ended with `Moved to free_coded: bug: BUG-10 (bug-52efd958)`), and a fresh `xgd ticket get` now shows:
+
+- **Status**: `free_coded`
+- **fields.commits**: `['65e79b6…']`
+- **fields.version**: `0.0.14`
+- Body has the appended "Landed (issue 1)" / "Deferred (issue 2)" sections under the `---` divider, original scope preserved above.
+
+Lifecycle for the recorded commit is complete.
 
 <!-- xgd-chat-end -->
