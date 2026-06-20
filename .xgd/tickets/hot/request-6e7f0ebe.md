@@ -6,9 +6,9 @@ title: 'D1 schema: accounts, sites (draft + published), revisions, slug validati
   1stcontact seed'
 created_by: xgd
 created_at: '2026-06-15T22:42:21.300689+00:00'
-updated_at: '2026-06-20T19:43:57.461272+00:00'
+updated_at: '2026-06-20T19:44:13.336226+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_points
 status: free_coded
 fields:
   priority: medium
