@@ -1,0 +1,174 @@
+---
+export interface BannerCta {
+  label: string;
+  href: string;
+}
+
+export interface Props {
+  variant: "simple" | "with-cta";
+  eyebrow?: string;
+  heading: string;
+  subhead?: string;
+  cta?: BannerCta;
+  dials?: {
+    size?: "sm" | "md" | "lg";
+    align?: "left" | "center";
+    spacingTop?: string;
+    spacingBottom?: string;
+    surface?: "default" | "subtle" | "inverse" | "accent";
+  };
+}
+
+const { variant, eyebrow, heading, subhead, cta, dials = {} } = Astro.props;
+
+const size = dials.size ?? "md";
+const align = dials.align ?? "left";
+const surface = dials.surface ?? "default";
+const spacingTop = dials.spacingTop ?? "6";
+const spacingBottom = dials.spacingBottom ?? "6";
+---
+
+<section
+  class:list={[
+    "fc-banner",
+    `fc-banner--variant-${variant}`,
+    `fc-banner--size-${size}`,
+    `fc-banner--align-${align}`,
+    `fc-banner--surface-${surface}`,
+    `fc-banner--space-top-${spacingTop}`,
+    `fc-banner--space-bottom-${spacingBottom}`,
+  ]}
+  data-module="banner"
+  data-variant={variant}
+>
+  <div class="fc-banner__inner">
+    <div class="fc-banner__text">
+      {eyebrow && <p class="fc-banner__eyebrow">{eyebrow}</p>}
+      <h2 class="fc-banner__heading">{heading}</h2>
+      {subhead && <div class="fc-banner__subhead" set:html={subhead} />}
+    </div>
+    {
+      cta && (
+        <a class="fc-banner__cta" href={cta.href}>
+          {cta.label}
+        </a>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .fc-banner {
+    color: var(--color-text);
+    background: var(--color-bg);
+  }
+  .fc-banner--surface-subtle { background: var(--color-surface-subtle); }
+  .fc-banner--surface-inverse {
+    background: var(--color-surface-inverse);
+    color: var(--color-bg);
+  }
+  .fc-banner--surface-accent {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .fc-banner--space-top-0 { padding-top: var(--space-0); }
+  .fc-banner--space-top-1 { padding-top: var(--space-1); }
+  .fc-banner--space-top-2 { padding-top: var(--space-2); }
+  .fc-banner--space-top-3 { padding-top: var(--space-3); }
+  .fc-banner--space-top-4 { padding-top: var(--space-4); }
+  .fc-banner--space-top-6 { padding-top: var(--space-6); }
+  .fc-banner--space-top-8 { padding-top: var(--space-8); }
+  .fc-banner--space-top-12 { padding-top: var(--space-12); }
+  .fc-banner--space-top-16 { padding-top: var(--space-16); }
+  .fc-banner--space-top-24 { padding-top: var(--space-24); }
+  .fc-banner--space-bottom-0 { padding-bottom: var(--space-0); }
+  .fc-banner--space-bottom-1 { padding-bottom: var(--space-1); }
+  .fc-banner--space-bottom-2 { padding-bottom: var(--space-2); }
+  .fc-banner--space-bottom-3 { padding-bottom: var(--space-3); }
+  .fc-banner--space-bottom-4 { padding-bottom: var(--space-4); }
+  .fc-banner--space-bottom-6 { padding-bottom: var(--space-6); }
+  .fc-banner--space-bottom-8 { padding-bottom: var(--space-8); }
+  .fc-banner--space-bottom-12 { padding-bottom: var(--space-12); }
+  .fc-banner--space-bottom-16 { padding-bottom: var(--space-16); }
+  .fc-banner--space-bottom-24 { padding-bottom: var(--space-24); }
+
+  .fc-banner__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  .fc-banner__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .fc-banner--align-center .fc-banner__inner {
+    flex-direction: column;
+    text-align: center;
+  }
+  .fc-banner--align-center .fc-banner__text { align-items: center; }
+
+  .fc-banner__eyebrow {
+    margin: 0;
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+  .fc-banner--surface-inverse .fc-banner__eyebrow,
+  .fc-banner--surface-accent .fc-banner__eyebrow { color: inherit; opacity: 0.85; }
+
+  .fc-banner__heading {
+    margin: 0;
+    font-family: var(--font-family-heading);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+  }
+  .fc-banner--size-sm .fc-banner__heading { font-size: var(--font-size-xl); }
+  .fc-banner--size-md .fc-banner__heading { font-size: var(--font-size-2xl); }
+  .fc-banner--size-lg .fc-banner__heading { font-size: var(--font-size-3xl); }
+
+  .fc-banner__subhead {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+  }
+  .fc-banner__subhead :global(p) { margin: 0; }
+  .fc-banner__subhead :global(a) { color: inherit; text-decoration: underline; }
+  .fc-banner__subhead :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .fc-banner__cta {
+    display: inline-block;
+    flex: 0 0 auto;
+    background: var(--color-primary);
+    color: var(--color-bg);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-family: var(--font-family-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+  }
+  .fc-banner__cta:hover { background: var(--color-accent); }
+  .fc-banner--surface-accent .fc-banner__cta {
+    background: var(--color-bg);
+    color: var(--color-accent);
+  }
+  .fc-banner--surface-inverse .fc-banner__cta {
+    background: var(--color-bg);
+    color: var(--color-surface-inverse);
+  }
+</style>

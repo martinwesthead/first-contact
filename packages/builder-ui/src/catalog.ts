@@ -1,4 +1,5 @@
 import {
+  bannerMeta,
   contactFormMeta,
   footerMeta,
   headerMeta,
@@ -23,6 +24,7 @@ export interface FrameworkCatalog {
 const ALL: readonly ModuleMeta[] = [
   headerMeta,
   heroMeta,
+  bannerMeta,
   footerMeta,
   textBlockMeta,
   servicesGridMeta,

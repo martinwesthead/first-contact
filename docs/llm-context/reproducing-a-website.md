@@ -8,6 +8,14 @@ Call `transcribe_site` with the URL as `digestId`. The first step inside `transc
 
 You do not need to clear or "reset" the draft yourself. Treat the draft as empty after `transcribe_site` returns — every subsequent `state_edit` tool call lands on a fresh scaffold. Never reason about pre-existing modules, theme tokens, or page composition from before the convert.
 
+## 1a. Execute the entire convert flow in a single turn
+
+**Execute the entire convert flow in a single turn, without pausing.** After `transcribe_site` returns, immediately call `read_transcription_digest`, then apply tokens, add pages, and populate all modules — all in the same response. Do not narrate what you are about to do, do not ask for confirmation, and do not stop until the full reconstruction is complete. The operator will see the result when you're done.
+
+The convert flow has no human-in-the-loop steps. There is no point at which the operator confirms, approves, or chooses to continue. A single operator message ("convert this site" / a pasted URL) MUST produce one fully-reconstructed draft in one assistant turn. Pausing mid-flow — including pausing after `transcribe_site` returns to announce what you're about to do next — leaves the draft empty and forces the operator to ask again. That is a failure of this contract.
+
+The transcription digest is ephemeral. If you pause and wait for the operator to reply, the digest may have expired by the time you resume, and you will have to re-run `transcribe_site` from scratch. Do not pause.
+
 ## 2. After `transcribe_site` succeeds
 
 Call `read_transcription_digest({ siteId })` where `siteId` is the operator's account id. This returns the `TranscriptionDigest`: the deterministic distillation of the source site — theme tokens, per-page plan, asset inventory.
@@ -19,9 +27,12 @@ Call `read_transcription_digest({ siteId })` where `siteId` is the operator's ac
 3. **Wire up the nav.** If you added more than one page, call `set_nav_entries` with one `{ label, target: { kind: 'page', pageId } }` entry per page so the new pages are reachable. Use the page's stable `id` (returned by `get_site_definition`) as `pageId`, not the slug. For single-page sites, skip this step — the framework renders in-page anchors automatically. If the source's nav pattern is obviously different from the framework default (e.g. a hamburger menu rather than top tabs), call `set_nav_pattern` first.
 4. **Walk each page's modules.** For each `perPagePlan` entry, iterate its `suggestedModuleTypes` and call `add_module` to insert each one. Then `set_module_content` for every module:
    - **Structural text fields** (headings, button labels, navigation labels): pull from `extractedContent` (headings, form-field labels). Match by visual proximity — the page's first heading is usually the hero heading. Pass the text as an inline string.
-   - **Body markdown fields** (any module field whose meta declares `type: 'markdown'` — e.g. `text-block.body`, `hero.subhead`, `services-grid.items[].body`): use what the digest already captured for you. **Do not rewrite, paraphrase, or "improve" the source copy** — pass it through verbatim. See section 5.
+   - **Body markdown fields** (any module field whose meta declares `type: 'markdown'` — e.g. `text-block.body`, `hero.subhead`, `banner.subhead`, `services-grid.items[].body`): use what the digest already captured for you. **Do not rewrite, paraphrase, or "improve" the source copy** — pass it through verbatim. See section 5.
    - Image fields take the precomputed `assetRef` **object** from the matching `digest.assetInventory[]` entry. See section 4 for the exact shape. Match assets to modules by visual proximity (largest image → hero; sequential images → `image-gallery`; small square images → service icons).
    - `image-gallery` populates `items[]` one entry per asset, where each entry is `{ image: <assetRef>, caption?: <string> }`. Pull captions from `extractedContent` if present (figcaption-adjacent text); otherwise leave `caption` unset rather than fabricating one.
+   - `services-grid` populates `items[]` with `{ heading, body, image?, cta? }`. The optional `image` is an `assetRef` object (no string fallback — drop the field if no asset matches). Set the section-level `imageStyle` dial to match how images appear in the source: `icon` (tiny pictogram next to the title), `cover` (full-bleed top of the card), or `thumb` (small square thumbnail). Use the `one-col` variant when the source uses a single full-width feature callout rather than a grid.
+   - `banner` is a full-width strip for announcements, calls-to-action, or section dividers — short standalone copy with no body paragraph. Fields: `eyebrow?`, `heading`, `subhead?` (markdown), `cta?` (`{ label, href }`). Use the `with-cta` variant when the source has a banner-shaped call-to-action with a button; use `simple` when it's just an announcement / divider strip with no action. Don't use `banner` for body copy — that's `text-block`'s job.
+   - `logo-strip` is a horizontal row of small images with optional labels and links. Fields: `heading?`, `items[]` (each `{ image: <assetRef>, label?, href? }`). Two variants: `logos` for image-dominant strips (trust badges, partner logos, "as seen in" — labels become alt text only, not rendered visually) and `features` for icon+label highlights (smaller icons, label rendered beneath). Set the `columns` dial (`3`/`4`/`5`/`6`) to match the source's desktop column count; mobile/tablet degrade automatically. Use this when the source has a row of small same-size logos or icons — not for individual hero or service images.
    - Skip any module whose content/assets can't be matched. Don't fabricate content.
 
 ## 4. Asset reference rules
@@ -155,6 +166,8 @@ Rules:
 ## 6. Fallback policy
 
 If `read_transcription_digest` returns `digest_not_found`, the convert hasn't completed successfully. Apologise to the operator, ask them to paste the URL again, and re-run `transcribe_site`.
+
+If `transcribe_site` or `read_transcription_digest` fails mid-flow, report the failure immediately and ask the operator to paste the URL again. Do not leave the draft in a partially-built state without explaining what happened. The operator should never see a half-populated site with no explanation — either the convert completes end-to-end, or you tell them clearly what went wrong and what to do next.
 
 ## 7. Tone
 

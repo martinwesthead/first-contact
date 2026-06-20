@@ -1,4 +1,5 @@
 import type { AssetRef, ModuleInstance } from "@1stcontact/site-schema";
+import { meta as bannerMeta } from "../modules/banner/meta.js";
 import { meta as headerMeta } from "../modules/header/meta.js";
 import { meta as heroMeta } from "../modules/hero/meta.js";
 import { meta as footerMeta } from "../modules/footer/meta.js";
@@ -14,6 +15,7 @@ import type {
 const METAS_BY_ID: Record<string, ModuleMeta> = {
   [headerMeta.id]: headerMeta,
   [heroMeta.id]: heroMeta,
+  [bannerMeta.id]: bannerMeta,
   [footerMeta.id]: footerMeta,
   [textBlockMeta.id]: textBlockMeta,
   [servicesGridMeta.id]: servicesGridMeta,
