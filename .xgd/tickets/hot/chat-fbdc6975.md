@@ -5,7 +5,7 @@ type: chat
 title: REQ ordering
 created_by: xgd
 created_at: '2026-06-18T21:52:00.117856+00:00'
-updated_at: '2026-06-20T00:33:40.072074+00:00'
+updated_at: '2026-06-20T18:15:02.694462+00:00'
 completed_at: null
 last_field_updated: body
 status: open
@@ -1086,6 +1086,42 @@ Done.
 **COMMENT-113** carries the design transcript: your discomfort about text location → trace to inline strings in `site.json` → 1/2/3 options → hybrid → union confirmation → capture-as-markdown → scope.
 
 Ready for the next issue when you are.
+
+
+<!-- xgd-turn id="475b33e6-fad8-43a4-b3c1-0764bfec97fc" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T18:15:02.635Z" -->
+#### You
+Just to be clear on this the md-> HTML is triggered at build time, not at render time - the HTML is built (jamstack) and served right?
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T18:15:02.635Z" -->
+#### Claude
+Yes, exactly. Two contexts, same renderer code, different invocation times:
+
+| Context | When `renderSiteToHtml` runs | What's served |
+|---|---|---|
+| **Production (public-site)** | At **build time** in `tools/generate` (Jamstack) | Static HTML files (Astro output). Markdown is converted, R2 text assets are fetched and baked in. Zero runtime markdown work; zero runtime R2 reads from the public site. |
+| **Builder preview iframe** | Live in the browser each time the in-memory store changes | HTML re-synthesized on every edit. Markdown is converted on the fly; text AssetRefs are fetched from `/api/assets/get/<key>` via the resolver. This path exists because the preview needs to reflect tool-call edits instantly without a build step. |
+
+So the public-facing experience is Jamstack from start to finish: paste URL → convert flow runs → user iterates in the builder until happy → publish → `tools/generate` builds static HTML → public-site serves static files. Visitors never hit a markdown converter, never hit R2 for copy.
+
+I should tighten REQ-33's wording — the body says "renderer does markdown-to-HTML at render time," which is technically accurate for both contexts but reads ambiguously. Let me fix it to make the Jamstack split explicit so future reviewers don't misread it as "runtime conversion in production."
+
+Body updated and Jamstack split is now explicit in REQ-33's Decisions section. Also appending this exchange to the design transcript so the build-time-vs-render-time clarification is preserved with the ticket.
+
+Done.
+
+**REQ-33 body** now has the Jamstack split explicit:
+
+> - **Production (Jamstack):** `tools/generate` invokes `renderSiteToHtml` at **build time**. Markdown → HTML conversion and R2 text-asset resolution happen during build. Static HTML files served by the public-site Worker. Visitors never hit a markdown converter, never hit R2 for copy.
+> - **Builder preview:** the builder UI invokes `renderSiteToHtml` in the **browser** each time the in-memory store changes. Markdown → HTML happens client-side per edit; text AssetRefs are fetched live via `/api/assets/get/<key>`.
+> - Same renderer code in both — only the invocation timing and the resolver implementation differ.
+
+And the Decisions section's resolver bullet now spells out: production's resolver does sync R2 read at build time → markdown→HTML → inlined → static HTML; preview's resolver does live fetch → markdown→HTML → injected into iframe.
+
+The clarification turn is also appended to COMMENT-113 so future ticket readers see your "build time not render time" question and the explicit answer alongside the rest of the design thread.
+
+Ready for the next one.
 
 
 <!-- xgd-chat-end -->
