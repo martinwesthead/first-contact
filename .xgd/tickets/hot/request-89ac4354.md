@@ -5,14 +5,18 @@ type: request
 title: Image Sizing & Controls
 created_by: xgd
 created_at: '2026-06-20T22:50:00.074796+00:00'
-updated_at: '2026-06-20T23:05:20.932961+00:00'
+updated_at: '2026-06-20T23:20:17.297593+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - 394bbfbe86a48ea271b85a3ccb45af3bea1fa5ac
+  - c91aabdab780c1a5645656313ce8a534e5bdfd50
+  version: 0.0.24
 ---
 
 **Type:** Framework + Instructions
