@@ -8,10 +8,14 @@ import Hero from "./hero/index.astro";
 import { meta as heroMeta } from "./hero/meta.js";
 import ImageGallery from "./image-gallery/index.astro";
 import { meta as imageGalleryMeta } from "./image-gallery/meta.js";
+import LogoStrip from "./logo-strip/index.astro";
+import { meta as logoStripMeta } from "./logo-strip/meta.js";
 import ServicesGrid from "./services-grid/index.astro";
 import { meta as servicesGridMeta } from "./services-grid/meta.js";
 import SplitSection from "./split-section/index.astro";
 import { meta as splitSectionMeta } from "./split-section/meta.js";
+import Testimonials from "./testimonials/index.astro";
+import { meta as testimonialsMeta } from "./testimonials/meta.js";
 import TextBlock from "./text-block/index.astro";
 import { meta as textBlockMeta } from "./text-block/meta.js";
 import type { ModuleEntry } from "./types.js";
@@ -46,6 +50,12 @@ const REGISTRY: Record<string, Record<number, ModuleEntry>> = {
   },
   [imageGalleryMeta.id]: {
     [imageGalleryMeta.version]: { meta: imageGalleryMeta, Component: ImageGallery },
+  },
+  [logoStripMeta.id]: {
+    [logoStripMeta.version]: { meta: logoStripMeta, Component: LogoStrip },
+  },
+  [testimonialsMeta.id]: {
+    [testimonialsMeta.version]: { meta: testimonialsMeta, Component: Testimonials },
   },
   [contactFormMeta.id]: {
     [contactFormMeta.version]: { meta: contactFormMeta, Component: ContactForm },
