@@ -5,14 +5,15 @@ type: request
 title: 'Dev tool: AI can run xgd ticket create/list/get in this project'
 created_by: xgd
 created_at: '2026-06-20T22:48:10.354985+00:00'
-updated_at: '2026-06-20T23:16:17.567553+00:00'
+updated_at: '2026-06-20T23:26:24.543260+00:00'
 completed_at: null
-last_field_updated: title
+last_field_updated: venv_path
 status: draft
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  venv_path: /Users/martin/Projects/xgendev-main/.venv-working/bin/xgd
 ---
 
 ## Intent
