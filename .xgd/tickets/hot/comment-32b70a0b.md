@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-45
 created_by: xgd
 created_at: '2026-06-20T22:33:51.414538+00:00'
-updated_at: '2026-06-20T22:34:11.578279+00:00'
+updated_at: '2026-06-20T23:11:36.957419+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -81,5 +81,11 @@ Both updates landed in `docs/llm-context/reproducing-a-website.md`:
 This is a documentation/configuration change (the file is loaded into the system prompt at runtime, not compiled into code), so no scope ticket or UAT is required per the free-coding rules.
 
 The next convert attempt should run end-to-end without the stop-and-confirm gap that hit you this time.
+
+<!-- xgd-turn id="cb420c19-28b0-483f-bbca-85792002c065-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T23:00:47.328Z" -->
+#### You
+Can you update the ticket to say what was don and move it to legacy_done
 
 <!-- xgd-chat-end -->
