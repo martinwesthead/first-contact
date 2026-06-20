@@ -1,3 +1,5 @@
+import Banner from "./banner/index.astro";
+import { meta as bannerMeta } from "./banner/meta.js";
 import ContactForm from "./contact-form/index.astro";
 import { meta as contactFormMeta } from "./contact-form/meta.js";
 import Footer from "./footer/index.astro";
@@ -38,6 +40,7 @@ export class CatalogMissError extends Error {
 const REGISTRY: Record<string, Record<number, ModuleEntry>> = {
   [headerMeta.id]: { [headerMeta.version]: { meta: headerMeta, Component: Header } },
   [heroMeta.id]: { [heroMeta.version]: { meta: heroMeta, Component: Hero } },
+  [bannerMeta.id]: { [bannerMeta.version]: { meta: bannerMeta, Component: Banner } },
   [footerMeta.id]: { [footerMeta.version]: { meta: footerMeta, Component: Footer } },
   [textBlockMeta.id]: {
     [textBlockMeta.version]: { meta: textBlockMeta, Component: TextBlock },
