@@ -11,6 +11,8 @@ import {
 import type {
   BrowserDriver,
   ComputedBackgroundAsset,
+  ComputedBoundingBoxes,
+  ComputedFontAsset,
   ComputedStyles,
   DriverResult,
   Viewport,
@@ -38,6 +40,10 @@ export interface FakeDriverConfig {
   computedBackgroundAssets: readonly ComputedBackgroundAsset[];
   screenshotPngs: Partial<Record<ViewportName, Uint8Array>>;
   durationSeconds?: number;
+  /** REQ-49 — optional rendered-time font URLs the fake driver returns. */
+  computedFontAssets?: readonly ComputedFontAsset[];
+  /** REQ-49 — optional bounding boxes for hero/nav/sections/cards. */
+  boundingBoxes?: ComputedBoundingBoxes;
 }
 
 export function makeFakeDriver(config: FakeDriverConfig): BrowserDriver {
@@ -55,6 +61,10 @@ export function makeFakeDriver(config: FakeDriverConfig): BrowserDriver {
         html: config.html,
         computedStyles: config.computedStyles,
         computedBackgroundAssets: [...config.computedBackgroundAssets],
+        computedFontAssets: config.computedFontAssets
+          ? [...config.computedFontAssets]
+          : [],
+        boundingBoxes: config.boundingBoxes ?? { sections: [], cards: [] },
         screenshots,
         durationSeconds: config.durationSeconds ?? 4,
       };

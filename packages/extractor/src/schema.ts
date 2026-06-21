@@ -54,10 +54,34 @@ export const LayoutDensity = z.union([
 ]);
 export type LayoutDensity = z.infer<typeof LayoutDensity>;
 
+export const BoundingBox = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+});
+export type BoundingBox = z.infer<typeof BoundingBox>;
+
+export const LayoutBoundingBoxes = z.object({
+  hero: BoundingBox.optional(),
+  nav: BoundingBox.optional(),
+  sections: z.array(BoundingBox),
+  cards: z.array(BoundingBox),
+});
+export type LayoutBoundingBoxes = z.infer<typeof LayoutBoundingBoxes>;
+
 export const LayoutSignals = z.object({
   maxContentWidth: NumberOrNd,
   bias: LayoutBias,
   density: LayoutDensity,
+  /**
+   * REQ-49 — viewport bounding boxes for key page regions, captured by the
+   * Layer 2 rendered fetch only. Static fetch leaves this field unset; the
+   * merge step populates it when the puppeteer driver returns layout data.
+   * `sections` and `cards` always lists (possibly empty); `hero` / `nav`
+   * undefined when not detected.
+   */
+  boundingBoxes: LayoutBoundingBoxes.optional(),
 });
 export type LayoutSignals = z.infer<typeof LayoutSignals>;
 
@@ -100,7 +124,7 @@ export const AssetClassification = z.enum([
 ]);
 export type AssetClassification = z.infer<typeof AssetClassification>;
 
-export const AssetKind = z.enum(["img", "background", "video"]);
+export const AssetKind = z.enum(["img", "background", "video", "font"]);
 export type AssetKind = z.infer<typeof AssetKind>;
 
 export const AssetRecord = z.object({
