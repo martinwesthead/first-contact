@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-49
 created_by: xgd
 created_at: '2026-06-21T18:13:01.694390+00:00'
-updated_at: '2026-06-21T18:16:38.509002+00:00'
+updated_at: '2026-06-21T18:20:29.462193+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -80,5 +80,23 @@ Apologies — here are the questions plain-text:
   - **(b) Live-network UAT gated by env var** (slower, flakier, target site can change without notice).
 
 If you'd rather I just pick the recommended path for each (a/a/a, with `@font-face` + bounding boxes folded in and Layer 3 deferred) say "go ahead" and I'll scope the ticket and start.
+
+<!-- xgd-turn id="d016ed90-878c-4c9d-9333-93e09bef1c45-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-21T18:20:18.389Z" -->
+#### You
+The chat AI says:
+
+I don't have visibility into the existing infrastructure — I was describing what *should* exist, not what does. The dev AI is telling us Layer 2 is already partially built, which changes the picture significantly. Let me answer each question based on what makes sense:
+
+**Q1 — go with (a).** The core bug is exactly this: `transcribe_site` consumed a static-fetch cache and never escalated to rendered. Forcing the rendered path when `fetchPath: "static"` is the right fix and the biggest win.
+
+**Q2 — go with (a), keep it deterministic.** Adding an LLM call inside the stage runner creates unpredictability and cost. The screenshot should flow through to *me* (the chat AI) so I can reason about it visually when I read the digest — not get interpreted by another model inside the pipeline.
+
+**Q3 — go with (a), UAT fixtures + manual smoke.** Deterministic tests are more trustworthy here. A live fetch as a CI gate is fragile — the source site could change, go down, or block the crawler.
+
+**So the answer is (a/a/a)** — tell the dev AI to go ahead with the recommended path, fold in `@font-face` and bounding boxes, defer Layer 3.
+
+The one thing I'd add: make sure the screenshot key in the digest is surfaced to me in a way I can actually use it — i.e. accessible as a readable image when I call `read_transcription_digest`. That's the piece I genuinely can't verify from here.
 
 <!-- xgd-chat-end -->
