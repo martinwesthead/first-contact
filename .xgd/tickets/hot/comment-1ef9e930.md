@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-49
 created_by: xgd
 created_at: '2026-06-21T18:13:01.694390+00:00'
-updated_at: '2026-06-21T18:16:25.377872+00:00'
+updated_at: '2026-06-21T18:16:38.509002+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -55,5 +55,30 @@ The user declined the question prompt. I'll wait for direction on which gaps to 
 <!-- xgd-chat role="user" ts="2026-06-21T18:16:21.696Z" -->
 #### You
 This UI does not support question mode can you ask your questions directly please?
+
+<!-- xgd-turn id="7661da56-e0bf-47d2-8d08-addd77b6a4d8-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-21T18:16:38.508Z" -->
+#### Claude
+Apologies — here are the questions plain-text:
+
+**Q1 — Scope.** Layer 2 infra (puppeteer driver, screenshots, computed styles, bg-image merge, escalation, vision commentary in `analyze_page`) is already in place. Which of these gaps do you want REQ-49 to close? Pick any combination:
+
+  - **(a) Force rendered in `transcribe_site`.** Today `transcribe_site` consumes whatever `analyze_page` cached; if escalation didn't fire, the digest has no screenshot/computed signals. Fix: when the cached digest has `fetchPath: "static"`, re-run the rendered path and re-merge before building the transcription digest. *(Biggest behavioural lift; recommended.)*
+  - **(b) `@font-face` URL capture.** Extend the in-page eval to capture font file URLs (Google Fonts hrefs, self-hosted `.woff2`) via `document.fonts` + stylesheet `@font-face` rules. Adds to asset inventory as `kind: "font"`.
+  - **(c) Bounding boxes for hero/nav/sections/cards.** Extend the eval to record layout structure the AI can reason about.
+  - **(d) Layer 3 raw CSS source fetch.** Heavier lift, ticket itself flags as "on demand / when Layer 2 confidence is low" — recommend defer to a follow-up unless you want it bundled.
+
+**Q2 — AI vision in `transcribe_site`.** `analyze_page` already pipes the desktop screenshot through Haiku for commentary, and the digest the chat-driving AI consumes downstream already carries the screenshot key. Do you want:
+
+  - **(a) Keep `transcribe_site` deterministic** (recommended — no new LLM call inside the stage runner), OR
+  - **(b) Add a new vision pass inside `transcribe_site`** that interprets the screenshot into structured module hints before `perPagePlan` is built?
+
+**Q3 — Validation of "joyfulculinarycreations.com produces a recognisable result".** This needs a live fetch. Two options:
+
+  - **(a) UAT fixtures + manual smoke** (recommended — deterministic, follows the existing pattern in `tests/_helpers_REQ-21_analyze_page.ts`; you eyeball the live site separately), OR
+  - **(b) Live-network UAT gated by env var** (slower, flakier, target site can change without notice).
+
+If you'd rather I just pick the recommended path for each (a/a/a, with `@font-face` + bounding boxes folded in and Layer 3 deferred) say "go ahead" and I'll scope the ticket and start.
 
 <!-- xgd-chat-end -->
