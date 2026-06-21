@@ -6,9 +6,9 @@ title: Enhance transcription pipeline with headless browser rendering and struct
   digest
 created_by: xgd
 created_at: '2026-06-21T00:29:25.050546+00:00'
-updated_at: '2026-06-21T18:22:06.292442+00:00'
+updated_at: '2026-06-21T18:22:06.387565+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: ready_to_implement
 fields:
   auto_merge_back: true
@@ -99,3 +99,42 @@ Enhancement
 ---
 
 (new ticket)
+
+
+---
+
+## Scope refinement (2026-06-21)
+
+Audit of `xgd-working` shows Layer 2 substrate already exists (REQ-21/REQ-22):
+- `renderedFetch` + `BrowserDriver` interface in `packages/extractor/src/rendered-fetch.ts`
+- `makePuppeteerDriver` (cloudflare-puppeteer) in `apps/control-app/src/operator/browser-driver.ts`
+- Per-viewport screenshots → R2 via `uploadScreenshots`
+- Computed styles for body/h1/h2/h3/primary-bg merged into the digest
+- Computed `background-image` URLs resolved + added to the asset inventory
+- `analyze_page` already feeds the desktop screenshot to Haiku for vision commentary
+
+The real gap behind the joyfulculinarycreations.com regression is that `transcribe_site` *consumes* whatever `analyze_page` cached — if the static-only escalation decision said "sufficient", the cached digest has no screenshot, no computed styles, and no background-image inventory, and the transcription proceeds blind.
+
+### In scope (this ticket)
+
+1. **Force rendered in `transcribe_site`** — when the cached `ReferenceDigest` has `fetchPath: "static"`, run the rendered path (re-using `renderedFetch` + existing driver/budget/upload helpers), merge computed signals, and persist the upgraded digest back to the cache before building the `TranscriptionDigest`.
+2. **`@font-face` URL capture** — extend the in-page eval to read `document.fonts` (and inline `@font-face` rules in `document.styleSheets`) for font-file URLs. Surface as `kind: "font"` `AssetRecord` entries so the existing mirror pipeline picks them up.
+3. **Layout bounding boxes** — extend the in-page eval to record bounding boxes for hero, nav, sections, and cards. Surface on `Signals.layout` as a new `boundingBoxes` sub-object.
+4. **Expose `screenshotUrl` in `TranscriptionDigest`** — add a `screenshotUrl` field per `perPagePlan` entry (just `/assets/${screenshotKey}` — already-served path) so the chat AI reading `read_transcription_digest` can render the screenshot via Anthropic vision without guessing the URL convention.
+
+### Deferred (follow-up ticket)
+
+- **Layer 3 raw CSS source access.** Ticket itself flags as "on demand / when Layer 2 confidence is low" — once `@font-face` is captured via Layer 2 (`document.fonts`), the marginal value is low.
+
+### Out of scope
+
+- New LLM call inside `transcribe_site` — keep the stage runner deterministic. The chat AI already reads the screenshot via the digest (Anthropic vision), and `analyze_page` still runs the existing vision-commentary pass.
+
+### Acceptance (UATs)
+
+- `test_UAT_FC_REQ-49_transcribe_site_forces_rendered.test.ts` — given a cached digest with `fetchPath: "static"`, `transcribe_site` runs the rendered path, the upgraded digest is written back to cache, and the resulting `TranscriptionDigest` carries the desktop screenshot key.
+- `test_UAT_FC_REQ-49_font_face_urls_captured.test.ts` — given a page with `document.fonts` entries, the resulting digest's `assetInventory` contains `kind: "font"` records.
+- `test_UAT_FC_REQ-49_bounding_boxes_captured.test.ts` — given a page with hero/nav/section elements, the resulting digest's `signals.layout.boundingBoxes` exposes their rects.
+- `test_UAT_FC_REQ-49_screenshot_url_in_digest.test.ts` — `perPagePlan[i].screenshotUrl === "/assets/" + perPagePlan[i].screenshotKey` whenever a screenshot exists.
+
+Live `joyfulculinarycreations.com` reproduction is operator-driven (manual smoke), not a CI gate.
