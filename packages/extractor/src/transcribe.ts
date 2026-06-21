@@ -177,6 +177,14 @@ export interface TranscriptionDigestPerPage {
   readonly slug: string;
   readonly title: string;
   readonly screenshotKey: string;
+  /**
+   * REQ-49 — stable URL the chat AI can pass to Anthropic vision (or just
+   * render in the operator UI) without having to know the `/assets/`
+   * routing convention. Empty string when no desktop screenshot was
+   * captured for this page (Layer 2 not run / driver dropped the
+   * viewport).
+   */
+  readonly screenshotUrl: string;
   readonly extractedContent: ExtractedBlock[];
   readonly suggestedModuleTypes: string[];
   /**
@@ -206,7 +214,7 @@ export interface TranscriptionDigestAssetRef {
 export interface TranscriptionDigestAssetEntry {
   readonly sourceUrl: string;
   readonly r2Key: string;
-  readonly kind: "img" | "background" | "video";
+  readonly kind: "img" | "background" | "video" | "font";
   readonly altText?: string;
   readonly dimensions?: { readonly width: number; readonly height: number };
   /**
@@ -333,11 +341,13 @@ export function buildTranscriptionDigest(
   const pageDigests = [args.homeDigest, ...args.additionalPageDigests];
   const perPagePlan: TranscriptionDigestPerPage[] = pageDigests.map((d) => {
     const copyEntry = args.pageCopyByUrl?.get(d.sourceUrl);
+    const screenshotKey = d.screenshotKeys.desktop ?? "";
     const base: TranscriptionDigestPerPage = {
       url: d.sourceUrl,
       slug: slugFromUrl(d.sourceUrl),
       title: titleFromDigest(d),
-      screenshotKey: d.screenshotKeys.desktop ?? "",
+      screenshotKey,
+      screenshotUrl: screenshotKey ? `/assets/${screenshotKey}` : "",
       extractedContent: extractPageContent(d),
       suggestedModuleTypes: inferSuggestedModuleTypes(d),
     };
