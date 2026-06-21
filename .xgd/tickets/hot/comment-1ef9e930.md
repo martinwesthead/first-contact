@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-49
 created_by: xgd
 created_at: '2026-06-21T18:13:01.694390+00:00'
-updated_at: '2026-06-21T18:20:29.462193+00:00'
+updated_at: '2026-06-21T18:34:41.359529+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -98,5 +98,73 @@ I don't have visibility into the existing infrastructure — I was describing wh
 **So the answer is (a/a/a)** — tell the dev AI to go ahead with the recommended path, fold in `@font-face` and bounding boxes, defer Layer 3.
 
 The one thing I'd add: make sure the screenshot key in the digest is surfaced to me in a way I can actually use it — i.e. accessible as a readable image when I call `read_transcription_digest`. That's the piece I genuinely can't verify from here.
+
+<!-- xgd-turn id="d016ed90-878c-4c9d-9333-93e09bef1c45-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-21T18:34:40.347Z" -->
+#### Claude
+Direction received: a/a/a + `@font-face` + bounding boxes, Layer 3 deferred, plus ensure the screenshot key is reachable via `read_transcription_digest`. Let me check that last point and then scope the ticket.
+
+Good — the digest already exposes `perPagePlan[i].screenshotKey`. The chat AI ask is to ensure it's actually loadable. Let me check the assets routing to confirm `/assets/<key>` works for screenshots too.
+
+Let me set up tasks and load the schemas I need.
+
+Let me append a scope refinement to the ticket without replacing the existing body, then set status to scoped.
+
+I see there's already an `external-stylesheets.ts` exporting font/CSS handlers. Let me check what's already there.
+
+Now I have a clearer plan. Let me make the schema/extractor changes first.
+
+Now I'll start editing. First, the schema additions for `font` kind and bounding boxes.
+
+Now extend `rendered-fetch.ts` to capture fonts and bounding boxes via the in-page eval and add types.
+
+Tasks are tracked. Continuing — now extend the in-page eval script.
+
+Now extend `merge.ts` to fold computed fonts + bounding boxes into the digest signals.
+
+Now update the puppeteer driver to plumb the new fields through.
+
+Now the major change: force rendered path in `transcribe_site` when cached digests are static-only.
+
+Now add the upgrade helper and wire it into the handler.
+
+Now add the upgrade helper at the bottom of the file.
+
+Let me look at existing UAT patterns to follow them faithfully.
+
+The existing `makeFakeDriver` helper won't compile against the new required `DriverResult` fields. Let me update it.
+
+Let me extend the transcribe harness so I can install a driver and provide the BROWSER binding.
+
+Let me reconsider — the default of providing `BROWSER` might break existing tests that don't expect upgrade attempts.
+
+Now write the four UATs.
+
+Extractor compiles. Let me run the control-app + full test pass.
+
+Those look like pre-existing DOM-types errors in builder-ui (not touched by my changes). Let me verify by running tests directly.
+
+All 5 REQ-49 UATs pass. Let me run the full test suite to make sure nothing regressed.
+
+All 640 tests pass. Now let me run the project's quality check and lint.
+
+Quality run is green. Let me commit and finalize the ticket.
+
+REQ-49 is shipped — status `free_coded`, version `0.0.29`, both commits attached.
+
+**Summary of what landed (commits `7669308` + `c76c786`):**
+
+1. **`transcribe_site` now forces the rendered path.** When a cached digest has `fetchPath: "static"`, it runs `renderedFetch`, merges computed signals (typography, palette, background images), uploads screenshots to R2, and writes the upgraded digest back to `FETCH_CACHE_KV`. Runs for the home digest and every same-origin nav-linked page; gated by `BROWSER_BUDGET_KV`; best-effort fallback to the static digest if BROWSER/budget/driver fails.
+
+2. **`@font-face` URL capture.** Extended `COMPUTED_EXTRACTION_SCRIPT` to walk `document.styleSheets` (CSSFontFaceRule) plus `document.fonts` (FontFace.src). Surfaced as `kind: "font"` `AssetRecord` entries with family on `alt`.
+
+3. **Layout bounding boxes** for hero / nav / sections / cards captured at render time and hung off `signals.layout.boundingBoxes`. Existing layout fields preserved.
+
+4. **`screenshotUrl`** added to `TranscriptionDigestPerPage` as `/assets/<screenshotKey>` so the chat AI reading `read_transcription_digest` has a stable URL it can pass to Anthropic vision without reverse-engineering routing conventions.
+
+5. **4 UATs** under `test_UAT_FC_REQ-49_*` covering each acceptance criterion; all 640 tests in the suite still pass; `xgd quality run` is green.
+
+**Deferred:** Layer 3 raw CSS source access (`@font-face` is already captured via Layer 2 `document.fonts`); live joyfulculinarycreations.com smoke test (operator-driven, not a CI gate).
 
 <!-- xgd-chat-end -->
