@@ -3,6 +3,9 @@ import {
   resolveUrl,
   type BrowserDriver,
   type ComputedBackgroundAsset,
+  type ComputedBoundingBox,
+  type ComputedBoundingBoxes,
+  type ComputedFontAsset,
   type ComputedStyles,
   type DriverResult,
   type Viewport,
@@ -30,6 +33,13 @@ export function resolveDriverFactory(): DriverFactory {
 /** Network-idle wait — 10s hard cap per REQ-22. */
 const NETWORKIDLE_TIMEOUT_MS = 10_000;
 
+interface InPageBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface InPageResult {
   body: { family: string; size: string; weight: string; backgroundColor: string; backgroundImage: string };
   h1: { family: string; size: string; weight: string; backgroundColor: string; backgroundImage: string };
@@ -37,6 +47,13 @@ interface InPageResult {
   h3: { family: string; size: string; weight: string; backgroundColor: string; backgroundImage: string };
   primaryBackgroundColor: string;
   bgAssets: Array<{ url: string; selector: string }>;
+  fontAssets: Array<{ url: string; family: string }>;
+  boundingBoxes: {
+    hero: InPageBox | null;
+    nav: InPageBox | null;
+    sections: InPageBox[];
+    cards: InPageBox[];
+  };
 }
 
 interface PuppeteerPage {
@@ -125,6 +142,8 @@ export function makePuppeteerDriver(binding: unknown): BrowserDriver {
           html: lastHtml,
           computedStyles: shapeComputed(computed),
           computedBackgroundAssets: resolveAssets(computed.bgAssets, lastFinalUrl),
+          computedFontAssets: resolveFontAssets(computed.fontAssets, lastFinalUrl),
+          boundingBoxes: shapeBoundingBoxes(computed.boundingBoxes),
           screenshots,
           durationSeconds,
         };
@@ -148,6 +167,8 @@ function emptyInPage(): InPageResult {
     h3: empty,
     primaryBackgroundColor: "",
     bgAssets: [],
+    fontAssets: [],
+    boundingBoxes: { hero: null, nav: null, sections: [], cards: [] },
   };
 }
 
@@ -173,4 +194,26 @@ function resolveAssets(
   return raw
     .filter((a) => a.url.length > 0)
     .map((a) => ({ url: resolveUrl(a.url, baseUrl), selector: a.selector }));
+}
+
+function resolveFontAssets(
+  raw: ReadonlyArray<{ url: string; family: string }>,
+  baseUrl: string,
+): ComputedFontAsset[] {
+  return raw
+    .filter((a) => a.url.length > 0)
+    .map((a) => ({ url: resolveUrl(a.url, baseUrl), family: a.family }));
+}
+
+function shapeBoundingBoxes(raw: InPageResult["boundingBoxes"]): ComputedBoundingBoxes {
+  return {
+    sections: raw.sections.map(toBox),
+    cards: raw.cards.map(toBox),
+    ...(raw.hero ? { hero: toBox(raw.hero) } : {}),
+    ...(raw.nav ? { nav: toBox(raw.nav) } : {}),
+  };
+}
+
+function toBox(b: { x: number; y: number; width: number; height: number }): ComputedBoundingBox {
+  return { x: b.x, y: b.y, width: b.width, height: b.height };
 }

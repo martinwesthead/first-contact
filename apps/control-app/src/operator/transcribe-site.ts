@@ -5,22 +5,34 @@ import {
   collectReferencedAssetUrls,
   deriveThemeTokens,
   htmlToMarkdown,
+  mergeComputedSignals,
   mirrorAssetBatchToR2,
+  renderedFetch,
   rewriteMarkdownImageRefs,
   titleFromDigest,
+  uploadScreenshots,
+  type DriverResult,
   type MirrorAssetResult,
   type PageCopyResult,
   type ReferenceDigest,
+  type ScreenshotKeys,
 } from "@1stcontact/extractor";
 import { buildEmptyScaffold } from "@1stcontact/builder-ui";
-import { safeFetch } from "@1stcontact/web-fetch-safety";
-import type { ActionHandler, ActionResult } from "./registry.js";
+import {
+  chargeBrowserBudget,
+  checkBrowserBudget,
+  safeFetch,
+} from "@1stcontact/web-fetch-safety";
+import { resolveDriverFactory } from "./browser-driver.js";
+import type { ActionContext, ActionHandler, ActionResult } from "./registry.js";
 
 export interface TranscribeSiteEnv {
   readonly FETCH_CACHE_KV?: KVNamespace;
   readonly FETCH_ROBOTS_KV?: KVNamespace;
   readonly FETCH_RATE_KV?: KVNamespace;
+  readonly BROWSER_BUDGET_KV?: KVNamespace;
   readonly ASSETS_BUCKET?: R2Bucket;
+  readonly BROWSER?: unknown;
 }
 
 interface CacheLookup {
@@ -55,15 +67,16 @@ function hexOf(buf: ArrayBuffer): string {
 
 /**
  * Resolve any same-origin nav-link URLs that already have cached digests and
- * return their ReferenceDigests. Cross-origin links and unanalyzed pages are
- * silently skipped — the AI can call analyze_page for them and re-invoke if
- * it wants them included.
+ * return their CacheLookup pairs (digest + KV key). Cross-origin links and
+ * unanalyzed pages are silently skipped — the AI can call analyze_page for
+ * them and re-invoke if it wants them included. The KV key is returned so
+ * the REQ-49 rendered upgrade step can write back to the same cache slot.
  */
 async function discoverAdditionalPageDigests(
   env: TranscribeSiteEnv,
   home: ReferenceDigest,
-): Promise<ReadonlyArray<ReferenceDigest>> {
-  const out: ReferenceDigest[] = [];
+): Promise<ReadonlyArray<CacheLookup>> {
+  const out: CacheLookup[] = [];
   const seen = new Set<string>([home.sourceUrl]);
   let homeOrigin: string;
   try {
@@ -84,7 +97,7 @@ async function discoverAdditionalPageDigests(
     seen.add(normalized);
     const lookup = await loadDigest(env, normalized);
     if (!lookup) continue;
-    out.push(lookup.digest);
+    out.push(lookup);
   }
   return out;
 }
@@ -102,8 +115,28 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
       `digest_not_found: no digest record for ${digestId} — run analyze_page first`,
     );
   }
-  const homeDigest = lookup.digest;
+  let homeDigest = lookup.digest;
   const accountId = ctx.session.account_id;
+
+  // ── REQ-49: upgrade static-only digests via the rendered path ──────────
+  // The original transcribe_site path silently accepted whatever fetchPath
+  // analyze_page produced. When escalation decided "sufficient" (typical
+  // for pages with enough static text to clear the thin-body gate), the
+  // cached digest carries no screenshot, no computed styles, and no
+  // background-image asset records — and the resulting transcription has
+  // nothing for the AI to visually anchor on. Force the rendered path now,
+  // re-merge signals, re-persist the digest to KV so subsequent reads see
+  // the upgrade.
+  const upgradedHome = await maybeUpgradeStaticDigest({
+    env,
+    ctx,
+    digest: homeDigest,
+    digestKey: lookup.digestKey,
+    stageLabel: "home",
+  });
+  if (upgradedHome) {
+    homeDigest = upgradedHome;
+  }
 
   // ── Stage 0: clear the operator's draft to a fresh empty scaffold ───────
   // REQ-34: every convert lands on an empty 1-page scaffold so the AI's
@@ -155,8 +188,22 @@ export const transcribeSiteHandler: ActionHandler = async (input, ctx) => {
     },
   });
 
-  // Discover same-origin nav-linked pages that are already cached.
-  const additionalDigests = await discoverAdditionalPageDigests(env, homeDigest);
+  // Discover same-origin nav-linked pages that are already cached, then
+  // upgrade any that are still static-only. Best-effort: if a per-page
+  // upgrade fails (timeout / budget exhausted), we keep the static digest
+  // so the page still appears in perPagePlan — just without a screenshot.
+  const additionalLookups = await discoverAdditionalPageDigests(env, homeDigest);
+  const additionalDigests: ReferenceDigest[] = [];
+  for (const lookup of additionalLookups) {
+    const upgraded = await maybeUpgradeStaticDigest({
+      env,
+      ctx,
+      digest: lookup.digest,
+      digestKey: lookup.digestKey,
+      stageLabel: "additional",
+    });
+    additionalDigests.push(upgraded ?? lookup.digest);
+  }
   const pageDigests = [homeDigest, ...additionalDigests];
 
   // ── Mirror referenced assets (inline; the digest carries r2Keys) ────────
@@ -455,4 +502,169 @@ function extractBodyHtml(html: string): string {
 function firstLine(markdown: string): string {
   const line = markdown.split("\n").find((l) => l.trim().length > 0) ?? "";
   return line.trim().slice(0, 120);
+}
+
+/**
+ * REQ-49 — when a cached ReferenceDigest has fetchPath: "static", drive the
+ * rendered fetch path, merge computed signals, upload screenshots, and
+ * persist the upgraded digest back to the cache. Returns the upgraded digest
+ * on success, or `null` to fall through to the cached static digest (no
+ * BROWSER binding, budget exhausted, driver failure, or the digest is
+ * already rendered).
+ *
+ * The upgrade is best-effort by design: any failure logs a stage notify
+ * event and returns null so transcribe_site still produces a TranscriptionDigest
+ * with whatever signals the static fetch captured.
+ */
+async function maybeUpgradeStaticDigest(args: {
+  env: TranscribeSiteEnv;
+  ctx: ActionContext;
+  digest: ReferenceDigest;
+  digestKey: string;
+  stageLabel: string;
+}): Promise<ReferenceDigest | null> {
+  const { env, ctx, digest, digestKey, stageLabel } = args;
+  if (digest.fetchPath === "rendered") return null;
+  if (!env.BROWSER) {
+    ctx.emit({
+      event: "action:notify",
+      data: {
+        tool: "transcribe_site",
+        stage: 1,
+        status: "render_upgrade_skipped",
+        page: stageLabel,
+        url: digest.sourceUrl,
+        reason: "browser_binding_missing",
+      },
+    });
+    return null;
+  }
+  if (!env.FETCH_CACHE_KV) {
+    return null;
+  }
+
+  if (env.BROWSER_BUDGET_KV) {
+    const probe = await checkBrowserBudget(
+      { BROWSER_BUDGET_KV: env.BROWSER_BUDGET_KV },
+      {
+        accountId: ctx.session.account_id,
+        sessionId: ctx.session.session_id ?? ctx.session.account_id,
+      },
+    );
+    if (!probe.ok) {
+      ctx.emit({
+        event: "action:notify",
+        data: {
+          tool: "transcribe_site",
+          stage: 1,
+          status: "render_upgrade_skipped",
+          page: stageLabel,
+          url: digest.sourceUrl,
+          reason: `browser_budget_exhausted:${probe.exhausted}`,
+        },
+      });
+      return null;
+    }
+  }
+
+  ctx.emit({
+    event: "action:notify",
+    data: {
+      tool: "transcribe_site",
+      stage: 1,
+      status: "render_upgrade_started",
+      page: stageLabel,
+      url: digest.sourceUrl,
+    },
+  });
+
+  let driverResult: DriverResult;
+  try {
+    const driver = resolveDriverFactory()(env.BROWSER);
+    driverResult = await renderedFetch({ driver, url: digest.sourceUrl });
+  } catch (err) {
+    ctx.emit({
+      event: "action:notify",
+      data: {
+        tool: "transcribe_site",
+        stage: 1,
+        status: "render_upgrade_failed",
+        page: stageLabel,
+        url: digest.sourceUrl,
+        reason: String(err),
+      },
+    });
+    return null;
+  }
+
+  if (env.BROWSER_BUDGET_KV && driverResult.durationSeconds > 0) {
+    await chargeBrowserBudget(
+      { BROWSER_BUDGET_KV: env.BROWSER_BUDGET_KV },
+      {
+        accountId: ctx.session.account_id,
+        sessionId: ctx.session.session_id ?? ctx.session.account_id,
+        costSeconds: driverResult.durationSeconds,
+      },
+    );
+  }
+
+  let screenshotKeys: ScreenshotKeys = { ...digest.screenshotKeys };
+  if (env.ASSETS_BUCKET) {
+    const turnId = await shortHash(`${digest.sourceUrl}|transcribe_upgrade`);
+    const upload = await uploadScreenshots(
+      env.ASSETS_BUCKET,
+      driverResult.screenshots,
+      {
+        chatId: ctx.session.session_id ?? ctx.session.account_id ?? "session",
+        turnId,
+      },
+    );
+    screenshotKeys = { ...screenshotKeys, ...upload.keys };
+  }
+
+  const mergedSignals = mergeComputedSignals(
+    digest.signals,
+    driverResult.computedStyles,
+    driverResult.computedBackgroundAssets,
+    digest.sourceUrl,
+    {
+      fontAssets: driverResult.computedFontAssets,
+      boundingBoxes: driverResult.boundingBoxes,
+    },
+  );
+
+  const upgraded: ReferenceDigest = {
+    ...digest,
+    fetchPath: "rendered",
+    signals: mergedSignals,
+    screenshotKeys,
+  };
+
+  await env.FETCH_CACHE_KV.put(digestKey, JSON.stringify(upgraded));
+
+  ctx.emit({
+    event: "action:notify",
+    data: {
+      tool: "transcribe_site",
+      stage: 1,
+      status: "render_upgrade_completed",
+      page: stageLabel,
+      url: digest.sourceUrl,
+      desktopScreenshot: screenshotKeys.desktop ?? null,
+      durationSeconds: driverResult.durationSeconds,
+    },
+  });
+
+  return upgraded;
+}
+
+async function shortHash(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  const bytes = new Uint8Array(hash);
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, "0");
+  }
+  return hex.slice(0, 16);
 }

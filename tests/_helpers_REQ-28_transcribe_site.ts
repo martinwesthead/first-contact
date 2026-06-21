@@ -2,9 +2,11 @@ import { vi } from "vitest";
 import {
   SCHEMA_VERSION,
   NOT_DETECTED,
+  type BrowserDriver,
   type ReferenceDigest,
 } from "../packages/extractor/src/index.js";
 import { __resetForTests as resetChatMetadata } from "../apps/control-app/src/operator/chat-metadata.js";
+import { setDriverFactoryForTest } from "../apps/control-app/src/operator/browser-driver.js";
 import { transcribeSiteHandler } from "../apps/control-app/src/operator/transcribe-site.js";
 import type {
   ActionContext,
@@ -18,7 +20,9 @@ export interface TranscribeHarness {
     FETCH_CACHE_KV: MemKv;
     FETCH_ROBOTS_KV: MemKv;
     FETCH_RATE_KV: MemKv;
+    BROWSER_BUDGET_KV: MemKv;
     ASSETS_BUCKET: R2Bucket;
+    BROWSER?: unknown;
     CLAUDE_API_KEY?: string;
     ANTHROPIC_API_URL?: string;
   };
@@ -29,6 +33,8 @@ export interface TranscribeHarness {
   setAssetResponses(map: Record<string, { status: number; contentType: string; body: Uint8Array }>): void;
   setAssetFailures(map: Record<string, { reason: string; detail?: string }>): void;
   seedDigest(url: string, digest?: Partial<ReferenceDigest>): Promise<ReferenceDigest>;
+  /** REQ-49 — install a fake BrowserDriver for the rendered upgrade path. */
+  installDriver(driver: BrowserDriver | null): void;
   invokeTranscribe(input: Record<string, unknown>): Promise<ActionResult>;
 }
 
@@ -36,13 +42,16 @@ export function makeTranscribeHarness(opts?: {
   sessionId?: string;
   accountId?: string;
   claudeApiKey?: string | null;
+  withBrowserBinding?: boolean;
 }): TranscribeHarness {
   resetChatMetadata();
   const env = {
     FETCH_CACHE_KV: makeMemKv(),
     FETCH_ROBOTS_KV: makeMemKv(),
     FETCH_RATE_KV: makeMemKv(),
+    BROWSER_BUDGET_KV: makeMemKv(),
     ASSETS_BUCKET: makeMemR2(),
+    BROWSER: opts?.withBrowserBinding === true ? { __fake: true } : undefined,
     CLAUDE_API_KEY: opts?.claudeApiKey === null ? undefined : (opts?.claudeApiKey ?? "test-key"),
     ANTHROPIC_API_URL: "https://anthropic.test/v1/messages",
   };
@@ -189,12 +198,16 @@ export function makeTranscribeHarness(opts?: {
       await env.FETCH_CACHE_KV.put(`digest:${hex}`, JSON.stringify(digest));
       return digest;
     },
+    installDriver(driver): void {
+      setDriverFactoryForTest(driver ? () => driver : null);
+    },
     async invokeTranscribe(input): Promise<ActionResult> {
       const unstub = stubGlobalFetch();
       try {
         return await transcribeSiteHandler(input, ctx);
       } finally {
         unstub();
+        setDriverFactoryForTest(null);
       }
     },
   };

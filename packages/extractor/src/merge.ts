@@ -1,12 +1,16 @@
 import { resolveUrl } from "./dom.js";
 import type {
   ComputedBackgroundAsset,
+  ComputedBoundingBoxes,
+  ComputedFontAsset,
   ComputedStyles,
   ComputedTypeStyle,
 } from "./rendered-fetch.js";
 import {
   NOT_DETECTED,
   type AssetRecord,
+  type LayoutBoundingBoxes,
+  type LayoutSignals,
   type PaletteSignals,
   type Signals,
   type TypeStyle,
@@ -34,21 +38,32 @@ export function mergeComputedSignals(
   computed: ComputedStyles,
   computedBackgroundAssets: readonly ComputedBackgroundAsset[],
   baseUrl: string,
+  extras?: {
+    readonly fontAssets?: readonly ComputedFontAsset[];
+    readonly boundingBoxes?: ComputedBoundingBoxes;
+  },
 ): Signals {
   const typography = mergeTypography(signals.typography, computed);
   const palette = mergePalette(signals.palette, computed);
-  const assetInventory = mergeAssetInventory(
+  const withBackgrounds = mergeAssetInventory(
     signals.assetInventory,
     computedBackgroundAssets,
     baseUrl,
   );
+  const assetInventory = mergeFontAssets(
+    withBackgrounds,
+    extras?.fontAssets ?? [],
+    baseUrl,
+  );
   const backgroundCount = assetInventory.filter((a) => a.kind === "background").length;
   const imagery = { ...signals.imagery, backgroundCount };
+  const layout = mergeLayout(signals.layout, extras?.boundingBoxes);
   return {
     ...signals,
     palette,
     typography,
     imagery,
+    layout,
     assetInventory,
   };
 }
@@ -118,6 +133,61 @@ function mergeAssetInventory(
     byUrl.set(absolute, record);
   }
   return out;
+}
+
+/**
+ * REQ-49 — fold rendered-time font URLs into the inventory as kind='font'.
+ * Same dedup rules as backgrounds: an existing entry for the URL bumps
+ * references and keeps its original kind, new URLs land at the end.
+ */
+function mergeFontAssets(
+  declared: readonly AssetRecord[],
+  computedFonts: readonly ComputedFontAsset[],
+  baseUrl: string,
+): AssetRecord[] {
+  const out: AssetRecord[] = declared.map((r) => ({ ...r }));
+  if (computedFonts.length === 0) return out;
+  const byUrl = new Map<string, AssetRecord>();
+  for (const r of out) byUrl.set(r.url, r);
+  for (const asset of computedFonts) {
+    if (!asset.url) continue;
+    const absolute = resolveUrl(asset.url, baseUrl);
+    const existing = byUrl.get(absolute);
+    if (existing) {
+      existing.references += 1;
+      continue;
+    }
+    const record: AssetRecord = {
+      url: absolute,
+      kind: "font",
+      classification: "unknown",
+      references: 1,
+      ...(asset.family ? { alt: asset.family } : {}),
+    };
+    out.push(record);
+    byUrl.set(absolute, record);
+  }
+  return out;
+}
+
+/**
+ * REQ-49 — fold rendered-time bounding boxes into the layout signals.
+ * Existing layout fields (maxContentWidth, bias, density) are preserved.
+ * When the rendered pass didn't produce boxes (undefined / static-only),
+ * the layout signals pass through unchanged.
+ */
+function mergeLayout(
+  declared: LayoutSignals,
+  boxes: ComputedBoundingBoxes | undefined,
+): LayoutSignals {
+  if (!boxes) return declared;
+  const next: LayoutBoundingBoxes = {
+    sections: boxes.sections.map((b) => ({ ...b })),
+    cards: boxes.cards.map((b) => ({ ...b })),
+    ...(boxes.hero ? { hero: { ...boxes.hero } } : {}),
+    ...(boxes.nav ? { nav: { ...boxes.nav } } : {}),
+  };
+  return { ...declared, boundingBoxes: next };
 }
 
 function nonEmpty(v: string | undefined | null): string | null {
