@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-20T23:50:01.607784+00:00'
+updated_at: '2026-06-21T00:17:45.079509+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -292,5 +292,11 @@ pnpm dev:control
 ```
 
 Open the builder, ask the AI to list/get/create XGD tickets, and the dispatcher will route through the sidecar. The tool is invisible to any session where `DEV_TOOLS_ENABLED` is not `"true"`, so prod is unaffected.
+
+<!-- xgd-turn id="531da959-ec75-4d18-95e8-b34139ea3ecd-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-21T00:16:49.001Z" -->
+#### You
+Is that you have implemented this using an HTTP server that is bonkers. You and the system are all running on this machine all I want is for you to make a bash call to run that command. please don't do this with a web server
 
 <!-- xgd-chat-end -->
