@@ -56,6 +56,13 @@ export {
 } from "./rendered-fetch.js";
 export { mergeComputedSignals } from "./merge.js";
 export {
+  collectExternalStylesheetUrls,
+  extractExternalStylesheetAssets,
+  mergeStylesheetAssets,
+  type StylesheetFetcher,
+  type StylesheetFetchResult,
+} from "./external-stylesheets.js";
+export {
   uploadScreenshots,
   type R2BucketLike,
   type ScreenshotDrop,

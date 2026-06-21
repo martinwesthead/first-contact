@@ -1,7 +1,9 @@
 import {
   deriveWhatsMissing,
+  extractExternalStylesheetAssets,
   extractSignals,
   mergeComputedSignals,
+  mergeStylesheetAssets,
   renderDigestMarkdown,
   renderedFetch,
   SCHEMA_VERSION,
@@ -12,6 +14,7 @@ import {
   type ReferenceDigest,
   type ScreenshotKeys,
   type Signals,
+  type StylesheetFetcher,
 } from "@1stcontact/extractor";
 import {
   chargeBrowserBudget,
@@ -110,7 +113,20 @@ export const analyzePageHandler: ActionHandler = async (input, ctx) => {
   }
 
   const html = decodeBody(fetched.body);
-  const staticSignals = extractSignals(html, fetched.finalUrl);
+  const baseSignals = extractSignals(html, fetched.finalUrl);
+  // BUG-13: hero/banner backgrounds are commonly declared in external
+  // stylesheets, not inline <style> blocks. Fetch each <link rel=stylesheet>
+  // through safeFetch and fold any background-image url() values into the
+  // static inventory before rendered-pass merging.
+  const externalStylesheetAssets = await extractExternalStylesheetAssets(
+    html,
+    fetched.finalUrl,
+    makeStylesheetFetcher({
+      FETCH_CACHE_KV: env.FETCH_CACHE_KV,
+      FETCH_ROBOTS_KV: env.FETCH_ROBOTS_KV,
+    }),
+  );
+  const staticSignals = mergeStylesheetAssets(baseSignals, externalStylesheetAssets);
 
   const escalation = shouldEscalateToRendered({ html, forceRendered });
 
@@ -324,6 +340,25 @@ function decodeBody(body: Uint8Array): string {
   } catch {
     return "";
   }
+}
+
+function makeStylesheetFetcher(env: {
+  FETCH_CACHE_KV: KVNamespace;
+  FETCH_ROBOTS_KV: KVNamespace;
+}): StylesheetFetcher {
+  return async (url: string) => {
+    const result = await safeFetch(
+      url,
+      { FETCH_CACHE_KV: env.FETCH_CACHE_KV, FETCH_ROBOTS_KV: env.FETCH_ROBOTS_KV },
+      { headers: { "user-agent": "1stcontact-bot" } },
+    );
+    if (!result.ok) return { ok: false };
+    try {
+      return { ok: true, text: new TextDecoder("utf-8").decode(result.body) };
+    } catch {
+      return { ok: false };
+    }
+  };
 }
 
 interface CommentaryResult {
