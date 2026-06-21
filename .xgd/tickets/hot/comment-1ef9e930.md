@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-49
 created_by: xgd
 created_at: '2026-06-21T18:13:01.694390+00:00'
-updated_at: '2026-06-21T18:14:49.398497+00:00'
+updated_at: '2026-06-21T18:16:25.377872+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -49,5 +49,11 @@ I have a clear picture. Before coding I want to surface what's already implement
 So I have enough to start, but I want to confirm scope before opening the editor.
 
 The user declined the question prompt. I'll wait for direction on which gaps to close before opening the editor — the substrate is largely in place; the highest-value single change is making `transcribe_site` force-rendered, with `@font-face` capture and layout bounding boxes as additional extractor extensions. Let me know which of those to tackle (or all, plus Layer 3) and I'll proceed.
+
+<!-- xgd-turn id="7661da56-e0bf-47d2-8d08-addd77b6a4d8-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-21T18:16:21.696Z" -->
+#### You
+This UI does not support question mode can you ask your questions directly please?
 
 <!-- xgd-chat-end -->
