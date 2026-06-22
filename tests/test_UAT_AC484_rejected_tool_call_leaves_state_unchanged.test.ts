@@ -15,7 +15,11 @@ describe("UAT AC-484: rejected AI tool call leaves site state unchanged and reco
 
   it("test_UAT_AC484_invalid_set_module_dial_rejected_with_structured_error", async () => {
     const site = load1stContactSite();
-    const store = new BuilderStore({ siteDefinition: site, chatHistory: [] });
+    const store = new BuilderStore({
+      siteDefinition: site,
+      chatHistory: [],
+      activeSessionId: "sess_test_REQ-8_invalid",
+    });
     const catalog = buildFrameworkCatalog();
 
     // Target a hero instance (which declares size: [sm, md, lg] per DOC-8 §6).

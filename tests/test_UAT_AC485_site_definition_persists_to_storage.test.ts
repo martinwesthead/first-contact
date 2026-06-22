@@ -20,7 +20,11 @@ describe("UAT AC-485: working site definition is persisted to browser storage an
 
     // First builder: load starter, run two accepted tool calls.
     const first = new BuilderStore(
-      { siteDefinition: load1stContactSite(), chatHistory: [] },
+      {
+        siteDefinition: load1stContactSite(),
+        chatHistory: [],
+        activeSessionId: "sess_test_AC485_persist",
+      },
       { storage },
     );
 

@@ -27,6 +27,7 @@ describe("UAT FC REQ-36: chat-driver streams assistant text progressively into t
     const store = new BuilderStore({
       siteDefinition: load1stContactSite(),
       chatHistory: [],
+      activeSessionId: "sess_test_REQ-36_stream",
     });
     const catalog = buildFrameworkCatalog();
 
@@ -89,6 +90,7 @@ describe("UAT FC REQ-36: chat-driver streams assistant text progressively into t
     const store = new BuilderStore({
       siteDefinition: load1stContactSite(),
       chatHistory: [],
+      activeSessionId: "sess_test_REQ-36_stream",
     });
     const catalog = buildFrameworkCatalog();
 

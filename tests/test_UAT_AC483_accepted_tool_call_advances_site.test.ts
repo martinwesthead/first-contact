@@ -16,7 +16,11 @@ describe("UAT AC-483: accepted AI tool call advances the working site and re-ren
 
   it("test_UAT_AC483_accepted_set_theme_token_updates_store_and_preview_iframe", async () => {
     const site = load1stContactSite();
-    const store = new BuilderStore({ siteDefinition: site, chatHistory: [] });
+    const store = new BuilderStore({
+      siteDefinition: site,
+      chatHistory: [],
+      activeSessionId: "sess_test_REQ-8_preview",
+    });
     const catalog = buildFrameworkCatalog();
     const panel = createPreviewPanel(document.body);
     store.subscribe((state) => panel.render(state.siteDefinition));
