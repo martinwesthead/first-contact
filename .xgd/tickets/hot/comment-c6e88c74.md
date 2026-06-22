@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:07:32.740288+00:00'
+updated_at: '2026-06-22T22:08:37.066757+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -570,5 +570,11 @@ Flip A → B *never*. If A is hurting, the answer is always C.
 The trip-wire list above is the actual artefact worth keeping. It's a watch-list for the next 6-8 weeks of marketing work, and it converts speculation ("when will I want a calendar?") into observable events ("when have I lost a doc version twice?").
 
 Want me to draft a short DOC ticket capturing the recommendation + trip-wires, so it's recoverable when you're actually feeling the pain in week 4 and trying to remember what we decided? Or save it as a memory entry? Or just leave it in this chat?
+
+<!-- xgd-turn id="607bc510-45b5-4201-ae89-d3c2176de2d5-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T22:08:31.360Z" -->
+#### You
+Sorry I think I've lost some of your content I don't see options A-C laid out
 
 <!-- xgd-chat-end -->
