@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-25
 created_by: xgd
 created_at: '2026-06-22T18:08:26.910800+00:00'
-updated_at: '2026-06-22T23:17:12.195451+00:00'
+updated_at: '2026-06-22T23:55:42.464424+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -182,5 +182,11 @@ Done. REQ-25 is now `free_coded` at version 0.0.35 with the scope reduction appl
 
 **Quality gate:** ✅ all-tests pass.
 **Commits:** `7e91942` (feature) + `3a5f59d` (bump).
+
+<!-- xgd-turn id="85188dae-16ba-47e9-922d-0da448f7360d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:55:30.652Z" -->
+#### You
+Thank you for removbing the unnecesarry buttons. However the new UI does not work
 
 <!-- xgd-chat-end -->
