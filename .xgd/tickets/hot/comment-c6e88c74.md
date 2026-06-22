@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T21:13:31.530349+00:00'
+updated_at: '2026-06-22T21:14:08.706767+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -144,5 +144,11 @@ The pressure test I'd want next: pick **two scenarios** end-to-end and walk them
 If those two read naturally in this UI, the model is real. If they require operator gymnastics, we iterate.
 
 Want to walk one of those scenarios next, or push on something earlier in the list?
+
+<!-- xgd-turn id="4085b7f4-a3e1-47ea-b9b6-cca962d76dc8-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T21:13:59.491Z" -->
+#### You
+Sorry this UI failed to render those tables can you reproduce them as text blaocks so I can read them?
 
 <!-- xgd-chat-end -->
