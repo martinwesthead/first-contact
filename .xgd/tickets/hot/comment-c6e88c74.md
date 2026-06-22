@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:41:44.045947+00:00'
+updated_at: '2026-06-22T23:46:47.404356+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1434,5 +1434,11 @@ That's the only protocol-level coordination needed. No shared code, no API contr
 The "two implementations" cost is now bounded honestly: ~1-2K lines of TS for the JS one, no obligation to feature-parity with Python. The format is the contract; each implementation is small.
 
 Want to look at any other tabs/features before sketching the substrate spec, or is this enough scaffolding to start writing a DOC ticket?
+
+<!-- xgd-turn id="9eef2e3b-bcff-45d2-af2d-833b98d6c4d1-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:46:22.578Z" -->
+#### You
+ok so it sounds like we build a new lightweight backend for the XGD agentic framework in JS that does tickets, chat in a consistent way. We probably end up with two implementations of the knowledge infrastructure then one in Python one in JS - but maybe we don't need JS immediately...
 
 <!-- xgd-chat-end -->
