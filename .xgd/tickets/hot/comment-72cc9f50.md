@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-22T18:11:06.434878+00:00'
+updated_at: '2026-06-22T18:13:36.305278+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -343,5 +343,11 @@ And yes, right now you'd need to start two processes: `pnpm dev:control` (your e
 **Easy fix: fold the sidecar into the existing `concurrently` setup so one command starts both.** `apps/control-app/package.json` already runs `bundle` + `wrangler` concurrently — I just add a third entry for the sidecar. Then `pnpm dev:control` boots everything; you never think about it again. Two-line change to one `package.json`, no architectural shift, no rewrite of what's already shipped.
 
 Want me to do that now (small `[FREE-CODED]` follow-up on REQ-46)?
+
+<!-- xgd-turn id="fb06e183-433d-428f-8b62-0c643a14a9b7-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T18:12:50.814Z" -->
+#### You
+Sure lets do that
 
 <!-- xgd-chat-end -->
