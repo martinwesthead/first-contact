@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:00:19.419913+00:00'
+updated_at: '2026-06-22T23:05:20.602717+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1050,5 +1050,13 @@ This is xgendev-main code, not first-contact. The fix is XGD work; the ticket be
 My vote: **A + C combined.** File the bug in xgendev-main so it's visible and tracked, but don't fix it standalone — it gets resolved as part of the substrate work, where the design naturally eliminates the root cause.
 
 Want me to open the bug ticket in xgendev-main now?
+
+<!-- xgd-turn id="9ea0745b-3f7b-481b-a3d3-2d226f7693a2-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:04:14.722Z" -->
+#### You
+Please create a ticket in XGD for this its horrible and needs fixing but lets not derail this conversation
+
+`xgd ticket` CLI becomes a thin HTTP client. <--really?? We have to make an HTTP call to a node server to run a local command?
 
 <!-- xgd-chat-end -->
