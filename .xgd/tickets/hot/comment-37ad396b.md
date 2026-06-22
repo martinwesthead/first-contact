@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:11:21.598214+00:00'
+updated_at: '2026-06-22T20:14:53.615347+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -495,5 +495,11 @@ Now let me save this architectural commitment to project memory so it survives t
 Memories saved. The architectural commitment (multi-tenant from day one with RLS, memberships join table, tenant-resolving middleware) and the broader product picture (four pillars sharing the dashboard+chat+ticket UI) are now durable across future conversations.
 
 Three open questions waiting for your call before scope-locking: auth/data primitive (Supabase vs Clerk+Postgres), custom-domain handling approach (Cloudflare-for-SaaS vs Vercel vs self-built), and MVP tenant onboarding mechanism (admin endpoint vs CLI script vs SQL).
+
+<!-- xgd-turn id="3741d86b-5654-46dd-92d3-a20cd2a23066-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:14:45.457Z" -->
+#### You
+Please read the existing architecture documents - we are NOT designing this in a vaccuum a lot of decisions are already made - come back when you understand the current design
 
 <!-- xgd-chat-end -->
