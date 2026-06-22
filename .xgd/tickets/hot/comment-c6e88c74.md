@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:41:26.933904+00:00'
+updated_at: '2026-06-22T23:41:44.045947+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1383,5 +1383,56 @@ Does this match what you were sketching?
 This argues hard for the **storage adapter pattern** the synthesis surfaced earlier <-- so XGD stays in Python and handles this we write a simple version in JS.
 
 Note that the Python version has Hot and Cold storage for scaling needs - with 1C that too may be overkill
+
+<!-- xgd-turn id="81005ca6-c3ae-45bb-a154-7ca301f92d08-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T23:41:43.042Z" -->
+#### Claude
+Right call. That collapses the dual-implementation cost dramatically — the JS substrate doesn't need to match XGD's feature surface, only what *its* consumers actually need.
+
+## What the JS substrate includes (the minimum useful version)
+
+- YAML+md ticket files, single `tickets/` directory
+- In-memory index rebuilt on startup (small corpus, fast)
+- Per-file fcntl/flock for concurrency
+- Adapter pattern: `FsAdapter`, later `R2Adapter` when FC needs hosting
+- Events: `created` / `updated` / `deleted`
+- Query API: filter (`type`, `status`, `fields.*`), sort, glob
+- Chat transcripts as comment tickets (same shape as XGD)
+- Format-compatible with XGD's frontmatter schema (subset of fields)
+
+## What it explicitly does NOT include
+
+- Hot/cold tiering — XGD has 22K tickets; a marketing tool has tens to hundreds. YAGNI.
+- Branching overlay / staging — single store, single tenant (or prefix-per-tenant later).
+- Worktree awareness — no `git worktree list`, no per-branch logic.
+- Capability matrix integration — XGD product concept.
+- Workflow / FSM state, prerequisites, exit conditions — XGD product concept.
+- Quality gates, dispatcher, reconcile/regression orchestration — XGD product concept.
+- Custom git merge driver (`merge_ticket_recent`) — not needed without branching.
+
+Probably ~1-2K lines of TS + tests, not 3-4K. A day of XGD-time including tests, like you said.
+
+## Format compatibility
+
+Both substrates target the same on-disk format (YAML frontmatter + markdown body, comment subject_uid convention, chat turn markers). This is the contract:
+
+- XGD-only fields (FSM state, capability refs, workflow IDs) ignored by JS substrate as opaque pass-through frontmatter.
+- 1C-only fields (campaign_id, asset_refs) ignored by Python substrate similarly.
+- Both implementations can read each other's tickets without crashing.
+- A ticket can be exported XGD → 1C or vice versa by `cp`.
+
+That's the only protocol-level coordination needed. No shared code, no API contract, no conformance suite — just "respect the format, ignore what you don't understand."
+
+## Implications
+
+- XGD: zero change to substrate. The chat-transcript-bypass bug (BUG-702) still needs fixing in Python.
+- 1C marketing tool: ships on a small JS substrate. Days of work, not weeks.
+- Book tool: same JS substrate, different app composition.
+- FC product surface (eventually): same JS substrate + R2Adapter when hosted multi-tenant matters.
+
+The "two implementations" cost is now bounded honestly: ~1-2K lines of TS for the JS one, no obligation to feature-parity with Python. The format is the contract; each implementation is small.
+
+Want to look at any other tabs/features before sketching the substrate spec, or is this enough scaffolding to start writing a DOC ticket?
 
 <!-- xgd-chat-end -->
