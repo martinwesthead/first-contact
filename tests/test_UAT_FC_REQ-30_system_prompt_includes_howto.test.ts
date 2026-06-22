@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -7,6 +7,7 @@ import { encodeAnthropicSSE } from "./_helpers_REQ-36_chat_sse.js";
 import { REPRODUCING_A_WEBSITE_DOC } from "../apps/control-app/src/llm-context.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const howtoPath = resolve(
@@ -15,6 +16,14 @@ const howtoPath = resolve(
 );
 
 describe("UAT FC REQ-30: chat system prompt includes the how-to doc (AC6)", () => {
+  let env: SeededChatEnv;
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_req30_howto" });
+  });
+  afterAll(async () => {
+    await env.cleanup();
+  });
+
   it("the inlined constant matches the canonical .md file byte-for-byte (drift guard)", () => {
     const fromDisk = readFileSync(howtoPath, "utf-8");
     expect(REPRODUCING_A_WEBSITE_DOC).toBe(fromDisk);
@@ -55,14 +64,15 @@ describe("UAT FC REQ-30: chat system prompt includes the how-to doc (AC6)", () =
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [{ role: "user", content: "hi" }],
+        sessionId: env.sessionId,
+        userMessage: "hi",
         siteDefinition: load1stContactSite(),
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key" },
+      { CLAUDE_API_KEY: "test-key", SITES_DB: env.db },
       { fetch: upstreamFetch as unknown as typeof fetch },
     );
     expect(response.status).toBe(200);

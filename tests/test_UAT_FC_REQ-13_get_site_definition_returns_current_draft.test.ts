@@ -1,11 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeAnthropicSequenceFetch } from "./_helpers_REQ-13_anthropic.js";
 import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 describe("UAT FC REQ-13: get_site_definition read tool returns the current draft site state", () => {
+  let env: SeededChatEnv;
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_req13_getsite" });
+  });
+  afterAll(async () => {
+    await env.cleanup();
+  });
   it("returns the canonical draft definition the chat handler received so the AI can verify state after edits", async () => {
     const site = load1stContactSite();
 
@@ -31,14 +39,15 @@ describe("UAT FC REQ-13: get_site_definition read tool returns the current draft
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [{ role: "user", content: "what does the site look like?" }],
+        sessionId: env.sessionId,
+        userMessage: "what does the site look like?",
         siteDefinition: site,
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key" },
+      { CLAUDE_API_KEY: "test-key", SITES_DB: env.db },
       { fetch: stubFetch },
     );
     expect(response.status).toBe(200);

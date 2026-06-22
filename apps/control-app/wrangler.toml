@@ -35,6 +35,13 @@ id = "placeholder_browser_budget_kv"
 binding = "ASSETS_BUCKET"
 bucket_name = "1stcontact-assets"
 
+# D1 database (REQ-10 schema, REQ-23 chat schema). Local Miniflare emulates
+# D1 in `wrangler dev`; production binding fills in `database_id` at deploy.
+[[d1_databases]]
+binding = "SITES_DB"
+database_name = "1stcontact-sites"
+database_id = "placeholder_sites_db"
+
 # Browser Rendering binding (REQ-22). Drives @cloudflare/puppeteer from the
 # analyze_page rendered-fetch path. Bound only in production — Wrangler dev
 # does not emulate Browser Rendering locally (requires `--remote`), and the
@@ -69,6 +76,11 @@ id = "placeholder_browser_budget_kv"
 [[env.production.r2_buckets]]
 binding = "ASSETS_BUCKET"
 bucket_name = "1stcontact-assets"
+
+[[env.production.d1_databases]]
+binding = "SITES_DB"
+database_name = "1stcontact-sites"
+database_id = "placeholder_sites_db"
 
 [env.production.browser]
 binding = "BROWSER"

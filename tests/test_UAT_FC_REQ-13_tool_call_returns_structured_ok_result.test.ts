@@ -1,11 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeAnthropicSequenceFetch } from "./_helpers_REQ-13_anthropic.js";
 import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 describe("UAT FC REQ-13: a successful tool call produces a structured ok tool_result with a non-empty summary visible in the AI's next prompt", () => {
+  let env: SeededChatEnv;
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_req13_ok" });
+  });
+  afterAll(async () => {
+    await env.cleanup();
+  });
+
   it("emits a tool_result content block on the next turn containing {ok:true, applied:{tool, args, summary}} and feeds the working site state forward", async () => {
     const site = load1stContactSite();
     const heroInstance = site.pages[0]!.modules.find((m) => m.type === "hero")!;
@@ -39,7 +48,8 @@ describe("UAT FC REQ-13: a successful tool call produces a structured ok tool_re
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [{ role: "user", content: "make the hero bigger" }],
+        sessionId: env.sessionId,
+        userMessage: "make the hero bigger",
         siteDefinition: site,
         frameworkCatalog: buildFrameworkCatalog(),
       }),
@@ -47,7 +57,7 @@ describe("UAT FC REQ-13: a successful tool call produces a structured ok tool_re
 
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key" },
+      { CLAUDE_API_KEY: "test-key", SITES_DB: env.db },
       { fetch: stubFetch },
     );
     expect(response.status).toBe(200);

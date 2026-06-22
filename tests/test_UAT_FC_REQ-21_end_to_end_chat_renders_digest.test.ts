@@ -18,6 +18,7 @@ import {
   consumeChatSSE,
   encodeAnthropicSSE,
 } from "./_helpers_REQ-36_chat_sse.js";
+import { makeStubChatDb } from "./_helpers_REQ-24_chat.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLAIN_HTML = readFileSync(
@@ -129,23 +130,21 @@ describe("UAT FC REQ-21: end-to-end chat → analyze_page → <DigestReport> ren
       method: "POST",
       headers: { "content-type": "application/json", "x-session-id": "session-e2e" },
       body: JSON.stringify({
-        history: [
-          {
-            role: "user",
-            content: `please analyze ${targetUrl} as a reference for the new site`,
-          },
-        ],
+        sessionId: "sess_req21",
+        userMessage: `please analyze ${targetUrl} as a reference for the new site`,
         siteDefinition: site,
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
 
+    const stubDb = makeStubChatDb({ sessionId: "sess_req21" });
     const env = {
       CLAUDE_API_KEY: "test-key",
       ANTHROPIC_API_URL: "https://anthropic.test/v1/messages",
       FETCH_CACHE_KV: makeMemKv(),
       FETCH_ROBOTS_KV: makeMemKv(),
       FETCH_RATE_KV: makeMemKv(),
+      SITES_DB: stubDb.binding as unknown as D1Database,
     };
 
     const response = await handleChatRequest(request, env);

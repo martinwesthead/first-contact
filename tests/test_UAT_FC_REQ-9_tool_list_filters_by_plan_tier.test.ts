@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { encodeAnthropicSSE } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 const STATE_EDIT_TOOLS = [
   "set_module_content",
@@ -16,6 +17,16 @@ const STATE_EDIT_TOOLS = [
 ];
 
 describe("UAT FC REQ-9: /api/chat tool list is filtered by session plan_tier", () => {
+  let env: SeededChatEnv;
+
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_req9" });
+  });
+
+  afterAll(async () => {
+    await env.cleanup();
+  });
+
   function makeMockFetch(): {
     fetch: ReturnType<typeof vi.fn>;
     capturedBodies: Array<{ tools: Array<{ name: string }> }>;
@@ -40,7 +51,8 @@ describe("UAT FC REQ-9: /api/chat tool list is filtered by session plan_tier", (
         "x-plan-tier": planTier,
       },
       body: JSON.stringify({
-        history: [{ role: "user", content: "hi" }],
+        sessionId: env.sessionId,
+        userMessage: "hi",
         siteDefinition: load1stContactSite(),
         frameworkCatalog: buildFrameworkCatalog(),
       }),
@@ -51,7 +63,7 @@ describe("UAT FC REQ-9: /api/chat tool list is filtered by session plan_tier", (
     const { fetch, capturedBodies } = makeMockFetch();
     const response = await handleChatRequest(
       makeChatRequest("trial"),
-      { CLAUDE_API_KEY: "k" },
+      { CLAUDE_API_KEY: "k", SITES_DB: env.db },
       { fetch: fetch as unknown as typeof fetch },
     );
     expect(response.status).toBe(200);
@@ -66,7 +78,7 @@ describe("UAT FC REQ-9: /api/chat tool list is filtered by session plan_tier", (
     const { fetch, capturedBodies } = makeMockFetch();
     const response = await handleChatRequest(
       makeChatRequest("paid"),
-      { CLAUDE_API_KEY: "k" },
+      { CLAUDE_API_KEY: "k", SITES_DB: env.db },
       { fetch: fetch as unknown as typeof fetch },
     );
     expect(response.status).toBe(200);
