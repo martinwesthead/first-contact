@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-25
 created_by: xgd
 created_at: '2026-06-22T18:08:26.910800+00:00'
-updated_at: '2026-06-22T20:10:11.375065+00:00'
+updated_at: '2026-06-22T20:29:11.931438+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -68,5 +68,71 @@ Which direction would you like? My recommendation is **option 2** (REQ-23 + REQ-
 <!-- xgd-chat role="user" ts="2026-06-22T20:10:05.064Z" -->
 #### You
 ok 23 and 24 are done - can you go ahead and free code this please?
+
+<!-- xgd-turn id="f55ac0e4-086d-4638-9f64-826122ec805b-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T20:29:11.928Z" -->
+#### Claude
+Let me verify REQ-23/REQ-24 status and understand the current API surface before I start.
+
+Let me set up tasks and look at existing tests for patterns before diving in.
+
+Now I have enough context. Let me update the ticket scope, then start building.
+
+Now let me create the chats-api module.
+
+Now extend the store with session state and methods.
+
+Now add session-management methods. Let me look at the current method shape first.
+
+Now refactor the chat-driver to use sessionId and persist failure notes via the API.
+
+Now the body of `runChatTurn`. Replace the history-prepend-and-send logic with sessionId+userMessage.
+
+Now the chat panel — add session controls and infinite scroll.
+
+Now add the session-bar DOM construction and the supporting logic. Let me insert it just after the existing tool-pane header block.
+
+Now hook session bar into the root, add the top sentinel inside messageList, and wire up handlers.
+
+Now adjust `renderMessages` to keep the sentinel and add the session-bar / scroll-anchor logic. Find the rendering section.
+
+Now wire the session-bar interactions and IntersectionObserver. Find the subscribe and insertion points.
+
+Now add the helper and update the return statement and destroy.
+
+Now wire main.ts to hydrate sessions, restore active, handle the lifecycle.
+
+Let me typecheck the package to catch any errors before going further.
+
+Clean. Now let me update the broken existing tests (REQ-37 driver test) and verify other tests still build.
+
+Now update the REQ-37 driver test that depends on the old `history` contract.
+
+Now let me write the REQ-25 UAT tests. First a helper to stub the chat HTTP surface.
+
+Now write the UAT tests for REQ-25. I'll start with tests that exercise the ChatsApi + store directly (covering most ACs without touching the full DOM).
+
+Now let me run typecheck on everything and the test suite.
+
+All 11 REQ-25 UAT tests pass. Let me also run the existing chat-related tests to confirm nothing broke.
+
+All 96 adjacent tests pass. Now the full suite + quality gate.
+
+Quality gate green. Now commit and update the ticket.
+
+Done. REQ-25 is `free_coded` at version 0.0.33.
+
+**What landed:**
+- `packages/builder-ui/src/chats-api.ts` — typed client for the REQ-24 endpoints.
+- `store.ts` — added `activeSessionId`, `sessions`, `loadedFromOrd`, `hasMoreOlder` and the session-management methods (`setActiveSession`, `prependOlderMessages`, upsert/remove session).
+- `chat-driver.ts` — POSTs `{sessionId, userMessage, …}` with no `history`. Prior-turn tool failures are persisted via `POST /api/chats/:id/messages` so the server's tail-load picks them up (REQ-37 reinjection adapted).
+- `chat-panel.ts` — session bar (select / new / inline title editor / delete), top sentinel + IntersectionObserver for infinite scroll, `withScrollAnchor` primitive that preserves topmost-visible position on prepend.
+- `main.ts` — per-site `fc.builder.activeChatSession.<siteId>` localStorage key, hydrates sessions on boot, restores last-active session, refreshes the list after each turn.
+
+**Tests:** 11 new UAT tests under `tests/test_UAT_FC_REQ-25_*` covering all 10 ACs + the wire-contract gate. Adapted 6 existing tests (REQ-8/-34/-36/-37) to the new `sessionId`-driven driver.
+
+**Quality gate:** `xgd quality run --all-tests` → PASS.
+**Commits:** `46109cd` (feature) + `3772b3d` (version bump).
 
 <!-- xgd-chat-end -->
