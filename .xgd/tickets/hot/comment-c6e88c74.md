@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T21:47:23.761704+00:00'
+updated_at: '2026-06-22T21:47:38.381877+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -423,5 +423,60 @@ The rest of the analysis (the "where the UI strains" section, the suggested surf
 I think this is about right I'm not seeing anything that doesn't fit our model. Obviously the raw dashboard widgets and obviously the AI can carry out actions without a ticket.
 
 The one thing that I think is missing may be a calendar I wonder how tickets and calendar can be combined or whether they should be separate. Perhaps target date is a field on a ticket and the calendar is a view of tickets or maybe even multiple views of tickets by target date
+
+<!-- xgd-turn id="0f69629d-be13-4c7e-a615-cbcd312d1c2b-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T21:47:38.379Z" -->
+#### Claude
+I'd push hard on "calendar is a view of tickets" rather than a separate object. Reasoning:
+
+- Single source of truth. A ticket with a date appears on the calendar; drag-to-reschedule = mutate the date field. No sync layer, no drift.
+- All the existing ticket affordances (chat, status, sub-tickets, cross-pillar) work in the calendar view for free.
+- The "editorial calendar" pattern marketers expect is just a filtered, date-sorted view of content/distribution tickets — not a new concept.
+
+But the model needs to admit a few wrinkles, otherwise the calendar will feel thin compared to what marketers actually use:
+
+**1. Tickets need more than one date.** At minimum:
+- `target_date` — when the work should be done (internal deadline)
+- `publish_date` — when it goes public
+
+Often the same; sometimes not (write a post Friday for a Monday morning HN drop). The calendar should default to `publish_date` for editorial views and `target_date` for production views.
+
+**2. Multiple calendar views, not one.** Marketers think in at least three:
+- **Editorial calendar** — by `publish_date`, scoped to content/distribution. "What goes out when."
+- **Production calendar** — by `target_date`, scoped to active work. "What I need to finish when."
+- **Activity log** — by `completed_at`, retrospective. "What actually happened." (overlaps with the audit feed we already named)
+
+Same ticket store, different filter + date-field combo. Cheap once the fields exist.
+
+**3. Recurring tickets.** The monthly AI probe, the weekly funnel review — the calendar needs to show each instance. Two options:
+- **Materialise** — the recurrence rule spawns concrete child tickets on a schedule. Each occurrence gets its own chat and state.
+- **Synthesise** — the calendar renders instances from the rule on the fly; only the parent exists.
+
+I'd vote materialise. It preserves per-occurrence history — when this month's SEM review needs to reference last month's, the conversation is there.
+
+**4. Fixed external dates.** Conferences, competitor launches, product GA dates, holidays. There's no work to *do* on these dates — they're constraints/context. Two options:
+- A thin "event" type (calendar entries with date + label, no ticket affordances). Adds a concept.
+- Model them as tickets with `status=external`. One concept, but pollutes the ticket list.
+
+I lean event type. These are gravitational fields, not work items.
+
+**5. Milestones / campaigns.** "Closed beta launch on Sep 15" is the convergence point for ~7 tickets across pillars (use case #3 earlier). This is already a parent ticket. On the calendar it should render distinctly — wider bar, distinct colour — so the operator sees the gravitational centre. Same data, different render rule.
+
+## Scope check: Lead Gen only, or XGD-wide?
+
+Calendar isn't really Lead-Gen-specific. Builder has release dates, CRM has follow-up dates, Invoicing has billing cycles, Monitoring has scheduled checks, Portal has customer-visible deadlines. If we build it inside Lead Gen we'll rebuild it elsewhere within months.
+
+Calendar belongs in the shared XGD substrate — same as the ticket system itself. Lead Gen is just the first heavy consumer.
+
+That probably argues for its own DOC ticket rather than a section in the Lead Gen one.
+
+## What I'd nail down next
+
+1. Calendar XGD-wide or Lead-Gen-first? (My vote: XGD-wide substrate, Lead Gen ships first consumer.)
+2. Recurrence: materialise or synthesise? (My vote: materialise.)
+3. External fixed dates: events or tickets? (My vote: separate event type.)
+
+Want me to draft a calendar-substrate concept doc as a DOC ticket, or keep pressure-testing — e.g. walk one of the two end-to-end scenarios (launch sequence, or one-blog-many-outputs) through the dashboard + tickets + calendar shape and see if it holds?
 
 <!-- xgd-chat-end -->
