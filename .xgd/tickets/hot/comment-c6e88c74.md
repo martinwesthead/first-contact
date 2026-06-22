@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:12:35.023985+00:00'
+updated_at: '2026-06-22T22:25:54.623738+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -771,5 +771,22 @@ Two things, when Phase 2 actually starts:
 Neither needs to be answered now. They get answered when Phase 1 has produced enough evidence to make them obvious.
 
 Does this version hang together?
+
+<!-- xgd-turn id="0fec332d-4f64-4b49-8c0f-90586ed3dab6-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T22:23:32.358Z" -->
+#### You
+Yes, it kind of makes sense. I was hoping that 1C could get to market before XGD and in your model it cannot.
+
+I'm also a little frustrated that the conclusion is that I have to re-implement all the chat and the ticket functionality that already works in XGD. a second time. I have a third project that I am interested in pursuing to support the writing of books this would probably have more of the XGD deployment factor than 1st contact. Am I going to have to reimplement again for that?
+
+What are the reasons you came to this conclusion? You have not shared your reasoning and this is important because we need to align on what is movable and what is immovable.
+
+One question I am wondering about is this route - start with option B:
+Fork XGD, ripout all the workflow stuff so I'm left with chat and ticketing
+Refactor chat and ticketing so its a modular framework
+apply the new framework back to XGD
+Apply the new framework to 1st contact
+Leverage the new framework for other agentic work projects
 
 <!-- xgd-chat-end -->
