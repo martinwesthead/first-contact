@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:20:46.803144+00:00'
+updated_at: '2026-06-22T20:41:22.950063+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -564,5 +564,23 @@ Now let me fix the memory I wrote earlier that contradicts the actual architectu
 Memory now reflects reality: a pointer to where the architecture docs live (so future conversations consult them first), the corrected multi-tenancy entry (D1 + Worker enforcement, not Postgres RLS), and the corrected pillar status (Lead Gen is deferred, not committed).
 
 The three paths I named — catalog gap audit, Lead Gen DOC, or subscription pipeline DOC — are the real next-step choices. Which would you like me to start on?
+
+<!-- xgd-turn id="c2faa377-3bf0-43c7-b441-c2cf47beb597-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:39:27.707Z" -->
+#### You
+Let's prioritize based on the order that I think I need things.
+
+1. Basic website is required - no user portals of payments day 1 but email capture for close beta
+   2. I have 2-3 whitepapers to complete they are currently written in .md simplest approach would be to complete these on Google Docs and upload PDFs.
+   3. From that basis - when the tool is ready, I need to create a campagn
+       a) Posts - I imagine creating a blog on my site but repost the content on Medium and Linkend in
+       b) YouTube series of videos - create something using XGD (my plan a new open source, modular, plugable MD editor)
+       c) Meetups and conferences - reach out to get speaking engagments once I have the site and a few posts I think this will not be hard - there are a lot of people looking for content
+   4. manage the beta program and get the site ready for paid customers
+   5. SEM plan - small spend on search marketing 
+   6. AI plan
+   
+   The Lead gen tool could help with planning 3, 5 and 6 and managing SEO
 
 <!-- xgd-chat-end -->
