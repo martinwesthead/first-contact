@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-22T18:13:36.305278+00:00'
+updated_at: '2026-06-22T18:14:06.144783+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -349,5 +349,25 @@ Want me to do that now (small `[FREE-CODED]` follow-up on REQ-46)?
 <!-- xgd-chat role="user" ts="2026-06-22T18:12:50.814Z" -->
 #### You
 Sure lets do that
+
+<!-- xgd-turn id="fb06e183-433d-428f-8b62-0c643a14a9b7-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T18:14:06.142Z" -->
+#### Claude
+Now verifying `pnpm dev:control` boots all three processes cleanly.
+
+The wiring is correct — the trace shows `concurrently` started all three (bundle, wrangler, sidecar), and when wrangler crashed on port 8788, `-k` correctly killed the other two (you can see `[sidecar] received SIGTERM, shutting down` — the sidecar was alive and responding to teardown). The boot failure was just port 8788 already being in use, because you already have a wrangler running.
+
+In a clean shell with no existing `wrangler dev` on 8788, one `pnpm dev:control` now boots all three together. When you want to test the AI tool, you can ask the chat to `xgd_ticket {command:"list"}` and it'll route through the sidecar without any second terminal.
+
+**REQ-46 final state:**
+
+- Status: `free_coded`
+- Version: `0.0.30`
+- 7 commits on the ticket: step 1 (sidecar), step 2 (handler+registration), bump → 0.0.26, smoke-test fix (kind tag + vite-node dep + richer summary), bump → 0.0.27, dev-control concurrently wiring, bump → 0.0.30
+- 28 REQ-46 UATs (all green); full suite 627/627
+- End-to-end live smoke-tested through wrangler+sidecar
+
+Nothing else to do unless you'd like me to (a) actually fix the wrangler port issue you have running, or (b) take on something else.
 
 <!-- xgd-chat-end -->
