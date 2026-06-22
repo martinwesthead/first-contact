@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-19
 created_by: xgd
 created_at: '2026-06-22T18:22:41.166211+00:00'
-updated_at: '2026-06-22T18:33:42.156202+00:00'
+updated_at: '2026-06-22T19:08:57.543460+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -83,5 +83,11 @@ The kit pieces are headless cores with optional UI. XGD imports the same `@fc/au
 **The reframe this gives you, which is the actually valuable part:** XGD becomes the first paying customer of the operating layer. 1stcontact becomes the second. You stop having to believe the SMB-website market exists to justify building any of this — every piece earns its keep from XGD's own commercial needs first. If 1stcontact never finds product-market fit, you've still built the infrastructure XGD needs. If it does, you've already got the primitives.
 
 Want me to look at the current `apps/` and `packages/` layout and sketch a concrete migration path — i.e., what would move where, and what the first extraction looks like? That would make this real instead of theoretical.
+
+<!-- xgd-turn id="c2f9fe8a-f6cc-493b-aa4c-333d4ae69c4b-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T19:08:45.000Z" -->
+#### You
+Yes and take a look at the design documents - I think we are on the right architecture track here but I welcome and suggestion for course corrections?
 
 <!-- xgd-chat-end -->
