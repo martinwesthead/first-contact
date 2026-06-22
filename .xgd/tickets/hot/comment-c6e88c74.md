@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:59:29.668002+00:00'
+updated_at: '2026-06-22T23:00:19.419913+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -993,5 +993,62 @@ Want me to draft the substrate spec doc as the first concrete artifact (DOC tick
 <!-- xgd-chat role="user" ts="2026-06-22T22:59:11.490Z" -->
 #### You
 including a fast-path that bypasses Python and writes `.md ` <-- that is totally outrageous it MUST be removed evertying relies on ticket API adherence
+
+<!-- xgd-turn id="11024bf1-4093-4200-aaac-5e249157d271-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T23:00:19.416Z" -->
+#### Claude
+You're right — that violates the CLAUDE.md rule explicitly ("Tickets MUST be accessed exclusively through the ticketing API ... NEVER read, write, or modify ticket .md files directly via filesystem operations"). Before I agree on the fix, let me verify the agent's claim by reading the actual code — agents misread, and "fast-path that writes .md directly with fcntl" needs to be a real bypass, not a misdescribed call into the substrate.
+
+Confirmed. The bypass is real and explicit:
+
+```
+xgd_source/dashboard/server.py:56
+
+"""Write a turn directly to the comment file, bypassing the ticketing index.
+...
+Uses per-file fcntl LOCK_EX so concurrent threads don't race on the same file.
+"""
+```
+
+The function `_transcript_direct_append()` opens `tickets/hot/{comment_uid}.md` directly with `fcntl.LOCK_EX`, modifies it, enqueues a git commit. No ticketing API call. This is exactly the violation CLAUDE.md prohibits.
+
+## Why it's there (the rationale you'd want to know before ripping it out)
+
+Server.py:684-689 documents the motivation:
+
+```
+"The cold index rebuild can hold LOCK_EX for 70+ seconds (22K+ file scan under
+ I/O pressure). To avoid the LOCK_EX cost of ticketing.update(), we use
+ _transcript_direct_append() for existing comments — per-file fcntl, no index
+ lock. ticketing.comment_create() (new session) still needs LOCK_EX but is a
+ much rarer event (once per chat, not once per message)."
+```
+
+So the bypass exists because per-message chat-transcript appends were paying a 70-second LOCK_EX cost on the cold index rebuild. Performance pressure drove someone to break the rule.
+
+That doesn't make it OK — it makes it a symptom. There's a real perf problem upstream (cold-index LOCK_EX for 70s under I/O pressure on 22K files) that the bypass papers over.
+
+## Implications for removal
+
+Just deleting the fast path makes chat appends pay 70-second hangs again. The fix has to solve the perf root cause, not just delete the bypass. Three real options:
+
+1. **Fix the cold-index LOCK_EX-for-70s problem.** Make the index rebuild non-blocking, or only acquire LOCK_EX for the small final swap, or rebuild incrementally. Then the bypass becomes unnecessary.
+2. **Add a proper API op for per-message append.** `ticketing.comment_append(uid, kind, text)` that locks just the file (not the index) and queues an index update. The dashboard calls that instead of bypassing.
+3. **The substrate refactor we just designed.** A JS substrate with adapter-level concurrency primitives (R2 conditional writes, D1 transactions) wouldn't have the cold-index-LOCK_EX issue at all — the bypass goes away as a side effect of the rewrite.
+
+Option 3 is the most leveraged: it resolves the violation as part of the substrate work, not as a separate cleanup.
+
+## Scope question — where does this work live?
+
+This is xgendev-main code, not first-contact. The fix is XGD work; the ticket belongs in XGD's ticket store, not CHAT-22 (which is first-contact's session ticket). Three ways to proceed:
+
+- **A.** Open a bug ticket in xgendev-main to track removal of the bypass, defer the fix until substrate refactor lands (since option 3 subsumes it anyway).
+- **B.** Open a bug ticket in xgendev-main and fix immediately via option 2 (proper API op), independent of substrate refactor.
+- **C.** Make removal a non-negotiable acceptance criterion of the substrate refactor — the new substrate ships *only when* this bypass is gone.
+
+My vote: **A + C combined.** File the bug in xgendev-main so it's visible and tracked, but don't fix it standalone — it gets resolved as part of the substrate work, where the design naturally eliminates the root cause.
+
+Want me to open the bug ticket in xgendev-main now?
 
 <!-- xgd-chat-end -->
