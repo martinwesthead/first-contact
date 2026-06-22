@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:27:36.550607+00:00'
+updated_at: '2026-06-22T23:36:32.706390+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1258,5 +1258,15 @@ Same logic for the embedding provider: by abstracting it, the same `@xgd/knowled
 Doesn't change it. JS substrate + JS CLI + Python workflows shelling out (the corrected model from last turn) still works. The knowledge layer is a sibling, not a substrate concern. If anything, this *strengthens* the JS argument — Workers AI and transformers.js give you embedding/LLM affordances that Python+Cloudflare doesn't.
 
 So: yes, JS can support this. And the knowledge layer is its own package, layered on the substrate. Want to keep going, or sketch the substrate package boundary in more concrete terms next?
+
+<!-- xgd-turn id="a2da38d5-3aa9-4248-8d9b-1aa7336e67b2-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:36:20.379Z" -->
+#### You
+Take a look at RES-628, 629 and 630 ... XGD has some very specific branching requirements
+Then take a look at the tabs on the UI
+of the 9 tabs Chat and Documents are reusable immediately. Intents would need adjusting for 1C. Files would need adjuting for assets
+
+What I am thinking here is that half the tabs are very specific ticket views. I think the new framework would want to support reusable components (like chat and the chat ticket views). And then each application would add an arrange its own tab set. Capabilities is very XGD specific, for example
 
 <!-- xgd-chat-end -->
