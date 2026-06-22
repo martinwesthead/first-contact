@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-25
 created_by: xgd
 created_at: '2026-06-22T18:08:26.910800+00:00'
-updated_at: '2026-06-22T20:29:11.931438+00:00'
+updated_at: '2026-06-22T23:09:31.209312+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -134,5 +134,12 @@ Done. REQ-25 is `free_coded` at version 0.0.33.
 
 **Quality gate:** `xgd quality run --all-tests` → PASS.
 **Commits:** `46109cd` (feature) + `3772b3d` (version bump).
+
+<!-- xgd-turn id="4392ea12-3289-4c1d-aa95-cb88e96a4ffa-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:09:08.118Z" -->
+#### You
+1) This should start with an initial session established 
+2) the "+ New Chat Session" is broken. TBH I don't need or want session management on the page rightr now I just want a single chat session per tab (only one tab right now) to persist
 
 <!-- xgd-chat-end -->
