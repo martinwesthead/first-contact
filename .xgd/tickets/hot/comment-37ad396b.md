@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T19:46:26.769448+00:00'
+updated_at: '2026-06-22T20:04:23.274305+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -305,5 +305,16 @@ The earlier table line — "PDFs (lead magnets, guides) → MD editor + opiniona
 The principle becomes: **anything content-shaped is a page.** Web page, blog post, brochure, landing page, email body — all pages, all in the Builder, each with appropriate output targets. The Lead Gen pillar plans and tracks; the Builder pillar produces. That's a much cleaner division than I'd been carrying in my head before this thread.
 
 The one risk worth naming: scope creep on Builder. Print support broadens the Builder's surface meaningfully. Worth being deliberate about *which* brochure types we support first — meal plan, checklist, simple multi-page guide. Defer: glossy multi-section reports, magazine-style layouts, complex infographics. The discipline is "operator-grade not designer-grade, and we say that out loud."
+
+<!-- xgd-turn id="f433b5da-3f81-41c4-8fcc-a43abf865128-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:03:14.862Z" -->
+#### You
+Its images and text with layout and colors but HTML and CSS and our styling modules gives us a LOT more flexibility than MD at a pretty low cost.
+
+ok lets scope MVP on what I need for marketing XGD. I need:
+A Website Builder - that can build a site which will ultimately support Subscription payments
+Lead generation planning and analysis
+Simple content creation support
 
 <!-- xgd-chat-end -->
