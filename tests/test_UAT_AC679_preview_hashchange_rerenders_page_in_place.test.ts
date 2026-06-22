@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { renderSiteIntoIframe } from "@1stcontact/builder-ui";
+import { renderSiteIntoIframe } from "@gendev/builder-ui";
 import { makeTwoPageSite } from "./_helpers_BUG-3_multipage_site.js";
 
 /**

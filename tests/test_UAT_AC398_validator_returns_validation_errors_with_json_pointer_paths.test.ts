@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { validateSite, type ValidationError } from "@1stcontact/site-schema";
+import { validateSite, type ValidationError } from "@gendev/site-schema";
 
 describe("UAT AC-398: validator returns ValidationError list with JSON-pointer paths on failure", () => {
   it("test_UAT_AC398_validator_returns_validation_errors_with_json_pointer_paths", () => {

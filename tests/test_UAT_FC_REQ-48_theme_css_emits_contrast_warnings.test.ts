@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { generateThemeCss } from "@1stcontact/framework";
+import { generateThemeCss } from "@gendev/framework";
 
 describe("UAT FC REQ-48: generateThemeCss surfaces contrast failures as warnings", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;

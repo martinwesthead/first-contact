@@ -8,7 +8,7 @@ import {
   listRegisteredModules,
   servicesGridMeta,
   textBlockMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 const PHASE0_MODULES = [
   { id: "header", expected: headerMeta },

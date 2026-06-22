@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { BuilderStore, ChatsApi } from "@1stcontact/builder-ui";
+import { BuilderStore, ChatsApi } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import {
   createMockChatApi,

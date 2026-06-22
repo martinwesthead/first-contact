@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { validateSite, type Site } from "@1stcontact/site-schema";
+import { validateSite, type Site } from "@gendev/site-schema";
 import { makeMinimalSite } from "./_fixtures_REQ-3_site";
 
 describe("UAT AC-391: valid minimal site validates and narrows to typed Site", () => {

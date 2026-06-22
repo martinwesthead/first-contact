@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { createBuilderLayout } from "@1stcontact/builder-ui/layout";
+import { createBuilderLayout } from "@gendev/builder-ui/layout";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
 
 describe("UAT AC-480: splitter drag resizes the chat panel, clamps to min and max, and persists the final width", () => {

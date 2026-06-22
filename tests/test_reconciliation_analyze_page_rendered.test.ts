@@ -15,7 +15,7 @@ import {
   renderMarkdownToDom,
   renderToolResult,
   type ChatToolResultRecord,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 import {
   ReferenceDigest,
   renderDigestMarkdown,

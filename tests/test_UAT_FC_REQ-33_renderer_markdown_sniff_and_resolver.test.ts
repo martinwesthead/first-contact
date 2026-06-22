@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderModuleInstance, type ResolveAsset } from "@1stcontact/framework/render";
-import type { ModuleInstance } from "@1stcontact/site-schema";
+import { renderModuleInstance, type ResolveAsset } from "@gendev/framework/render";
+import type { ModuleInstance } from "@gendev/site-schema";
 
 function textBlock(body: unknown): ModuleInstance {
   return {

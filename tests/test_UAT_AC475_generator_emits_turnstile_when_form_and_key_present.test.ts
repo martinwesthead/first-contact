@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runGenerate } from "@1stcontact/generate";
+import { runGenerate } from "@gendev/generate";
 import { makeFixtureSite, writeFixtureSite } from "./_fixtures_REQ-6_site.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

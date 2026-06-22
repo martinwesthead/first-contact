@@ -1,4 +1,4 @@
-import type { AssetRef, ModuleInstance } from "@1stcontact/site-schema";
+import type { AssetRef, ModuleInstance } from "@gendev/site-schema";
 // `METAS_BY_ID` is derived from the single module-meta source of truth
 // (`modules/meta.ts` → `ALL_METAS`). Every module that declares a markdown
 // content field is baked here automatically — there is no second hand-synced

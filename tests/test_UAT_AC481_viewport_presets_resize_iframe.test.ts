@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { createPreviewPanel, VIEWPORT_PRESETS } from "@1stcontact/builder-ui";
+import { createPreviewPanel, VIEWPORT_PRESETS } from "@gendev/builder-ui";
 
 describe("UAT AC-481: preview viewport presets resize the iframe to mobile 375px, tablet 768px, desktop 100%", () => {
   afterEach(() => {

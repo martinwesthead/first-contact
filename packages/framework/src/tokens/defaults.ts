@@ -1,4 +1,4 @@
-import type { ThemeTokens } from "@1stcontact/site-schema";
+import type { ThemeTokens } from "@gendev/site-schema";
 
 export const defaultThemeTokens: ThemeTokens = {
   palette: {

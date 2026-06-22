@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CatalogMissError, getModule } from "@1stcontact/framework";
+import { CatalogMissError, getModule } from "@gendev/framework";
 
 describe("UAT FC REQ-4: registry throws on unknown module", () => {
   it("throws CatalogMissError naming the unknown id", () => {

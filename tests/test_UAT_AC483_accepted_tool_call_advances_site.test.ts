@@ -5,7 +5,7 @@ import {
   buildFrameworkCatalog,
   createPreviewPanel,
   runChatTurn,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
 

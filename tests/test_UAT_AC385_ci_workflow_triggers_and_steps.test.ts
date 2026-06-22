@@ -58,11 +58,11 @@ describe("UAT AC-385: CI workflow triggers on PRs and runs install/build/test/dr
     const testIdx = firstIndex(steps, (s) => /\bpnpm\s+test\b/.test(s.run ?? ""));
     const dryPublicIdx = firstIndex(
       steps,
-      (s) => (s.run ?? "").includes("dryrun:public") || (s.run ?? "").includes("@1stcontact/public-site") && (s.run ?? "").includes("dryrun"),
+      (s) => (s.run ?? "").includes("dryrun:public") || (s.run ?? "").includes("@gendev/public-site") && (s.run ?? "").includes("dryrun"),
     );
     const dryControlIdx = firstIndex(
       steps,
-      (s) => (s.run ?? "").includes("dryrun:control") || (s.run ?? "").includes("@1stcontact/control-app") && (s.run ?? "").includes("dryrun"),
+      (s) => (s.run ?? "").includes("dryrun:control") || (s.run ?? "").includes("@gendev/control-app") && (s.run ?? "").includes("dryrun"),
     );
 
     expect(installIdx, "frozen-lockfile install step present").toBeGreaterThanOrEqual(0);

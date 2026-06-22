@@ -10,7 +10,7 @@ const repoRoot = resolve(__dirname, "..");
 // ─────────────────────────────────────────────────────────────────────────
 // AC-727: web-fetch-safety is consumable without declaring
 // @cloudflare/workers-types. A downstream package that imports
-// @1stcontact/web-fetch-safety must compile under `pnpm build` without
+// @gendev/web-fetch-safety must compile under `pnpm build` without
 // listing @cloudflare/workers-types in its own tsconfig types[]. The library
 // must NOT leak a `KVNamespace` ambient-global requirement onto consumers —
 // building such a consumer produces zero `TS2304: Cannot find name
@@ -44,8 +44,8 @@ describe("Story story-a0482aed / AC-727: web-fetch-safety is consumable without 
     );
     expect(
       consumerSource,
-      "extractor must import @1stcontact/web-fetch-safety for this build to exercise the consumption path",
-    ).toContain("@1stcontact/web-fetch-safety");
+      "extractor must import @gendev/web-fetch-safety for this build to exercise the consumption path",
+    ).toContain("@gendev/web-fetch-safety");
 
     // Build the consumer. tsc (--noEmit) exits non-zero and prints the
     // diagnostics to stdout on any type error, so success == exit 0, and the
@@ -54,7 +54,7 @@ describe("Story story-a0482aed / AC-727: web-fetch-safety is consumable without 
     let exitCode = 0;
     let output = "";
     try {
-      output = execSync("pnpm --filter @1stcontact/extractor build", {
+      output = execSync("pnpm --filter @gendev/extractor build", {
         cwd: repoRoot,
         stdio: "pipe",
         encoding: "utf-8",

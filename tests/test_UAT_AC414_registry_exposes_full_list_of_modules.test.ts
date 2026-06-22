@@ -4,7 +4,7 @@ import {
   headerMeta,
   heroMeta,
   listRegisteredModules,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 describe("UAT AC-414: registry exposes the full list of registered modules", () => {
   it("test_UAT_AC414_registry_exposes_full_list_of_modules", () => {

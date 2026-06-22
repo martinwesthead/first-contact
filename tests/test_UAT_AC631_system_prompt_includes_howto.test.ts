@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
 /**

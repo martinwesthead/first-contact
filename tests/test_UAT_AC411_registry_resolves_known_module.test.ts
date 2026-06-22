@@ -4,7 +4,7 @@ import {
   getModule,
   headerMeta,
   heroMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 describe("UAT AC-411: registry resolves a known module to its component and meta", () => {
   it("test_UAT_AC411_registry_resolves_known_module", () => {

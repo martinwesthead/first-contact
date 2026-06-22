@@ -1,7 +1,7 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Banner, bakeModuleContentForRender } from "@1stcontact/framework";
-import type { ModuleInstance } from "@1stcontact/site-schema";
+import { Banner, bakeModuleContentForRender } from "@gendev/framework";
+import type { ModuleInstance } from "@gendev/site-schema";
 
 // AC-758: when given an eyebrow and a subhead, the rendered section shows the
 // eyebrow as a label above the heading and renders the subhead content, with

@@ -4,7 +4,7 @@ import {
   headerMeta,
   heroMeta,
   type ModuleMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 describe("UAT AC-415: every chrome module exposes meta conforming to the module contract", () => {
   it("test_UAT_AC415_every_chrome_module_meta_conforms_to_contract", () => {

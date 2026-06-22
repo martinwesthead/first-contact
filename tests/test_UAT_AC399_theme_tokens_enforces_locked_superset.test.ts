@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateSite } from "@1stcontact/site-schema";
+import { validateSite } from "@gendev/site-schema";
 import { makeMinimalSite, makeThemeTokens } from "./_fixtures_REQ-3_site";
 
 describe("UAT AC-399: theme tokens schema enforces the locked superset", () => {

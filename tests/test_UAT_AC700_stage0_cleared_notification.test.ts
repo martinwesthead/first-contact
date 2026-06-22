@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Site } from "@1stcontact/site-schema";
+import type { Site } from "@gendev/site-schema";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
 
 /**

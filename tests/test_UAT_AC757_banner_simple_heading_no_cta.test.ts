@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Banner } from "@1stcontact/framework";
+import { Banner } from "@gendev/framework";
 
 // AC-757: rendering the simple variant with a heading and no cta produces a
 // published banner section tagged as the simple variant, carrying the heading

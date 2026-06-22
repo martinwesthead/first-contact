@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
-import { applyToolCall, type ToolName } from "@1stcontact/builder-ui/tools";
-import type { Site } from "@1stcontact/site-schema";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
+import { applyToolCall, type ToolName } from "@gendev/builder-ui/tools";
+import type { Site } from "@gendev/site-schema";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import {
   NOT_DETECTED,

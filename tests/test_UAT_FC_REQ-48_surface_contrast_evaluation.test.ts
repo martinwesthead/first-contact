@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultThemeTokens, evaluateSurfaceContrast } from "@1stcontact/framework";
+import { defaultThemeTokens, evaluateSurfaceContrast } from "@gendev/framework";
 
 describe("UAT FC REQ-48: surface-pair contrast evaluation", () => {
   it("returns one entry per module surface variant (default/subtle/inverse/accent)", () => {

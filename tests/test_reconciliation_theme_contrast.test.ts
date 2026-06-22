@@ -6,8 +6,8 @@ import {
   generateThemeCss,
   type ContrastPair,
   type SurfaceVariant,
-} from "@1stcontact/framework";
-import type { PaletteTokens } from "@1stcontact/site-schema";
+} from "@gendev/framework";
+import type { PaletteTokens } from "@gendev/site-schema";
 
 describe("Story story-e53ba4cf: WCAG-AA contrast check over the theme palette", () => {
   it("test_UAT_AC769_contrast_ratio_helper_computes_wcag_luminance_ratio", () => {

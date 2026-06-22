@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderSite } from "@1stcontact/generate";
-import type { Site } from "@1stcontact/site-schema";
+import { renderSite } from "@gendev/generate";
+import type { Site } from "@gendev/site-schema";
 import { makeThemeTokens } from "./_fixtures_REQ-3_site.js";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
 

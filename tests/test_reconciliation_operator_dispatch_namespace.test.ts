@@ -7,7 +7,7 @@ import {
   visibleToolSpecs,
 } from "../apps/control-app/src/operator/registry.js";
 import { sessionEventBus } from "../apps/control-app/src/operator/events.js";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { waitForSseFrame } from "./_helpers_REQ-9_sse.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 

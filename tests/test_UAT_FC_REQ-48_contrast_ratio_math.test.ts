@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contrastRatio } from "@1stcontact/framework";
+import { contrastRatio } from "@gendev/framework";
 
 describe("UAT FC REQ-48: WCAG relative-luminance contrast ratio maths", () => {
   it("returns 21:1 for white on black (the canonical maximum)", () => {

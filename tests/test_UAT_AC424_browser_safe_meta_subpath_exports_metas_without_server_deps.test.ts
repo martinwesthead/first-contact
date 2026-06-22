@@ -7,12 +7,12 @@ import {
   getModule,
   headerMeta as headerMetaFromRegistry,
   heroMeta as heroMetaFromRegistry,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 import {
   footerMeta,
   headerMeta,
   heroMeta,
-} from "@1stcontact/framework/meta";
+} from "@gendev/framework/meta";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FRAMEWORK_SRC = resolve(HERE, "../packages/framework/src");

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { bootBuilder } from "@1stcontact/builder-ui";
+import { bootBuilder } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
 

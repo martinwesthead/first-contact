@@ -6,7 +6,7 @@ import {
   renderToolResult,
   renderMarkdownToDom,
   type ChatToolResultRecord,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 
 describe("UAT AC-584: tool_result kind to renderer dispatcher with markdown fallback and danger card on failure", () => {
   beforeEach(() => {

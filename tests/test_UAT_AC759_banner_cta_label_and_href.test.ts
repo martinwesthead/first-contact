@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Banner } from "@1stcontact/framework";
+import { Banner } from "@gendev/framework";
 
 // AC-759: when a banner is given a cta of { label, href }, the rendered section
 // contains a single CTA link whose visible text is the label and whose

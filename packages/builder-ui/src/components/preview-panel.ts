@@ -1,4 +1,4 @@
-import type { Site } from "@1stcontact/site-schema";
+import type { Site } from "@gendev/site-schema";
 import { renderSiteIntoIframe } from "../preview.js";
 
 export type ViewportPreset = "mobile" | "tablet" | "desktop";

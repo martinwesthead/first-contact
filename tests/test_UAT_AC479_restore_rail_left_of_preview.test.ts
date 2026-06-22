@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { createBuilderLayout } from "@1stcontact/builder-ui/layout";
+import { createBuilderLayout } from "@gendev/builder-ui/layout";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
 
 describe("UAT AC-479: collapsed restore rail sits on the left edge of the preview, not the right", () => {

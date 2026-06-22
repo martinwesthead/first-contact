@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runGenerate, SiteLoadError } from "@1stcontact/generate";
+import { runGenerate, SiteLoadError } from "@gendev/generate";
 
 describe("UAT FC REQ-6: generator validates site def against schema", () => {
   let siteDir: string;

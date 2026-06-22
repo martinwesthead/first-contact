@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Banner } from "@1stcontact/framework";
+import { Banner } from "@gendev/framework";
 
 // AC-761: when dials are omitted, the banner renders with its documented
 // defaults: align = left, surface = default, size = md, and spacingTop =

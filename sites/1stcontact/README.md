@@ -15,7 +15,7 @@ framework. This directory contains:
 From the repo root:
 
 ```sh
-pnpm --filter @1stcontact/public-site build
+pnpm --filter @gendev/public-site build
 ```
 
 This runs the generator (`tools/generate`) over this directory and writes the
@@ -25,7 +25,7 @@ serves it via Workers Static Assets.
 To regenerate directly without going through the public-site package:
 
 ```sh
-pnpm --filter @1stcontact/generate exec fc-generate \
+pnpm --filter @gendev/generate exec fc-generate \
   --site sites/1stcontact \
   --out apps/public-site/public \
   --clean

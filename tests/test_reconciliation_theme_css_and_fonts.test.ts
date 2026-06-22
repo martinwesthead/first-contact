@@ -6,7 +6,7 @@ import {
   generateThemeCss,
   googleFontsHref,
   type FontSpec,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 import { makeThemeTokens } from "./_fixtures_REQ-3_site.js";
 
 describe("Story story-e53ba4cf: theme tokens → CSS custom properties + vetted fonts", () => {

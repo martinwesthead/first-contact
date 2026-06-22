@@ -3,7 +3,7 @@ import {
   getModule,
   listRegisteredModules,
   splitSectionMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 describe("UAT FC REQ-39: split-section is registered in the framework catalog", () => {
   it("listRegisteredModules contains split-section v1", () => {

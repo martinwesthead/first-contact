@@ -10,7 +10,7 @@ import {
   SplitSection,
   Testimonials,
   TextBlock,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 // AC-772 (catalog-wide cross-cutting image-safety constraint): every catalog
 // module that renders a markdown body constrains inline <img> elements within

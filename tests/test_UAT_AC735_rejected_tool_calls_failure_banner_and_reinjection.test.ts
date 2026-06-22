@@ -5,7 +5,7 @@ import {
   buildFrameworkCatalog,
   createChatPanel,
   runChatTurn,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
 /** SSE frame helper — assembles the wire format the streaming driver parses. */

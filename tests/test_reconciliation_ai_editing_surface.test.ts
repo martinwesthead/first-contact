@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { applyToolCall, type ToolName } from "@1stcontact/builder-ui/tools";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
-import { validateSite } from "@1stcontact/site-schema";
+import { applyToolCall, type ToolName } from "@gendev/builder-ui/tools";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
+import { validateSite } from "@gendev/site-schema";
 import { findAction } from "../apps/control-app/src/operator/registry.js";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
-import type { NavEntry, Site } from "@1stcontact/site-schema";
+import type { NavEntry, Site } from "@gendev/site-schema";
 
 const catalog = buildFrameworkCatalog();
 

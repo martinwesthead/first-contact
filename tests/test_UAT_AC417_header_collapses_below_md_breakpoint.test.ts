@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { Header } from "@1stcontact/framework";
+import { Header } from "@gendev/framework";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 

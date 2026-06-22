@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   BuilderStore,
   createChatPanel,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
 /**

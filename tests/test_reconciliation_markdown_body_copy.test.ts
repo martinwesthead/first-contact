@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { AssetRef } from "@1stcontact/site-schema";
-import type { ModuleInstance, Site } from "@1stcontact/site-schema";
+import { AssetRef } from "@gendev/site-schema";
+import type { ModuleInstance, Site } from "@gendev/site-schema";
 import {
   textBlockMeta,
   validateModuleContent,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 import {
   renderModuleInstance,
   type ResolveAsset,
-} from "@1stcontact/framework/render";
+} from "@gendev/framework/render";
 import { htmlToMarkdown } from "../packages/extractor/src/index.js";
-import { renderSite } from "@1stcontact/generate";
+import { renderSite } from "@gendev/generate";
 import { REPRODUCING_A_WEBSITE_DOC } from "../apps/control-app/src/llm-context.js";
 import { findAction } from "../apps/control-app/src/operator/registry.js";
 import type { ActionContext } from "../apps/control-app/src/operator/registry.js";

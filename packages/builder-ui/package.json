@@ -1,5 +1,5 @@
 {
-  "name": "@1stcontact/builder-ui",
+  "name": "@gendev/builder-ui",
   "version": "0.0.3",
   "private": true,
   "description": "Chat-left / preview-right builder SPA. Served by control-app. (REQ-8)",
@@ -40,8 +40,8 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@1stcontact/framework": "workspace:*",
-    "@1stcontact/site-schema": "workspace:*",
+    "@gendev/framework": "workspace:*",
+    "@gendev/site-schema": "workspace:*",
     "@tiptap/core": "^2.6.0",
     "@tiptap/extension-placeholder": "^2.6.0",
     "@tiptap/pm": "^2.6.0",

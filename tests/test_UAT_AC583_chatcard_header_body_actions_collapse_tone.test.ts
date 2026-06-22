@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createChatCard, type ChatCardTone } from "@1stcontact/builder-ui";
+import { createChatCard, type ChatCardTone } from "@gendev/builder-ui";
 
 describe("UAT AC-583: ChatCard primitive renders header, body, actions, collapse, and one of five tones", () => {
   afterEach(() => {

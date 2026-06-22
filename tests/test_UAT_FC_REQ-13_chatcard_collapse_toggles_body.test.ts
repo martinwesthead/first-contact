@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createChatCard } from "@1stcontact/builder-ui";
+import { createChatCard } from "@gendev/builder-ui";
 
 describe("UAT FC REQ-13: <ChatCard> with onToggleCollapse hides/shows the body when the caret is clicked", () => {
   afterEach(() => {

@@ -1,5 +1,5 @@
 {
-  "name": "@1stcontact/generate",
+  "name": "@gendev/generate",
   "version": "0.0.1",
   "private": true,
   "description": "Static generator CLI: sites/<name>/ → apps/public-site/public/",
@@ -24,8 +24,8 @@
     "build": "echo 'generate: no build step (vite-node executes TS at runtime)'"
   },
   "dependencies": {
-    "@1stcontact/framework": "workspace:*",
-    "@1stcontact/site-schema": "workspace:*",
+    "@gendev/framework": "workspace:*",
+    "@gendev/site-schema": "workspace:*",
     "astro": "^4.16.0",
     "vite": "^5.0.0",
     "vite-node": "^2.1.0"

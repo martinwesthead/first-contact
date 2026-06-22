@@ -52,13 +52,13 @@ describe("UAT AC-386: deploy workflow triggers on xgd-stable and deploys both Wo
     const publicDeployIdx = steps.findIndex(
       (s) =>
         (s.run ?? "").includes("wrangler deploy") &&
-        (s.run ?? "").includes("@1stcontact/public-site") &&
+        (s.run ?? "").includes("@gendev/public-site") &&
         (s.run ?? "").includes("--env production"),
     );
     const controlDeployIdx = steps.findIndex(
       (s) =>
         (s.run ?? "").includes("wrangler deploy") &&
-        (s.run ?? "").includes("@1stcontact/control-app") &&
+        (s.run ?? "").includes("@gendev/control-app") &&
         (s.run ?? "").includes("--env production"),
     );
 

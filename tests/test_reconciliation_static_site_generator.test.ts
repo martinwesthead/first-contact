@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { runGenerate, SiteLoadError } from "@1stcontact/generate";
+import { runGenerate, SiteLoadError } from "@gendev/generate";
 import {
   FIXTURE_SITE_DIR,
   makeFixtureSite,

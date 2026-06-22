@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Footer } from "@1stcontact/framework";
+import { Footer } from "@gendev/framework";
 
 describe("UAT AC-421: footer renders the copyright with the supplied year and holder without computing the year at render time", () => {
   it("test_UAT_AC421_footer_renders_copyright_with_supplied_year", async () => {

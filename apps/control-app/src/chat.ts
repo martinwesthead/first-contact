@@ -1,10 +1,10 @@
-import { applyToolCall, type ToolName } from "@1stcontact/builder-ui/tools";
-import type { FrameworkCatalog } from "@1stcontact/builder-ui/catalog";
-import type { ChatMessageToolCall, Site } from "@1stcontact/site-schema";
+import { applyToolCall, type ToolName } from "@gendev/builder-ui/tools";
+import type { FrameworkCatalog } from "@gendev/builder-ui/catalog";
+import type { ChatMessageToolCall, Site } from "@gendev/site-schema";
 import {
   mintIntentToken,
   operatorMessageImpliesIntent,
-} from "@1stcontact/web-fetch-safety";
+} from "@gendev/web-fetch-safety";
 import {
   appendMessage,
   getSession,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validateSite } from "@1stcontact/site-schema";
-import type { Site } from "@1stcontact/site-schema";
+import { validateSite } from "@gendev/site-schema";
+import type { Site } from "@gendev/site-schema";
 import { defaultThemeTokens } from "../packages/framework/src/tokens/defaults.js";
 import {
   NOT_DETECTED,

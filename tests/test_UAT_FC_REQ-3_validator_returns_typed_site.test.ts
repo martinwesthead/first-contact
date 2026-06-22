@@ -1,5 +1,5 @@
 import { describe, expectTypeOf, it, expect } from "vitest";
-import { validateSite, type Site } from "@1stcontact/site-schema";
+import { validateSite, type Site } from "@gendev/site-schema";
 import { makeMinimalSite } from "./_fixtures_REQ-3_site";
 
 describe("UAT FC REQ-3: validator returns typed Site", () => {

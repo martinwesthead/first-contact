@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { BuilderStore, createChatPanel } from "@1stcontact/builder-ui";
+import { BuilderStore, createChatPanel } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

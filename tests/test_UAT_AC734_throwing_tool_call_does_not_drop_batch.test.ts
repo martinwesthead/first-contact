@@ -3,8 +3,8 @@ import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import {
   applyToolCall as realApplyToolCall,
   type ToolCall,
-} from "@1stcontact/builder-ui/tools";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui/tools";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import {
   consumeChatSSE,

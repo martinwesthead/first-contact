@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { MODULE_CSS } from "@1stcontact/framework";
+import { MODULE_CSS } from "@gendev/framework";
 import ServicesGrid from "../packages/framework/src/modules/services-grid/index.astro";
 
 // The one-col variant presents a single full-width feature-callout card. The

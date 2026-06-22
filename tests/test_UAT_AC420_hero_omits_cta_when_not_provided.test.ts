@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Hero } from "@1stcontact/framework";
+import { Hero } from "@gendev/framework";
 
 describe("UAT AC-420: hero omits the CTA when no CTA content is provided", () => {
   it("test_UAT_AC420_hero_omits_cta_when_not_provided", async () => {

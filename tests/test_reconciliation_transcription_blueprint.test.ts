@@ -12,7 +12,7 @@ import {
 import { defaultThemeTokens } from "../packages/framework/src/tokens/defaults.js";
 import { findAction } from "../apps/control-app/src/operator/registry.js";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
-import { AssetRef } from "@1stcontact/site-schema";
+import { AssetRef } from "@gendev/site-schema";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";

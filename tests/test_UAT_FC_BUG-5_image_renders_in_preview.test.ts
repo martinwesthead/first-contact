@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { applyToolCall, type ToolName } from "@1stcontact/builder-ui/tools";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
-import { renderSiteToHtml } from "@1stcontact/framework/render";
+import { applyToolCall, type ToolName } from "@gendev/builder-ui/tools";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
+import { renderSiteToHtml } from "@gendev/framework/render";
 import {
   buildTranscriptionDigest,
   NOT_DETECTED,
@@ -9,7 +9,7 @@ import {
   type ReferenceDigest,
 } from "../packages/extractor/src/index.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
-import type { Site } from "@1stcontact/site-schema";
+import type { Site } from "@gendev/site-schema";
 
 const catalog = buildFrameworkCatalog();
 

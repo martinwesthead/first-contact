@@ -3,11 +3,11 @@ import {
   bannerMeta,
   getModule,
   listRegisteredModules,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 import {
   buildFrameworkCatalog,
   findCatalogEntry,
-} from "@1stcontact/builder-ui/catalog";
+} from "@gendev/builder-ui/catalog";
 
 // AC-755: the framework module catalog exposes banner@v1, resolvable by id and
 // version, present in the builder-facing catalog, advertising exactly the

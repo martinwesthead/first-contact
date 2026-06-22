@@ -1,4 +1,4 @@
-import type { Site } from "@1stcontact/site-schema";
+import type { Site } from "@gendev/site-schema";
 import siteJson from "../sites/1stcontact/site.json" with { type: "json" };
 
 /**

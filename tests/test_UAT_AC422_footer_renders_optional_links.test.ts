@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Footer } from "@1stcontact/framework";
+import { Footer } from "@gendev/framework";
 
 describe("UAT AC-422: footer renders the optional small-link row when navigation entries are supplied", () => {
   it("test_UAT_AC422_footer_renders_optional_links", async () => {

@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Header } from "@1stcontact/framework";
+import { Header } from "@gendev/framework";
 
 describe("UAT AC-416: header top-nav variant renders the logo and one anchor per navigation entry", () => {
   it("test_UAT_AC416_header_top_nav_renders_logo_and_entries", async () => {

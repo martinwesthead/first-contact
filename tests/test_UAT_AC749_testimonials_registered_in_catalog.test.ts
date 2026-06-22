@@ -3,7 +3,7 @@ import {
   getModule,
   listRegisteredModules,
   testimonialsMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 // AC-749: the framework module catalog includes testimonials at version 1.
 // Resolving by id+version returns a usable entry whose component is callable

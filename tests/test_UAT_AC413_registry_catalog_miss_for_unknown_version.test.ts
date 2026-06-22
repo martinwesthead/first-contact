@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CatalogMissError, getModule, headerMeta } from "@1stcontact/framework";
+import { CatalogMissError, getModule, headerMeta } from "@gendev/framework";
 
 describe("UAT AC-413: registry surfaces a catalog-miss error for an unknown version of a known module", () => {
   it("test_UAT_AC413_registry_catalog_miss_for_unknown_version", () => {

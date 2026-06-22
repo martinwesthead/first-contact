@@ -3,7 +3,7 @@ import {
   getModule,
   listRegisteredModules,
   splitSectionMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 // AC-742: the framework module catalog includes split-section at version 1.
 // Resolving by id+version returns a usable entry whose component is callable

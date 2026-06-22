@@ -5,7 +5,7 @@ import {
   SCHEMA_VERSION,
   type ReferenceDigest,
 } from "../packages/extractor/src/index.js";
-import { AssetRef } from "@1stcontact/site-schema";
+import { AssetRef } from "@gendev/site-schema";
 
 function fixtureDigest(
   url: string,

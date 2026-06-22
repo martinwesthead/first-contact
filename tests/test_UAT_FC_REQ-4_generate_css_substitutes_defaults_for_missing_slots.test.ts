@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultThemeTokens, generateThemeCss } from "@1stcontact/framework";
+import { defaultThemeTokens, generateThemeCss } from "@gendev/framework";
 
 describe("UAT FC REQ-4: generateThemeCss substitutes defaults for missing slots", () => {
   it("fills missing palette slots from defaults when input is partial", () => {

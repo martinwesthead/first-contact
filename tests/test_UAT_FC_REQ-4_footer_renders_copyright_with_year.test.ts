@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Footer } from "@1stcontact/framework";
+import { Footer } from "@gendev/framework";
 
 describe("UAT FC REQ-4: footer renders copyright with build-time year", () => {
   it("renders the configured year and copyright holder in the copyright line", async () => {

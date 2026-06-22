@@ -1,7 +1,7 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { bakeModuleContentForRender } from "@1stcontact/framework";
-import type { ModuleInstance } from "@1stcontact/site-schema";
+import { bakeModuleContentForRender } from "@gendev/framework";
+import type { ModuleInstance } from "@gendev/site-schema";
 import SplitSection from "../packages/framework/src/modules/split-section/index.astro";
 
 // AC-743: rendering the image-left variant produces a section marked as

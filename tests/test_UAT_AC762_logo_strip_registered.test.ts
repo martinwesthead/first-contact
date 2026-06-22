@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getModule, listRegisteredModules } from "@1stcontact/framework";
+import { getModule, listRegisteredModules } from "@gendev/framework";
 
 /**
  * AC-762: The framework module catalog exposes a module whose id is

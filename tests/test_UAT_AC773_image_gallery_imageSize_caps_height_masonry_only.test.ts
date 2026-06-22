@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { ImageGallery, imageGalleryMeta } from "@1stcontact/framework";
+import { ImageGallery, imageGalleryMeta } from "@gendev/framework";
 
 // The image-gallery declares an `imageSize` dial (sm/md/lg, default md). The
 // selected value is emitted as `fc-image-gallery--image-<value>` on the section.

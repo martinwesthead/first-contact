@@ -6,7 +6,7 @@ import {
   renderToolResult,
   renderMarkdownToDom,
   type ChatToolResultRecord,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 
 describe("UAT FC REQ-13: tool_result dispatcher routes by kind and falls back to markdown for unknown kinds", () => {
   beforeEach(() => {

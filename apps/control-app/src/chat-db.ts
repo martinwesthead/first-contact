@@ -7,7 +7,7 @@ import type {
   ReferenceDocRecord,
   ReferenceDocRecordParsed,
   ReferenceDocTocEntry,
-} from "@1stcontact/site-schema";
+} from "@gendev/site-schema";
 
 export interface D1Binding {
   prepare(sql: string): D1Statement;

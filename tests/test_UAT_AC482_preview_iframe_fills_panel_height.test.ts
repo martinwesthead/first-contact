@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { createPreviewPanel } from "@1stcontact/builder-ui";
+import { createPreviewPanel } from "@gendev/builder-ui";
 
 describe("UAT AC-482: preview iframe fills the full height of its panel rather than collapsing to the iframe default", () => {
   afterEach(() => {

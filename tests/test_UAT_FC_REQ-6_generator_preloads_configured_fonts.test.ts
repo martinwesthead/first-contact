@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { runGenerate } from "@1stcontact/generate";
+import { runGenerate } from "@gendev/generate";
 import { FIXTURE_SITE_DIR } from "./_fixtures_REQ-6_site.js";
 
 describe("UAT FC REQ-6: generator preloads configured fonts", () => {

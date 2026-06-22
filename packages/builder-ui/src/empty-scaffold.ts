@@ -1,5 +1,5 @@
-import type { Site } from "@1stcontact/site-schema";
-import { defaultThemeTokens } from "@1stcontact/framework/tokens";
+import type { Site } from "@gendev/site-schema";
+import { defaultThemeTokens } from "@gendev/framework/tokens";
 
 export interface EmptyScaffoldArgs {
   readonly businessName?: string;

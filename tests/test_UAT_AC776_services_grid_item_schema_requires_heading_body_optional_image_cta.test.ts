@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { servicesGridMeta, validateModuleContent } from "@1stcontact/framework";
+import { servicesGridMeta, validateModuleContent } from "@gendev/framework";
 
 // A services-grid item requires a `heading` (string) and a `body` (markdown),
 // with an optional `image` that must be an asset-ref object (no bare-string

@@ -9,13 +9,13 @@ import {
   loadModuleStyles,
   type FontSpec,
   type ResolveAsset,
-} from "@1stcontact/framework";
-import type { AssetRef } from "@1stcontact/site-schema";
+} from "@gendev/framework";
+import type { AssetRef } from "@gendev/site-schema";
 import type {
   ModuleInstance,
   Page,
   Site,
-} from "@1stcontact/site-schema";
+} from "@gendev/site-schema";
 
 export interface RenderedPage {
   slug: string;

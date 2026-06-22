@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Banner } from "@1stcontact/framework";
+import { Banner } from "@gendev/framework";
 
 // AC-760: the banner variants are visual-only. Whether the CTA renders depends
 // solely on whether a cta content value is present, independent of the selected

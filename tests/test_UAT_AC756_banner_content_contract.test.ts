@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bannerMeta } from "@1stcontact/framework";
+import { bannerMeta } from "@gendev/framework";
 
 // AC-756: the banner content contract marks heading as required (string) and
 // eyebrow (string), subhead (markdown), and cta (object of label + href) as

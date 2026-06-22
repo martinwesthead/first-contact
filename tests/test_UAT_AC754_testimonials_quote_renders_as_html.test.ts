@@ -1,7 +1,7 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { bakeModuleContentForRender } from "@1stcontact/framework";
-import type { ModuleInstance } from "@1stcontact/site-schema";
+import { bakeModuleContentForRender } from "@gendev/framework";
+import type { ModuleInstance } from "@gendev/site-schema";
 import Testimonials from "../packages/framework/src/modules/testimonials/index.astro";
 
 // AC-754: an item's quote is rendered as live HTML markup, not escaped text.
