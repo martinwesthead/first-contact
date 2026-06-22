@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T21:16:31.418331+00:00'
+updated_at: '2026-06-22T21:47:23.761704+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -415,5 +415,13 @@ Legend: **A** = AI does the work, **U** = user does the work, **A→U** = AI dra
 ---
 
 The rest of the analysis (the "where the UI strains" section, the suggested surface composition, and the next-step proposal) was prose, not tables — so it should have rendered fine. Want me to repost any of that too, or move on to walking one of the two end-to-end scenarios?
+
+<!-- xgd-turn id="0f69629d-be13-4c7e-a615-cbcd312d1c2b-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T21:46:33.847Z" -->
+#### You
+I think this is about right I'm not seeing anything that doesn't fit our model. Obviously the raw dashboard widgets and obviously the AI can carry out actions without a ticket.
+
+The one thing that I think is missing may be a calendar I wonder how tickets and calendar can be combined or whether they should be separate. Perhaps target date is a field on a ticket and the calendar is a view of tickets or maybe even multiple views of tickets by target date
 
 <!-- xgd-chat-end -->
