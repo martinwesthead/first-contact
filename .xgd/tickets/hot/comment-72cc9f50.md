@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-21T00:19:35.099890+00:00'
+updated_at: '2026-06-22T18:11:00.835655+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -325,5 +325,11 @@ Without a clarification I'll wait rather than rip code out on guesswork — the 
 Which one — (1) or (2)?
 
 (I have not changed any code while waiting for this answer. REQ-46 is still `free_coded` at v0.0.27.)
+
+<!-- xgd-turn id="0afdcb3d-ff8f-47f3-a576-73b1ae34dfd0-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T18:10:47.527Z" -->
+#### You
+Ah I see the problem - I never expect to use this tool in Cloudflare it is for DEVELOPMENT locally on my machine - does what you have built work locally? I just need to fire up another webserver?
 
 <!-- xgd-chat-end -->
