@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:53:24.308144+00:00'
+updated_at: '2026-06-22T20:55:51.282454+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -637,5 +637,105 @@ Memory updated with your priority order so future conversations know the sequenc
 <!-- xgd-chat role="user" ts="2026-06-22T20:51:27.187Z" -->
 #### You
 The website we are discussing is gendevlabs.ai and it should live on R2 like any other 1stcontact site. Whitepapers should be email gated. Resend sounds fine
+
+<!-- xgd-turn id="67bcada6-cc1f-4d22-8e0e-637082888aa5-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T20:55:51.279Z" -->
+#### Claude
+Locked. Three implications, then I'll start the audit.
+
+Choosing the D1 path makes this a three-layer audit, not one:
+
+1. **Module catalog gaps** in `packages/framework` (original scope).
+2. **Customer-site deploy pipeline maturity** — DOC-5 lists "build/deploy mechanics for customer sites" as an open question. The D1 path requires verifying what's actually wired (D1 → `tools/generate` → public-site Worker hostname routing). Gaps here precede catalog work.
+3. **Onboarding gaps** — how gendevlabs.ai's account + site get created in D1, plus custom-domain routing.
+
+Email-gated whitepapers are a real flow: form → lead in D1 → Resend tokenized download link → R2-served PDF. New module + endpoint + email template. Sequenced REQ, not a free add-on.
+
+Resend closes DOC-5's "email provider" open question — a small DOC patch should record it once the audit's REQs land.
+
+Updating memory with the decisions, then starting the recon.
+
+A lot more is built than I thought. Let me read the load-bearing files to ground the audit in reality.
+
+Initial recon done. Much more is built than I assumed — and the key gap for the D1 path is bigger than I framed earlier. Here's what I found.
+
+## What's already built
+
+| Area | Status |
+|---|---|
+| **Framework catalog (11 modules)** | header, hero, banner, footer, text-block, services-grid, split-section, image-gallery, logo-strip, testimonials, contact-form |
+| **D1 schema** | leads, accounts, sites (with draft + published definitions + revisions), chat sessions / messages / reference docs (REQ-23) |
+| **public-site Worker** | `/api/forms/contact` endpoint → D1 leads insert; Turnstile verification; **Resend integration already wired** (best-effort notification on lead creation) |
+| **tools/generate** | load → render → write pipeline; CLI driver; currently file-based input |
+| **Convert flow + chat persistence** | transcribe-site, analyze-page, browser-driver, chat sessions in D1 — REQ-20s and REQ-23-26 are landed or close |
+| **Existing site** | `sites/1stcontact/site.json` is the marketing-site definition, also seeded into D1 via migration `0005_seed_1stcontact.sql` |
+
+## What's gap (for priority 1+2)
+
+### A. Pipeline / multi-tenancy gaps (the biggest, structural)
+
+1. **public-site Worker is single-tenant.** `SITE_ID = "1stcontact"` is a hardcoded env var in `wrangler.toml`. Form submissions write that literal as `site_id` on every lead. For gendevlabs.ai alongside 1stcontact.io, the Worker needs either hostname → site_id resolution OR a second Worker deploy.
+
+2. **Per-site static asset serving** isn't there. Worker serves from one `./public` directory. Multi-site needs either per-Worker deploys (each with their own built assets) or shared Worker proxying hostname → R2-stored output.
+
+3. **tools/generate is file-based.** Takes a path; loads from disk. DOC-7 §11.1 said "site definition (file or D1)" — D1 loading isn't there yet. Either add a D1 loader, or wrap generate with an export-D1-to-file pre-step.
+
+4. **No publish trigger.** When does generate actually run after an edit in D1? On operator action? Background queue? Cron? DOC-5 lists this as an open question and it's still open.
+
+### B. Module catalog gaps
+
+| Module | Why needed | Priority |
+|---|---|---|
+| `code-block` | Dev-tool marketing content (XGD workflow snippets) | High (priority 1) |
+| `blog-index` | List of posts on the blog page | Medium (priority 3a, but cheap to add early) |
+| `gated-resource` | Email-gated PDF download CTA | High (priority 2) |
+| `faq` | Common on marketing sites; degrades to `text-block` for v1 | Low — defer |
+| Pricing table (Stripe-aware) | Subscriptions on the site | Priority 4 — defer |
+
+(I should verify `services-grid` doesn't already cover a "feature pillars" pattern; if it does, that gap doesn't exist.)
+
+### C. Email-gated PDF flow (beyond what Resend does today)
+
+Current Resend integration sends a "new lead arrived" notification to the operator. The whitepaper flow needs more:
+- R2 upload path for PDF assets (asset model handles images via `assetRef`; need to confirm non-image asset support)
+- Tokenized download URL generation (signed link, time-limited)
+- public-site Worker handler for `/downloads/:token` that validates and streams from R2
+- Templated email to the *visitor* (not just the operator) containing the link
+- `gated-resource` module on the page that captures email + triggers the flow
+
+### D. Onboarding (creating the gendevlabs.ai account+site)
+
+Migration 0005 seeds the 1stcontact site via SQL. A second site needs either another seed migration, a one-shot bootstrap script, or an admin endpoint. For tenant #2 specifically (us, manually), a one-shot script is the lowest-effort path.
+
+## The biggest decision this surfaces
+
+DOC-7 §10 explicitly names the open choice: **"Workers Static Assets per site, or shared Worker with per-site routing — to be decided in a later REQ."** This decision now needs to be made because gendevlabs.ai is the forcing function.
+
+| Option | Pros | Cons |
+|---|---|---|
+| **Per-site Worker deploy** (one Worker per site, hardcoded SITE_ID per env, built assets shipped per deploy) | Simple; reuses existing single-tenant Worker shape; gets gendevlabs.ai live fastest; DOC-7 §10 names this as a valid path | N Workers for N sites; operationally painful past ~10 tenants; doesn't move the platform toward shared-substrate |
+| **Shared Worker with hostname routing** (one Worker, looks up site by hostname, serves assets from R2-stored output) | Scales cleanly; the right end-state; foundation for self-serve onboarding later | Bigger work; needs the asset-from-R2 path built; needs publish pipeline writing built output to R2 |
+
+**Recommendation: per-site Worker for now.** Gets gendevlabs.ai live without rebuilding the substrate. When real tenant volume arrives (i.e., paying customers, post-priority-4), shared-Worker routing earns its way in. The per-site Worker path also doesn't *block* the shared-Worker path — it's additive.
+
+## Sequenced REQs for priority 1+2
+
+| # | REQ | Size | Notes |
+|---|---|---|---|
+| 1 | `sites/gendevlabs/site.json` + page composition draft | S | File-based starter; will get moved to D1 later. Includes pages: landing, methodology, blog (stub), resources, contact. |
+| 2 | `code-block` framework module | S | One module + variants for inline vs full-page; markdown body + language hint |
+| 3 | Second public-site Worker deploy (`apps/public-site-gendevlabs/` or via env-keyed deploys of the existing one) | S | Routes `gendevlabs.ai/*`; SITE_ID="gendevlabs"; shared LEADS_DB or its own |
+| 4 | `gated-resource` module + tokenized-download flow | M | Module + Worker endpoint `/api/resources/request` + `/downloads/:token` + Resend templated email + R2 PDF upload path |
+| 5 | `blog-index` module + post-page composition pattern | S | Index lists posts (text-block-based posts in v1); RSS feed could be a v1.5 polish |
+| 6 | DOC patch closing DOC-5's email-provider and build-mechanics open questions | XS | Documentation hygiene |
+
+REQ 1, 2, 3 unblock priority 1 (live closed-beta site). REQ 4 unblocks priority 2 (whitepapers). REQ 5 unblocks priority 3a's first post.
+
+## What I haven't checked yet
+
+To keep this turn focused, I didn't read: `apps/control-app/` (account/auth state, chat endpoints, builder API surface), `tools/generate/src/load.ts` (exact site-loading API), `sites/1stcontact/site.json` (what a real site definition looks like at this point), or the existing `services-grid` meta (to confirm it does/doesn't cover the "feature pillars" pattern I'd want for gendevlabs.ai landing). All are worth reading before the catalog audit is finalized.
+
+Want me to (a) dig into those remaining files and complete the audit, (b) skip ahead and start drafting `sites/gendevlabs/site.json` page composition based on what we know now, or (c) start with REQ 3 (second public-site Worker deploy) since that's the foundational unblock?
 
 <!-- xgd-chat-end -->
