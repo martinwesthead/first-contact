@@ -60,6 +60,9 @@
 # Environment files
 .env
 .env.local
+# Wrangler local secrets (live API keys; loaded by `wrangler dev` automatically)
+.dev.vars
+**/.dev.vars
 
 # macOS
 .DS_Store
