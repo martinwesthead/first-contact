@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T21:21:14.500867+00:00'
+updated_at: '2026-06-22T21:21:32.067817+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -910,5 +910,72 @@ Three steps ahead is far enough. What about A stands out as wrong or worth pushi
 <!-- xgd-chat role="user" ts="2026-06-22T21:19:47.324Z" -->
 #### You
 We need to accomodate sites that are not (yet) wired to a custom domain e.g. <SHA>.1stcontact.io
+
+<!-- xgd-turn id="905782dd-f039-45c9-98d4-9033f7bb79b9-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T21:21:32.066Z" -->
+#### Claude
+Good catch — I conflated slug-as-internal-id with slug-as-default-subdomain. They should be separate. Amendment:
+
+## A (amended) — default subdomain as a `kind='default'` row
+
+Cleanest fit: every site gets a `site_domains` row at creation time with `kind='default'`. Domain is opaque, derived (or randomly issued) at creation. Same lookup path as custom domains; no special-case routing.
+
+```sql
+-- site_domains.kind values:
+--   'default'              — platform-issued, e.g. a3f5c2d1e8.1stcontact.io. Cannot be removed.
+--   'primary'              — operator-attached custom domain (the canonical one)
+--   'alias'                — alternate serving the same content
+--   'redirect_to_primary'  — 301s to the primary
+```
+
+At site creation:
+
+```
+site_id     = uuid()
+default_sub = random(10 hex chars)   -- e.g. "a3f5c2d1e8"
+INSERT INTO site_domains
+  VALUES ("{default_sub}.1stcontact.io", site_id, 'default', verified_at=now(), created_at=now())
+```
+
+Hostname resolution stays uniform — the Worker doesn't care whether a hit came from `a3f5c2d1e8.1stcontact.io` or `gendevlabs.ai`. `kind` is metadata for UI ("this is your platform URL — can't be removed") and for deciding whether to 301.
+
+This also fixes the slug confusion: **slug stays as an internal/admin identifier** (control-app URLs like `app.1stcontact.io/sites/gendevlabs`); it isn't exposed on the public web as a hostname.
+
+### What this needs at the platform level
+
+- Wildcard DNS: `*.1stcontact.io` → public-site Worker
+- Wildcard route in `wrangler.toml`: `*.1stcontact.io/*` (Cloudflare supports this on a single zone)
+- `1stcontact.io` itself remains a normal `site_domains` row (kind='primary', pointing at the marketing site's site_id) — no conflict, apex and subdomains are distinct hostnames
+
+### Sub-questions worth deciding now
+
+1. **Default subdomain derivation: deterministic from site_id, or random-on-create-and-stored?**
+   - Deterministic (`sha256(site_id).slice(0, N)`) — derivable without a DB lookup, but if a site_id is ever leaked (logs, error messages) the default URL is derivable from it
+   - Random — slightly more entropy, follows the convention of preview URLs in tools like Vercel/Netlify
+   - **Recommend random-on-create, stored** — UUIDs are already opaque and the SHA buys little; random is more conventional and decouples URL from internal ID
+
+2. **Length:** 8 hex chars (32 bits) is plenty against collisions at expected scale; 10 (40 bits) is comfortable conservative. **Recommend 10.**
+
+3. **Default subdomain hostname:** `*.1stcontact.io` per your example. Worth being deliberate that the marketing site lives at the apex (`1stcontact.io`) and customer-site defaults live at subdomains. No conflict. Alternative would be a separate domain (`*.sites.1stcontact.io` or a short brand) — more cost and DNS complexity for no real gain. **Recommend `*.1stcontact.io`.**
+
+4. **Behavior once a primary custom domain is attached:** does the default URL 301 to the primary, or serve the same content with `<link rel="canonical">`?
+   - Industry default is 301 (Squarespace, Webflow, Vercel preview URLs all do this once a prod domain is bound). Cleaner for SEO; bookmarks update automatically.
+   - **Recommend 301.** The default URL still works after the redirect — it just funnels traffic to the canonical.
+
+5. **Pre-publish behavior:** brand new site has `published_definition = NULL`. What does the default URL serve?
+   - A generic "site being built" placeholder is simplest and matches how most platforms handle the moment between site-create and first-publish
+   - Draft-preview comes later as a separate URL pattern (`preview-{default_sub}.1stcontact.io` or query-param token) — not v1
+
+## Where this leaves A
+
+Final shape:
+- `accounts` unchanged
+- `sites` + `email_notify_to`
+- `site_domains` with kinds: `default` | `primary` | `alias` | `redirect_to_primary`
+- Every site has exactly one `default` row at creation; zero or more `primary`/`alias`/`redirect_to_primary` rows added when a custom domain is attached
+- Single hostname-lookup code path for all requests
+
+Push on any of the sub-questions, or shall we move to B (auth + operator role + account/site lifecycle AI tools)?
 
 <!-- xgd-chat-end -->
