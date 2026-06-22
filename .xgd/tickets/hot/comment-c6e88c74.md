@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:46:47.404356+00:00'
+updated_at: '2026-06-22T23:46:59.814483+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1440,5 +1440,28 @@ Want to look at any other tabs/features before sketching the substrate spec, or 
 <!-- xgd-chat role="user" ts="2026-06-22T23:46:22.578Z" -->
 #### You
 ok so it sounds like we build a new lightweight backend for the XGD agentic framework in JS that does tickets, chat in a consistent way. We probably end up with two implementations of the knowledge infrastructure then one in Python one in JS - but maybe we don't need JS immediately...
+
+<!-- xgd-turn id="9eef2e3b-bcff-45d2-af2d-833b98d6c4d1-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T23:46:58.786Z" -->
+#### Claude
+That's the shape. Two small notes on "defer knowledge":
+
+**1. The JS substrate should be designed so knowledge slots in cleanly later.** Costs ~nothing now:
+- Frontmatter passes through unknown fields verbatim (so `relevance_tags: [marketing/campaign/q3]` survives even with no consumer)
+- The query API supports `fields.*` filters generically (so when someone asks "tickets tagged X", the substrate can already answer it without knowing about the tag concept)
+- Events emit on ticket update (so a future `@xgd/knowledge` package can subscribe without substrate changes)
+
+If the substrate is built ignorant of knowledge but doesn't *resist* it, knowledge becomes purely additive when you want it.
+
+**2. The catalog file format is itself a portable contract.** Whenever XGD ships its `.xgd/knowledge/catalog.yaml` (Python), JS can read that YAML directly. The catalog YAML is small structured data — no code-sharing needed to interpret it. So even before JS gets its own Librarian workflow, a 1C tool could *read* an XGD-generated catalog if it ever wanted to.
+
+The full JS knowledge layer (vector search via transformers.js or Workers AI, Librarian workflow) waits until 1C has enough content to need it. Probably 6-12 months out for the marketing tool. Trivial to defer.
+
+## So the actual minimum next step
+
+A DOC ticket in 1C scoping the JS substrate: format spec (compatible subset of XGD's frontmatter), Storage adapter interface, ticket/chat/comment models, query API, events. Once that's written down, you (or rather XGD-on-1C) can build it in a day-ish. Marketing tool starts using it immediately.
+
+Want me to draft that DOC ticket in 1C? It'd be the first artifact that turns this conversation into shippable scope.
 
 <!-- xgd-chat-end -->
