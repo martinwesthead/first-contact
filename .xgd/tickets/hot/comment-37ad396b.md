@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:14:53.615347+00:00'
+updated_at: '2026-06-22T20:20:46.803144+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -501,5 +501,68 @@ Three open questions waiting for your call before scope-locking: auth/data primi
 <!-- xgd-chat role="user" ts="2026-06-22T20:14:45.457Z" -->
 #### You
 Please read the existing architecture documents - we are NOT designing this in a vaccuum a lot of decisions are already made - come back when you understand the current design
+
+<!-- xgd-turn id="3741d86b-5654-46dd-92d3-a20cd2a23066-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T20:20:45.791Z" -->
+#### Claude
+You're right — let me read what's there before saying more.
+
+Significant existing architecture. Let me also read the doc tickets and check what's actually been built.
+
+Read. Here's what I now know is locked, where my previous advice was off, and what the actual MVP question looks like.
+
+## What's already decided
+
+**Substrate is Cloudflare-native, end to end.** Workers (API), D1 (structured data), R2 (assets), KV (low-criticality cache), Durable Objects (per-site/per-account coordination), Queues + Cron (background). External deps deliberately limited to Stripe, email, AI providers, SMS [DOC-5, DOC-1]. The two-Worker split is committed: `public-site` for `1stcontact.io` (marketing + public endpoints), `control-app` for `app.1stcontact.io` (authenticated SPA + API) [DOC-7 §10].
+
+**Multi-tenancy is already baked in.** `account_id`/`site_id` flow through every owner-facing resource [DOC-5 §"Privacy and PII Principles" item 2, DOC-12 §17]. The exact line "one operator → one site is acceptable for MVP but the API contracts must accept and return `site_id` on every owner-facing resource" is already there. Mobile clients are explicitly written as multi-site from day one with a site picker. So my lecture on day-one tenancy was redundant — it's there.
+
+**Auth is magic-link only.** No passwords, no social [DOC-5]. Bearer access + refresh tokens layered for portal/mobile [DOC-12 §6]. HttpOnly cookies (web) + SecureStore (mobile). Clerk/Auth0/Supabase Auth do not enter this picture.
+
+**Builder UI is preview-shaped, not dashboard-shaped.** Two-panel — chat left, in-browser live preview right via `packages/framework` invoked directly in the iframe, no build round-trip on edit [DOC-8 §2-3]. AI tool surface is a fixed catalog mirroring DOC-7 §6.2, with four-layer mechanical validation [DOC-8 §5-6]. No raw JSON, no arbitrary CSS, no module-source edits, ever.
+
+**Chat persistence + reference docs + convert flow + mobile companion are designed and in flight.** REQ-20 through REQ-29 implement DOC-9/DOC-10. Active code on this branch — `packages/builder-ui/src/chats-api.ts` is the new file. Mobile companion architecture committed in DOC-12 (Expo + RN, owner-API namespace, Account event-bus DO, SSE for live updates, Expo Notifications for push, non-builder tool surface for mobile chat).
+
+## Where my previous suggestions were wrong
+
+| What I said | Reality |
+|---|---|
+| Supabase / Clerk for auth | Magic-link + D1 + Bearer tokens — substrate already specified |
+| Postgres RLS for tenant isolation | D1 isn't Postgres; enforcement is at the Worker/ORM layer via mandatory `account_id`/`site_id` filters. Same discipline, different mechanism. |
+| Vercel / Cloudflare-for-SaaS for custom domains | Cloudflare-native via Workers Static Assets; custom-domain pipeline is the platform's own concern |
+| Unified dashboard+chat+ticket pattern across **all** pillars | Right for CRM / Monitoring / Lead Gen / Mobile. **Wrong for Builder** — DOC-8 explicitly commits Builder to chat+preview because the operator is *building*, not *observing*. |
+| "Execution modes" taxonomy (guided/autonomous/drafted/outreach) | Needs reframing. Every AI action is already autonomous *within a fixed tool surface*. The real distinction is **which surface** (builder tools / CRM tools / lead-gen tools / mobile-chat tools — the last explicitly forbids site editing per DOC-12 §10a). |
+| Lead Gen as a settled 4th pillar | It's in "Future Expansion: Marketing" per DOC-4 — newsletter, mailing list, content, SEO, AI visibility, SEM are all explicitly deferred until customer demand justifies. Promoting Lead Gen to MVP is a real scope decision, not a given. |
+
+## Reframing the MVP question
+
+The goal stated cleanly: **Martin uses 1st Contact (as tenant #1, customer zero) to build and operate XGD's marketing presence.** Against the existing architecture, that decomposes to:
+
+**1. Website builder for XGD marketing site.** The framework + catalog already exist. Real question: what modules does XGD marketing need that aren't in the catalog? Likely candidates — pricing table (Stripe-aware), code block (dev-tool content), comparison/feature matrix, possibly an FAQ variant tuned for technical buyers. Per DOC-7 §7's catalog evolution discipline, these get added as variants or new modules when a real customer need surfaces — XGD is that customer.
+
+**2. Subscription payments on the built site.** Stripe is locked in. What doesn't exist yet: a **Stripe-aware pricing module** in the framework catalog + a **Checkout → webhook → account-provisioning** path. Worth being explicit about *which* subscription layer this is. For marketing-XGD this is "XGD product collecting from XGD's customers" → XGD's own Stripe account, vanilla Checkout, account-level entitlements provisioned on success. The other layer ("1st Contact platform collecting from its tenants") is a separate concern that lands when there's a paying tenant #2.
+
+**3. Lead Gen pillar.** This is the real net-new work. Currently deferred per DOC-4. The whole conversation we just had — tickets, AI conversation, dashboard, four execution modes, integration with Monitoring — is greenfield. Architecturally cheap (another product-native ticket type in D1, another tab in the control-app), but it's a deliberate scope-promotion decision and would need its own DOC at the DOC-4/5/7/8/9/10/12 level plus implementation REQs.
+
+**4. Simple content creation.** Already covered by the existing AI tool surface for site content [DOC-8 §5]. Blog posts are pages with text-block (and likely a code-block module added to the catalog). "Simple" maps cleanly onto "use what's there; don't add brochure/email/social tools yet."
+
+## The real next-step question
+
+Given the above, the path forward is one of:
+
+**(a) Catalog gap audit first** — concrete read against XGD's actual marketing-site needs vs. the current framework module set. Output: a list of modules/variants/dials to add via REQs. This is the most directly mechanical path and unblocks "1st Contact can build the XGD site at all."
+
+**(b) Lead Gen DOC first** — design the new pillar against the existing architecture (D1 schema, tool surface, UI shape, how it interacts with CRM/Monitoring, where it lives in the control-app SPA). Output: a DOC at the same level as DOC-4/5/7/8 plus implementation REQs. Bigger commitment.
+
+**(c) Subscription pipeline DOC first** — Stripe-aware module + Checkout flow + webhook → account provisioning + entitlement model. Output: a DOC + REQs.
+
+My instinct: (a) first because it's the smallest-scope thing that produces a real artifact (a list of catalog gaps for XGD marketing), and it surfaces concrete needs that inform (b) and (c). But you know your priorities better than me — which of these would you like me to start on?
+
+Now let me fix the memory I wrote earlier that contradicts the actual architecture.
+
+Memory now reflects reality: a pointer to where the architecture docs live (so future conversations consult them first), the corrected multi-tenancy entry (D1 + Worker enforcement, not Postgres RLS), and the corrected pillar status (Lead Gen is deferred, not committed).
+
+The three paths I named — catalog gap audit, Lead Gen DOC, or subscription pipeline DOC — are the real next-step choices. Which would you like me to start on?
 
 <!-- xgd-chat-end -->
