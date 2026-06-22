@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T21:11:02.974026+00:00'
+updated_at: '2026-06-22T21:21:14.500867+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -904,5 +904,11 @@ If A looks reasonable, the next things to settle in roughly this order:
 4. **Tool audit, then site audit**
 
 Three steps ahead is far enough. What about A stands out as wrong or worth pushing back on?
+
+<!-- xgd-turn id="905782dd-f039-45c9-98d4-9033f7bb79b9-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T21:19:47.324Z" -->
+#### You
+We need to accomodate sites that are not (yet) wired to a custom domain e.g. <SHA>.1stcontact.io
 
 <!-- xgd-chat-end -->
