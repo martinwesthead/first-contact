@@ -4,7 +4,6 @@ import {
   BuilderStore,
   DEFAULT_STORAGE_KEY,
   type ChatMessage,
-  type ChatSessionSummary,
 } from "./store.js";
 import { ChatsApi, type SessionSummary } from "./chats-api.js";
 import { createBuilderLayout } from "./components/builder-layout.js";
@@ -20,8 +19,8 @@ export interface BootBuilderOptions {
   initialSite: Site;
   /**
    * REQ-25: ID of the site whose chats this builder load owns. Used for the
-   * per-site session list and localStorage key for activeSessionId. Falls
-   * back to `initialSite.config.id` when present, else `"unknown"`.
+   * per-site session list and localStorage key for activeSessionId. Defaults
+   * to "default" when omitted (single-tenant local dev).
    */
   siteId?: string;
   /** Chat endpoint. Defaults to '/api/chat' (same-origin). */
@@ -55,8 +54,6 @@ export interface BootBuilderOptions {
    * underlying chat-driver). Defaults to globalThis.fetch.
    */
   fetch?: typeof fetch;
-  /** REQ-25 test-injection point: confirm prompt for delete-session. */
-  confirmPrompt?: (message: string) => boolean;
 }
 
 export const SESSION_ID_STORAGE_KEY = "fc.builder.sessionId";
@@ -88,13 +85,29 @@ function activeChatStorageKey(siteId: string): string {
   return `${ACTIVE_CHAT_SESSION_KEY_PREFIX}${siteId}`;
 }
 
-function toSummary(s: SessionSummary): ChatSessionSummary {
-  return {
-    id: s.id,
-    title: s.title,
-    lastMessageAt: s.lastMessageAt,
-    messageCount: s.messageCount,
-  };
+/**
+ * REQ-25 (second pass): pick the right session for this boot. Order:
+ *   1. localStorage-stored active id, if it still exists on the server
+ *   2. most-recently-used session for the site
+ *   3. create a fresh one (returns the freshly created summary)
+ *
+ * A session always exists after this call — the panel never sees a
+ * "no active session" state.
+ */
+async function ensureActiveSession(
+  api: ChatsApi,
+  siteId: string,
+  storage: Storage | null,
+): Promise<SessionSummary> {
+  const sessions = await api.listSessions(siteId);
+  const persisted = storage?.getItem(activeChatStorageKey(siteId));
+  if (persisted) {
+    const match = sessions.find((s) => s.id === persisted);
+    if (match) return match;
+  }
+  if (sessions.length > 0) return sessions[0]!;
+  const created = await api.createSession(siteId);
+  return created;
 }
 
 /**
@@ -154,23 +167,19 @@ export function bootBuilder(options: BootBuilderOptions): {
     return undefined;
   };
 
-  // REQ-25: load the tail of a session and write it into the store. Reused
-  // by initial hydrate, session switch, and new-session creation.
-  const loadAndActivateSession = async (
-    sessionId: string,
-  ): Promise<void> => {
-    const page = await chatsApi.loadTail(sessionId, TAIL_LIMIT);
+  // REQ-25: load the tail of the active session and write it into the
+  // store. Called once during boot.
+  const loadAndActivate = async (sid: string): Promise<void> => {
+    const page = await chatsApi.loadTail(sid, TAIL_LIMIT);
     const messages: ChatMessage[] = page.messages.map((m) => m.message);
     const loadedFromOrd =
       page.messages.length > 0 ? page.messages[0]!.ord : null;
-    store.setActiveSession(sessionId, {
+    store.setActiveSession(sid, {
       chatHistory: messages,
       loadedFromOrd,
       hasMoreOlder: page.hasMoreOlder,
     });
-    if (storage) {
-      storage.setItem(activeChatStorageKey(siteId), sessionId);
-    }
+    if (storage) storage.setItem(activeChatStorageKey(siteId), sid);
   };
 
   // REQ-25: lazy-loaded chat-panel handle (assigned after createChatPanel
@@ -181,14 +190,14 @@ export function bootBuilder(options: BootBuilderOptions): {
 
   const chat_ = createChatPanel(layout.chatPanel, {
     store,
-    confirmPrompt: options.confirmPrompt,
     onSend: async (text: string) => {
-      // REQ-25: if no session is active (fresh load with zero sessions), the
-      // send handler creates one first. Mirrors the "new chat" affordance.
+      // REQ-25 (second pass): the boot promise always ensures a session
+      // exists. If onSend fires before boot finishes (unlikely — the
+      // editor is mounted synchronously but the operator can't type
+      // before paint), wait for activation.
       if (!store.getState().activeSessionId) {
-        const created = await chatsApi.createSession(siteId);
-        store.upsertSession(toSummary(created));
-        await loadAndActivateSession(created.id);
+        const session = await ensureActiveSession(chatsApi, siteId, storage);
+        await loadAndActivate(session.id);
       }
       abortController = new AbortController();
       await runChatTurn(text, {
@@ -209,41 +218,12 @@ export function bootBuilder(options: BootBuilderOptions): {
         },
       });
       abortController = null;
-      // Refresh the session list so message_count / lastMessageAt updates.
-      try {
-        const refreshed = await chatsApi.listSessions(siteId);
-        store.setSessions(refreshed.map(toSummary));
-      } catch (err) {
-        console.warn("[builder] failed to refresh session list after turn", err);
-      }
     },
     onStop: () => {
       abortController?.abort();
       abortController = null;
     },
     sessionHandlers: {
-      onSelectSession: async (id) => {
-        await loadAndActivateSession(id);
-      },
-      onNewSession: async () => {
-        const created = await chatsApi.createSession(siteId);
-        store.upsertSession(toSummary(created));
-        await loadAndActivateSession(created.id);
-      },
-      onDeleteSession: async (id) => {
-        await chatsApi.deleteSession(id);
-        store.removeSession(id);
-        if (storage) storage.removeItem(activeChatStorageKey(siteId));
-        // Pick a fallback active session if any remain.
-        const remaining = store.getState().sessions;
-        if (remaining.length > 0) {
-          await loadAndActivateSession(remaining[0]!.id);
-        }
-      },
-      onRenameSession: async (id, title) => {
-        const updated = await chatsApi.patchSessionTitle(id, title);
-        store.upsertSession(toSummary(updated));
-      },
       onScrollToTop: async () => {
         const state = store.getState();
         if (!state.hasMoreOlder || state.activeSessionId === null) return;
@@ -266,25 +246,14 @@ export function bootBuilder(options: BootBuilderOptions): {
   });
   chat = chat_;
 
-  // REQ-25: initial hydration. Listing sessions and restoring the
-  // operator's last-active session happen in the background so the panel
-  // doesn't block on the network.
+  // REQ-25 (second pass): ensure the operator boots into a live, persisted
+  // chat session every time — no empty state, no UI to manage sessions.
   void (async () => {
     try {
-      const summaries = await chatsApi.listSessions(siteId);
-      store.setSessions(summaries.map(toSummary));
-      const persisted = storage?.getItem(activeChatStorageKey(siteId));
-      const activeId =
-        persisted && summaries.some((s) => s.id === persisted)
-          ? persisted
-          : summaries.length > 0
-            ? summaries[0]!.id
-            : null;
-      if (activeId) {
-        await loadAndActivateSession(activeId);
-      }
+      const session = await ensureActiveSession(chatsApi, siteId, storage);
+      await loadAndActivate(session.id);
     } catch (err) {
-      console.warn("[builder] failed to hydrate chat sessions", err);
+      console.warn("[builder] failed to establish chat session", err);
     }
   })();
 

@@ -45,18 +45,6 @@ export interface PendingToolFailure {
   readonly error: string;
 }
 
-/**
- * REQ-25: lightweight session metadata for the session-list affordance.
- * Distinct from REQ-24's wire row — drops site_id (UI is already site-scoped)
- * and renames snake_case to camelCase to match TS conventions.
- */
-export interface ChatSessionSummary {
-  readonly id: string;
-  readonly title: string | null;
-  readonly lastMessageAt: number;
-  readonly messageCount: number;
-}
-
 export interface BuilderState {
   readonly siteDefinition: Site;
   /**
@@ -66,10 +54,12 @@ export interface BuilderState {
    */
   readonly chatHistory: ReadonlyArray<ChatMessage>;
   readonly pendingToolFailures: ReadonlyArray<PendingToolFailure>;
-  /** REQ-25: active session id, null when no session has been selected. */
+  /**
+   * REQ-25: server-side id of the chat session the operator is talking to.
+   * Null until the boot routine has established a session — the chat-driver
+   * refuses to run a turn while it's null.
+   */
   readonly activeSessionId: string | null;
-  /** REQ-25: known sessions for the current site, ordered desc by lastMessageAt. */
-  readonly sessions: ReadonlyArray<ChatSessionSummary>;
   /**
    * REQ-25: lowest `ord` currently loaded into chatHistory (or null when
    * empty). Used by infinite scroll as the `before=:ord` cursor.
@@ -85,7 +75,6 @@ export interface BuilderStateInit {
   readonly chatHistory: ReadonlyArray<ChatMessage>;
   readonly pendingToolFailures?: ReadonlyArray<PendingToolFailure>;
   readonly activeSessionId?: string | null;
-  readonly sessions?: ReadonlyArray<ChatSessionSummary>;
   readonly loadedFromOrd?: number | null;
   readonly hasMoreOlder?: boolean;
 }
@@ -118,7 +107,6 @@ export class BuilderStore {
     const baseExtras = {
       pendingToolFailures: pending,
       activeSessionId: initial.activeSessionId ?? null,
-      sessions: initial.sessions ?? [],
       loadedFromOrd: initial.loadedFromOrd ?? null,
       hasMoreOlder: initial.hasMoreOlder ?? false,
     } as const;
@@ -204,44 +192,7 @@ export class BuilderStore {
     this.emit();
   }
 
-  /** REQ-25: replace the known session list (after `listSessions` or
-   *  create/delete). Caller passes the canonical lastMessageAt-desc order. */
-  setSessions(sessions: ReadonlyArray<ChatSessionSummary>): void {
-    this.state = { ...this.state, sessions };
-    this.emit();
-  }
-
-  /** REQ-25: insert/update one session in the list, preserving
-   *  lastMessageAt-desc ordering. New session goes to the top. */
-  upsertSession(session: ChatSessionSummary): void {
-    const without = this.state.sessions.filter((s) => s.id !== session.id);
-    const next = [session, ...without].sort(
-      (a, b) => b.lastMessageAt - a.lastMessageAt,
-    );
-    this.state = { ...this.state, sessions: next };
-    this.emit();
-  }
-
-  /** REQ-25: drop a session from the list. If it was active, the active id
-   *  becomes null (the wiring layer is responsible for picking a fallback). */
-  removeSession(sessionId: string): void {
-    const sessions = this.state.sessions.filter((s) => s.id !== sessionId);
-    const activeSessionId =
-      this.state.activeSessionId === sessionId ? null : this.state.activeSessionId;
-    this.state = { ...this.state, sessions, activeSessionId };
-    if (this.state.activeSessionId === null) {
-      this.state = {
-        ...this.state,
-        chatHistory: [],
-        loadedFromOrd: null,
-        hasMoreOlder: false,
-        pendingToolFailures: [],
-      };
-    }
-    this.emit();
-  }
-
-  /** REQ-25: switch the active session and seed its loaded tail. Resets
+  /** REQ-25: set the active session and seed its loaded tail. Resets
    *  pendingToolFailures (they belonged to the prior session). */
   setActiveSession(
     sessionId: string | null,
