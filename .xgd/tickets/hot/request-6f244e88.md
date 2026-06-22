@@ -5,9 +5,9 @@ type: request
 title: 'Builder UI: persistent chat sessions (session list, new-chat, infinite scroll)'
 created_by: xgd
 created_at: '2026-06-16T23:27:06.916520+00:00'
-updated_at: '2026-06-22T20:28:55.070443+00:00'
+updated_at: '2026-06-22T23:10:03.097665+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   priority: medium
@@ -150,3 +150,23 @@ The "new chat" affordance is necessary because sessions don't grow without bound
 **Tail load returns oldest → newest.** The client appends optimistic messages at the end and pages older messages via `?before=:loadedFromOrd`.
 
 **Optimistic UX, no inline refresh.** The driver appends a user message + empty assistant bubble locally, streams tokens into the bubble, and trusts the server to persist on `done`. We do not refresh the tail per turn; reload pulls from the canonical store.
+
+
+---
+
+## Scope reduction (REQ-25 second pass)
+
+Operator feedback: session-management UI not wanted for v1.
+
+**Dropped from scope:**
+
+- Session-list dropdown
+- "New chat" affordance
+- Inline title editor
+- Delete-session affordance
+
+**Replaced with:** a single auto-managed chat session per (site, browser) pair. On boot the wiring layer ensures a session exists — picks the localStorage-stored active id, falls back to the most recently used, or creates a fresh one if none exist. The session persists across reloads exactly as before; only the UI surface for switching/creating/renaming/deleting goes away.
+
+**Still in scope (and shipped):** server-resident history (no client-side `history` field), tail load on boot, infinite scroll upward through the active session, per-site isolation, scroll-position anchoring on prepend.
+
+**Implication on acceptance criteria:** AC1 (New chat button), AC3 (session list), AC4 (switch sessions), AC8 (title edit), AC9 (delete), AC10 (multiple sessions per site) are dropped as user-visible behaviour. Their backing API/store machinery stays in place — re-exposing them later is a UI-only change.
