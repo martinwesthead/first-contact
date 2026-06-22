@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T21:05:12.802582+00:00'
+updated_at: '2026-06-22T21:10:36.598487+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -787,5 +787,13 @@ I was racing past real design questions to land on REQs. Pulling back. The quest
 **Cluster A** — the data model question. Most other decisions follow once that's settled. **B** is operational and can be designed in parallel but probably shouldn't be designed first. **C** is largely downstream of A.
 
 Want to start with the custom-domain question specifically, or the broader account-vs-site scoping (what lives where) question? Or take this somewhere else entirely?
+
+<!-- xgd-turn id="b32645d3-c16c-4c91-9a9a-bcdb58e23bc7-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T21:08:38.301Z" -->
+#### You
+A - as far as I know this has not yet been designed. What do you propose
+B - for now I think we need the infrastructure for logging in. If First contact goes live it needs to be protected by authentication. However we do not need self sign-up as a flow from get go. It is sufficient to have the AI generate an account if I need one.
+C - at this point all we have is a builder widget really there isn't much of a site. We should probably distinguish between the tool and the site. The site will be a first contact site the tool is different.
 
 <!-- xgd-chat-end -->
