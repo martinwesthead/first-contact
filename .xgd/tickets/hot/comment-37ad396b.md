@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:55:51.282454+00:00'
+updated_at: '2026-06-22T21:05:03.806856+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -737,5 +737,13 @@ REQ 1, 2, 3 unblock priority 1 (live closed-beta site). REQ 4 unblocks priority 
 To keep this turn focused, I didn't read: `apps/control-app/` (account/auth state, chat endpoints, builder API surface), `tools/generate/src/load.ts` (exact site-loading API), `sites/1stcontact/site.json` (what a real site definition looks like at this point), or the existing `services-grid` meta (to confirm it does/doesn't cover the "feature pillars" pattern I'd want for gendevlabs.ai landing). All are worth reading before the catalog audit is finalized.
 
 Want me to (a) dig into those remaining files and complete the audit, (b) skip ahead and start drafting `sites/gendevlabs/site.json` page composition based on what we know now, or (c) start with REQ 3 (second public-site Worker deploy) since that's the foundational unblock?
+
+<!-- xgd-turn id="4d943d1b-ea2f-4469-a973-4914a800010b-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T21:03:34.501Z" -->
+#### You
+I think you're kind of racing ahead here there are important design considerations that are required let's go step at a time and not try to rush this.
+
+First off, site != tenant -> I will have many sites on this system hopefully some of my users will too
 
 <!-- xgd-chat-end -->
