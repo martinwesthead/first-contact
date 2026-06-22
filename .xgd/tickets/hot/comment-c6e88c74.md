@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:57:26.476123+00:00'
+updated_at: '2026-06-22T22:59:29.668002+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -987,5 +987,11 @@ Substrate is ~3K lines of Python today; JS port + FsAdapter is comparable. Sidec
 ---
 
 Want me to draft the substrate spec doc as the first concrete artifact (DOC ticket scoping the format, API surface, and the FsAdapter contract)? That's the natural next step regardless of A or B.
+
+<!-- xgd-turn id="11024bf1-4093-4200-aaac-5e249157d271-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T22:59:11.490Z" -->
+#### You
+including a fast-path that bypasses Python and writes `.md ` <-- that is totally outrageous it MUST be removed evertying relies on ticket API adherence
 
 <!-- xgd-chat-end -->
