@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-25
 created_by: xgd
 created_at: '2026-06-22T18:08:26.910800+00:00'
-updated_at: '2026-06-22T18:09:31.561525+00:00'
+updated_at: '2026-06-22T20:10:11.375065+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -62,5 +62,11 @@ So the realistic options:
 3. **Stub the API in apps/control-app and do just REQ-25** — the UI works, but nothing actually persists. Probably not what you want.
 
 Which direction would you like? My recommendation is **option 2** (REQ-23 + REQ-24 first as their own sessions, then REQ-25 after) — it matches the dependency chain in the ticket bodies and keeps each bundle's reconcile scope small.
+
+<!-- xgd-turn id="f55ac0e4-086d-4638-9f64-826122ec805b-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:10:05.064Z" -->
+#### You
+ok 23 and 24 are done - can you go ahead and free code this please?
 
 <!-- xgd-chat-end -->
