@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-19
 created_by: xgd
 created_at: '2026-06-22T18:22:41.166211+00:00'
-updated_at: '2026-06-22T18:23:00.139745+00:00'
+updated_at: '2026-06-22T18:33:25.595925+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -52,5 +52,11 @@ Your read is honest and I think largely right. A few threads worth pulling on:
 The tradeoff: you give up the satisfying narrative of "I'm building a SaaS for small businesses" and accept the messier truth that you're building a tool you want, on a methodology that might itself be the real product. That's actually a stronger position, not a weaker one — you stop needing to be right about a market and start needing to be right about your own utility, which is much easier to verify.
 
 What does Healer Friend actually say when you ask her about CRM-lite?
+
+<!-- xgd-turn id="dbec1c5d-704c-4813-99e1-4dde03b622a9-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T18:32:32.210Z" -->
+#### You
+All those productization features, I need for XGD and the XGD website - the question is can we build them in a way that is reusable?
 
 <!-- xgd-chat-end -->
