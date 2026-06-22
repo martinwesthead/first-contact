@@ -16,7 +16,11 @@ describe("UAT FC REQ-8: a stubbed tool call updates the store and re-renders the
 
   it("applies set_theme_token through the validator, updates the store, and the new token value appears in the iframe's CSS", async () => {
     const site = load1stContactSite();
-    const store = new BuilderStore({ siteDefinition: site, chatHistory: [] });
+    const store = new BuilderStore({
+      siteDefinition: site,
+      chatHistory: [],
+      activeSessionId: "sess_test_REQ-8_preview",
+    });
     const catalog = buildFrameworkCatalog();
     const panel = createPreviewPanel(document.body);
     store.subscribe((state) => panel.render(state.siteDefinition));

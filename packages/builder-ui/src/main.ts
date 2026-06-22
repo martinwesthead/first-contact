@@ -1,6 +1,12 @@
 import type { Site } from "@1stcontact/site-schema";
 import { buildFrameworkCatalog } from "./catalog.js";
-import { BuilderStore, DEFAULT_STORAGE_KEY } from "./store.js";
+import {
+  BuilderStore,
+  DEFAULT_STORAGE_KEY,
+  type ChatMessage,
+  type ChatSessionSummary,
+} from "./store.js";
+import { ChatsApi, type SessionSummary } from "./chats-api.js";
 import { createBuilderLayout } from "./components/builder-layout.js";
 import { createChatPanel } from "./components/chat-panel.js";
 import { createPreviewPanel } from "./components/preview-panel.js";
@@ -12,6 +18,12 @@ export interface BootBuilderOptions {
   root: HTMLElement;
   /** Initial site definition. Caller is responsible for loading it (e.g. from a starter-sites JSON). */
   initialSite: Site;
+  /**
+   * REQ-25: ID of the site whose chats this builder load owns. Used for the
+   * per-site session list and localStorage key for activeSessionId. Falls
+   * back to `initialSite.config.id` when present, else `"unknown"`.
+   */
+  siteId?: string;
   /** Chat endpoint. Defaults to '/api/chat' (same-origin). */
   chatEndpoint?: string;
   /** localStorage facility — defaults to window.localStorage when present. */
@@ -38,9 +50,22 @@ export interface BootBuilderOptions {
    * Set to null to disable persistence (a fresh ID is minted each boot).
    */
   sessionStorageFacility?: Storage | null;
+  /**
+   * REQ-25 test-injection point: override fetch for the ChatsApi (and the
+   * underlying chat-driver). Defaults to globalThis.fetch.
+   */
+  fetch?: typeof fetch;
+  /** REQ-25 test-injection point: confirm prompt for delete-session. */
+  confirmPrompt?: (message: string) => boolean;
 }
 
 export const SESSION_ID_STORAGE_KEY = "fc.builder.sessionId";
+
+/** REQ-25: localStorage key prefix for active chat session per site. */
+const ACTIVE_CHAT_SESSION_KEY_PREFIX = "fc.builder.activeChatSession.";
+
+/** REQ-25: page size for tail-load and infinite scroll. */
+const TAIL_LIMIT = 50;
 
 function resolveSessionId(
   explicit: string | undefined,
@@ -57,6 +82,19 @@ function resolveSessionId(
       : `sess-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
   if (store) store.setItem(SESSION_ID_STORAGE_KEY, fresh);
   return fresh;
+}
+
+function activeChatStorageKey(siteId: string): string {
+  return `${ACTIVE_CHAT_SESSION_KEY_PREFIX}${siteId}`;
+}
+
+function toSummary(s: SessionSummary): ChatSessionSummary {
+  return {
+    id: s.id,
+    title: s.title,
+    lastMessageAt: s.lastMessageAt,
+    messageCount: s.messageCount,
+  };
 }
 
 /**
@@ -79,6 +117,8 @@ export function bootBuilder(options: BootBuilderOptions): {
       ? options.sessionStorageFacility
       : (globalThis.sessionStorage ?? null);
   const sessionId = resolveSessionId(options.sessionId, sessionStorageFacility);
+  const fetchImpl = options.fetch ?? globalThis.fetch;
+  const siteId = options.siteId ?? "default";
   registerDigestReport();
   registerTranscribeProgress();
   const catalog = buildFrameworkCatalog();
@@ -86,6 +126,8 @@ export function bootBuilder(options: BootBuilderOptions): {
     { siteDefinition: options.initialSite, chatHistory: [] },
     { storage, storageKey },
   );
+
+  const chatsApi = new ChatsApi({ fetch: fetchImpl });
 
   const layout = createBuilderLayout(options.root, { storage });
   const preview = createPreviewPanel(layout.previewPanel, {
@@ -111,20 +153,55 @@ export function bootBuilder(options: BootBuilderOptions): {
     }
     return undefined;
   };
-  const chat = createChatPanel(layout.chatPanel, {
+
+  // REQ-25: load the tail of a session and write it into the store. Reused
+  // by initial hydrate, session switch, and new-session creation.
+  const loadAndActivateSession = async (
+    sessionId: string,
+  ): Promise<void> => {
+    const page = await chatsApi.loadTail(sessionId, TAIL_LIMIT);
+    const messages: ChatMessage[] = page.messages.map((m) => m.message);
+    const loadedFromOrd =
+      page.messages.length > 0 ? page.messages[0]!.ord : null;
+    store.setActiveSession(sessionId, {
+      chatHistory: messages,
+      loadedFromOrd,
+      hasMoreOlder: page.hasMoreOlder,
+    });
+    if (storage) {
+      storage.setItem(activeChatStorageKey(siteId), sessionId);
+    }
+  };
+
+  // REQ-25: lazy-loaded chat-panel handle (assigned after createChatPanel
+  // below). The closures above need this to anchor scroll during infinite
+  // scroll prepend, but createChatPanel needs the handlers below.
+  type ChatPanelHandle = ReturnType<typeof createChatPanel>;
+  let chat: ChatPanelHandle | null = null;
+
+  const chat_ = createChatPanel(layout.chatPanel, {
     store,
+    confirmPrompt: options.confirmPrompt,
     onSend: async (text: string) => {
+      // REQ-25: if no session is active (fresh load with zero sessions), the
+      // send handler creates one first. Mirrors the "new chat" affordance.
+      if (!store.getState().activeSessionId) {
+        const created = await chatsApi.createSession(siteId);
+        store.upsertSession(toSummary(created));
+        await loadAndActivateSession(created.id);
+      }
       abortController = new AbortController();
       await runChatTurn(text, {
         store,
         catalog,
         endpoint: options.chatEndpoint,
         sessionId,
+        fetch: fetchImpl,
         signal: abortController.signal,
-        onTurnStart: () => chat.clearToolEvents(),
+        onTurnStart: () => chat?.clearToolEvents(),
         onToolCallStart: (event) => {
-          chat.expandToolPane();
-          chat.appendToolEvent({
+          chat?.expandToolPane();
+          chat?.appendToolEvent({
             name: event.name,
             inputSummary: formatToolArg(event.input),
             status: event.status,
@@ -132,12 +209,84 @@ export function bootBuilder(options: BootBuilderOptions): {
         },
       });
       abortController = null;
+      // Refresh the session list so message_count / lastMessageAt updates.
+      try {
+        const refreshed = await chatsApi.listSessions(siteId);
+        store.setSessions(refreshed.map(toSummary));
+      } catch (err) {
+        console.warn("[builder] failed to refresh session list after turn", err);
+      }
     },
     onStop: () => {
       abortController?.abort();
       abortController = null;
     },
+    sessionHandlers: {
+      onSelectSession: async (id) => {
+        await loadAndActivateSession(id);
+      },
+      onNewSession: async () => {
+        const created = await chatsApi.createSession(siteId);
+        store.upsertSession(toSummary(created));
+        await loadAndActivateSession(created.id);
+      },
+      onDeleteSession: async (id) => {
+        await chatsApi.deleteSession(id);
+        store.removeSession(id);
+        if (storage) storage.removeItem(activeChatStorageKey(siteId));
+        // Pick a fallback active session if any remain.
+        const remaining = store.getState().sessions;
+        if (remaining.length > 0) {
+          await loadAndActivateSession(remaining[0]!.id);
+        }
+      },
+      onRenameSession: async (id, title) => {
+        const updated = await chatsApi.patchSessionTitle(id, title);
+        store.upsertSession(toSummary(updated));
+      },
+      onScrollToTop: async () => {
+        const state = store.getState();
+        if (!state.hasMoreOlder || state.activeSessionId === null) return;
+        if (state.loadedFromOrd === null) return;
+        const page = await chatsApi.loadBefore(
+          state.activeSessionId,
+          state.loadedFromOrd,
+          TAIL_LIMIT,
+        );
+        const messages = page.messages.map((m) => m.message);
+        const newOrd =
+          page.messages.length > 0
+            ? page.messages[0]!.ord
+            : state.loadedFromOrd;
+        chat?.withScrollAnchor(() => {
+          store.prependOlderMessages(messages, newOrd, page.hasMoreOlder);
+        });
+      },
+    },
   });
+  chat = chat_;
+
+  // REQ-25: initial hydration. Listing sessions and restoring the
+  // operator's last-active session happen in the background so the panel
+  // doesn't block on the network.
+  void (async () => {
+    try {
+      const summaries = await chatsApi.listSessions(siteId);
+      store.setSessions(summaries.map(toSummary));
+      const persisted = storage?.getItem(activeChatStorageKey(siteId));
+      const activeId =
+        persisted && summaries.some((s) => s.id === persisted)
+          ? persisted
+          : summaries.length > 0
+            ? summaries[0]!.id
+            : null;
+      if (activeId) {
+        await loadAndActivateSession(activeId);
+      }
+    } catch (err) {
+      console.warn("[builder] failed to hydrate chat sessions", err);
+    }
+  })();
 
   const unsubscribe = store.subscribe((state) => {
     preview.render(state.siteDefinition);
@@ -148,7 +297,7 @@ export function bootBuilder(options: BootBuilderOptions): {
     store,
     destroy: () => {
       unsubscribe();
-      chat.destroy();
+      chat?.destroy();
       layout.destroy();
     },
   };
