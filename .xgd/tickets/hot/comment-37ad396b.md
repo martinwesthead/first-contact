@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:42:17.254591+00:00'
+updated_at: '2026-06-22T20:53:24.308144+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -631,5 +631,11 @@ Lead Gen tool serves 3a (blog/content calendar), 5 (SEM ticket types), 6 (AI vis
 If you confirm domain + site-location path (option 1 vs 2), I'll start the catalog gap audit. Want me to pin those questions first, or do you have answers ready?
 
 Memory updated with your priority order so future conversations know the sequence. Ready to start the catalog gap audit as soon as you answer site-location (file-based `sites/xgd/` vs D1) and domain.
+
+<!-- xgd-turn id="67bcada6-cc1f-4d22-8e0e-637082888aa5-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:51:27.187Z" -->
+#### You
+The website we are discussing is gendevlabs.ai and it should live on R2 like any other 1stcontact site. Whitepapers should be email gated. Resend sounds fine
 
 <!-- xgd-chat-end -->
