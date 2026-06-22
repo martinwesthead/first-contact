@@ -6,9 +6,9 @@ title: 'Architecture: rename npm scope to @gendev + seed reusable productization
   + roadmap'
 created_by: xgd
 created_at: '2026-06-22T20:54:36.166056+00:00'
-updated_at: '2026-06-22T21:14:00.407074+00:00'
+updated_at: '2026-06-22T21:14:28.008897+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -128,3 +128,25 @@ Per free-coding protocol, `tests/test_UAT_FC_REQ-<id>_*`:
 | 5 | `sites/xgd` + `apps/xgd-site` (marketing) | Dogfoods `framework` cross-product; cheap; produces immediate value |
 | 6 | `apps/xgd-portal` (XGD customer portal) | **Architectural validation** — proves auth/billing/portal-ui are reusable |
 | 7 | 1stcontact tenant onboarding | Generalizes to 2-level tenancy once XGD's 1-level case works |
+
+
+---
+
+## Implementation note (added on free_coded)
+
+Landed in commit `3847ff00ff1cd86fd3dbbe028802d10523230ded`.
+
+**Acceptance criteria status:**
+
+1. ✅ `pnpm install` green; `pnpm test` 686/686 green.
+   ⚠️ `pnpm build` fails on `apps/control-app` due to **pre-existing** TypeScript DOM-type errors confirmed on baseline commit `46109cd`. The rename did not introduce these — control-app's tsconfig sets `"types": ["@cloudflare/workers-types"]` which removes the default DOM lib, and `tsc --noEmit` then type-checks transitively-imported `packages/builder-ui/src/components/*.ts` which references `HTMLElement`, `Document`, etc. Fix is out of scope for REQ-50 — file as a separate bug.
+2. ✅ `pnpm list -r --depth=-1` shows every workspace package as `@gendev/*`. Remaining `@1stcontact/` references are limited to ticket bodies (this REQ + a few historical comment tickets) and the `pnpm-lock.yaml` integrity hashes (not package names) — UAT `test_UAT_FC_REQ-50_scope_rename_complete` enforces this on source.
+3. ✅ Four new package directories exist (`api-contracts`, `auth`, `billing`, `portal-ui`), each with `package.json` (`@gendev/<name>`), `tsconfig.json`, `README.md`, `src/index.ts`. UAT `test_UAT_FC_REQ-50_package_skeletons_present` enforces this.
+4. ✅ `packages/ui-kit` removed.
+5. ✅ `apps/control-app` and `apps/public-site` build identically pre/post rename (same control-app DOM errors; same public-site green build).
+6. ✅ `sites/1stcontact` static output unchanged (no `sites/1stcontact/site.json` modification).
+7. ✅ Sequencing appendix present in this body, listing the seven follow-up steps.
+
+**Files touched:** 203 (192 modified, 17 new package skeleton files + 2 UATs, 2 deletions for `packages/ui-kit`).
+
+**Out-of-scope finding surfaced during work:** `apps/control-app/.dev.vars` is not in `.gitignore` and contains a live API key. Not committed (verified). Consider adding `**/.dev.vars` to `.gitignore` in a separate ticket.
