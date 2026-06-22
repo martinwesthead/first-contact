@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:40:29.868277+00:00'
+updated_at: '2026-06-22T22:53:15.308451+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -904,5 +904,15 @@ This answers your three frustrations: no double-build, FC can ship sooner as a t
 Before committing further, **let me actually survey XGD's JS frontend** — what's there, how reusable the components are, what coupling exists to dev-tool-specific features. That's a focused Explore task, not a full workflow. After that, the modularization plan is concrete instead of speculative.
 
 Want me to do that survey now?
+
+<!-- xgd-turn id="03c51bdd-9119-4b7f-8817-ceb8a1d87a7e-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T22:52:04.646Z" -->
+#### You
+yes its in ../xgendev-main
+
+Other important questions are: ticket storage in files, is this correct? I think re-implementation in JavaScript is interesting but XGD is cleanly JS FE and Python BE if chat and tickets were reimplemented in JS but workflows stayed in Python, how would that look?
+
+The only data storage in XGD is tickets (and code), tenancy could be based on separate ticket stores (directories?)
 
 <!-- xgd-chat-end -->
