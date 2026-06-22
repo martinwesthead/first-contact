@@ -7,26 +7,18 @@ import { Markdown } from "tiptap-markdown";
 import type {
   BuilderStore,
   ChatMessage,
-  ChatSessionSummary,
   ChatToolCallRecord,
   PendingToolFailure,
 } from "../store.js";
 import { renderToolResult } from "./tool-result-renderers.js";
 
 /**
- * REQ-25 hooks the chat-panel calls into when the operator interacts with
- * the session list. The wiring layer (main.ts) owns the API client and the
- * site context; the panel just reports intent.
+ * REQ-25 (second pass): the panel only needs one hook from the wiring
+ * layer — load older messages when the operator scrolls to the top.
+ * Session creation/selection/renaming/deletion are not exposed in v1; the
+ * wiring layer establishes a single auto-managed session per site.
  */
 export interface ChatSessionHandlers {
-  /** Operator clicked the active session entry. Should switch and reload tail. */
-  onSelectSession(sessionId: string): void | Promise<void>;
-  /** Operator clicked "New chat". Should create + activate a fresh session. */
-  onNewSession(): void | Promise<void>;
-  /** Operator confirmed delete on a session. */
-  onDeleteSession(sessionId: string): void | Promise<void>;
-  /** Title edited inline. */
-  onRenameSession(sessionId: string, title: string): void | Promise<void>;
   /** Top-sentinel visible: load older messages. No-op when no more older. */
   onScrollToTop(): void | Promise<void>;
 }
@@ -42,16 +34,6 @@ export interface ChatPanelHandle {
   readonly toolPaneBody: HTMLElement;
   /** REQ-37: banner that surfaces tool calls rejected on the prior turn. */
   readonly failurePanel: HTMLElement;
-  /** REQ-25: header strip with session list + new-chat button. */
-  readonly sessionBar: HTMLElement;
-  /** REQ-25: select element backing the session list. */
-  readonly sessionSelect: HTMLSelectElement;
-  /** REQ-25: button that creates a fresh session. */
-  readonly newChatButton: HTMLButtonElement;
-  /** REQ-25: editable title for the active session. */
-  readonly titleEditor: HTMLElement;
-  /** REQ-25: delete button for the active session. */
-  readonly deleteButton: HTMLButtonElement;
   /** REQ-25: sentinel at top of message list that triggers infinite scroll. */
   readonly topSentinel: HTMLElement;
   /** Read the current editor content as markdown. */
@@ -86,15 +68,10 @@ export interface ChatPanelOptions {
   /** Optional abort handler called when the operator clicks Stop. */
   onStop?: () => void;
   /**
-   * REQ-25: session-lifecycle handlers. Optional — when omitted the session
-   * bar is still rendered but actions are no-ops (some tests don't need it).
+   * REQ-25: optional infinite-scroll handler. When omitted, scrolling to
+   * the top is a no-op (tests without a backing API don't need it).
    */
   sessionHandlers?: ChatSessionHandlers;
-  /**
-   * REQ-25: confirm primitive for the delete button. Defaults to
-   * window.confirm; tests inject a stub.
-   */
-  confirmPrompt?: (message: string) => boolean;
 }
 
 // Marked is configured once at module scope. GFM extensions are on by default
@@ -137,42 +114,6 @@ export function createChatPanel(
   const root = doc.createElement("div");
   root.className = "fc-chat";
   root.setAttribute("data-fc-chat", "");
-
-  // REQ-25: session bar — session list, title editor, new-chat / delete
-  // buttons. Sits at the top of the panel above the tool pane.
-  const sessionBar = doc.createElement("div");
-  sessionBar.className = "fc-chat__session-bar";
-  sessionBar.setAttribute("data-fc-chat-session-bar", "");
-
-  const sessionSelect = doc.createElement("select");
-  sessionSelect.className = "fc-chat__session-select";
-  sessionSelect.setAttribute("data-fc-chat-session-select", "");
-  sessionSelect.setAttribute("aria-label", "Select chat session");
-  sessionBar.appendChild(sessionSelect);
-
-  const titleEditor = doc.createElement("span");
-  titleEditor.className = "fc-chat__session-title";
-  titleEditor.setAttribute("data-fc-chat-session-title", "");
-  titleEditor.setAttribute("role", "textbox");
-  titleEditor.setAttribute("aria-label", "Edit chat title");
-  titleEditor.setAttribute("contenteditable", "false");
-  sessionBar.appendChild(titleEditor);
-
-  const newChatButton = doc.createElement("button");
-  newChatButton.type = "button";
-  newChatButton.className = "fc-chat__new-chat";
-  newChatButton.setAttribute("data-fc-chat-new-chat", "");
-  newChatButton.setAttribute("aria-label", "New chat");
-  newChatButton.textContent = "+ New chat";
-  sessionBar.appendChild(newChatButton);
-
-  const deleteButton = doc.createElement("button");
-  deleteButton.type = "button";
-  deleteButton.className = "fc-chat__delete-chat";
-  deleteButton.setAttribute("data-fc-chat-delete-chat", "");
-  deleteButton.setAttribute("aria-label", "Delete chat");
-  deleteButton.textContent = "Delete";
-  sessionBar.appendChild(deleteButton);
 
   // Tool-use pane (collapsible). Sits above the message list — XGD parity.
   // Hidden by default; clicking the header toggles visible and flips the
@@ -256,7 +197,6 @@ export function createChatPanel(
   editorRoot.appendChild(stopButton);
   inputRow.appendChild(editorRoot);
 
-  root.appendChild(sessionBar);
   root.appendChild(toolHeader);
   root.appendChild(toolPane);
   root.appendChild(failurePanel);
@@ -419,138 +359,14 @@ export function createChatPanel(
     failurePanel.appendChild(list);
   };
 
-  // REQ-25: session-bar rendering. Re-runs on every state change so the
-  // dropdown reflects upserted/removed sessions; the title editor reflects
-  // the active session's title.
   const sessionHandlers = options.sessionHandlers;
-  const confirmPrompt =
-    options.confirmPrompt ??
-    ((msg: string) => globalThis.confirm?.(msg) ?? false);
-
-  const renderSessionBar = (
-    sessions: ReadonlyArray<ChatSessionSummary>,
-    activeId: string | null,
-  ): void => {
-    // Rebuild the dropdown only when the option set changes; the operator
-    // may be mid-interaction with the select otherwise.
-    const desiredKey = sessions
-      .map((s) => `${s.id}:${s.title ?? ""}`)
-      .join("|");
-    if (sessionSelect.getAttribute("data-fc-options-key") !== desiredKey) {
-      sessionSelect.replaceChildren();
-      if (sessions.length === 0) {
-        const opt = doc.createElement("option");
-        opt.value = "";
-        opt.textContent = "No sessions yet";
-        opt.disabled = true;
-        sessionSelect.appendChild(opt);
-      } else {
-        for (const s of sessions) {
-          const opt = doc.createElement("option");
-          opt.value = s.id;
-          opt.textContent = sessionLabel(s);
-          opt.setAttribute("data-fc-session-id", s.id);
-          sessionSelect.appendChild(opt);
-        }
-      }
-      sessionSelect.setAttribute("data-fc-options-key", desiredKey);
-    }
-    if (activeId) {
-      sessionSelect.value = activeId;
-      const active = sessions.find((s) => s.id === activeId);
-      titleEditor.textContent =
-        active?.title && active.title.length > 0
-          ? active.title
-          : active
-            ? sessionLabel(active)
-            : "";
-      titleEditor.setAttribute("data-fc-chat-session-active", activeId);
-      deleteButton.disabled = false;
-    } else {
-      sessionSelect.value = "";
-      titleEditor.textContent = "";
-      titleEditor.removeAttribute("data-fc-chat-session-active");
-      deleteButton.disabled = true;
-    }
-  };
 
   renderMessages(options.store.getState().chatHistory);
   renderFailurePanel(options.store.getState().pendingToolFailures);
-  renderSessionBar(
-    options.store.getState().sessions,
-    options.store.getState().activeSessionId,
-  );
   const unsubscribe = options.store.subscribe((state) => {
     renderMessages(state.chatHistory);
     renderFailurePanel(state.pendingToolFailures);
-    renderSessionBar(state.sessions, state.activeSessionId);
   });
-
-  // Session select: switch active session on change.
-  const onSelectChange = (): void => {
-    if (!sessionHandlers) return;
-    const value = sessionSelect.value;
-    if (!value || value === options.store.getState().activeSessionId) return;
-    void sessionHandlers.onSelectSession(value);
-  };
-  sessionSelect.addEventListener("change", onSelectChange);
-
-  // New chat button.
-  const onNewChat = (): void => {
-    if (!sessionHandlers) return;
-    void sessionHandlers.onNewSession();
-  };
-  newChatButton.addEventListener("click", onNewChat);
-
-  // Delete button.
-  const onDelete = (): void => {
-    if (!sessionHandlers) return;
-    const activeId = options.store.getState().activeSessionId;
-    if (!activeId) return;
-    if (!confirmPrompt("Delete this chat session? This cannot be undone."))
-      return;
-    void sessionHandlers.onDeleteSession(activeId);
-  };
-  deleteButton.addEventListener("click", onDelete);
-
-  // Title editor: click → enable editing; blur → commit.
-  const onTitleClick = (): void => {
-    if (!sessionHandlers) return;
-    if (titleEditor.getAttribute("contenteditable") === "true") return;
-    if (!options.store.getState().activeSessionId) return;
-    titleEditor.setAttribute("contenteditable", "true");
-    titleEditor.focus();
-  };
-  const commitTitle = (): void => {
-    if (titleEditor.getAttribute("contenteditable") !== "true") return;
-    titleEditor.setAttribute("contenteditable", "false");
-    const activeId = options.store.getState().activeSessionId;
-    if (!sessionHandlers || !activeId) return;
-    const newTitle = (titleEditor.textContent ?? "").trim();
-    if (newTitle.length === 0) return;
-    const current = options.store
-      .getState()
-      .sessions.find((s) => s.id === activeId);
-    if (current?.title === newTitle) return;
-    void sessionHandlers.onRenameSession(activeId, newTitle);
-  };
-  const onTitleKey = (event: KeyboardEvent): void => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      titleEditor.blur();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      const activeId = options.store.getState().activeSessionId;
-      const current = activeId
-        ? options.store.getState().sessions.find((s) => s.id === activeId)
-        : null;
-      titleEditor.textContent = current?.title ?? "";
-      titleEditor.setAttribute("contenteditable", "false");
-    }
-  };
-  titleEditor.addEventListener("click", onTitleClick);
-  titleEditor.addEventListener("blur", commitTitle);
-  titleEditor.addEventListener("keydown", onTitleKey);
 
   // REQ-25: IntersectionObserver on the top sentinel — when it scrolls
   // into view (operator at the top), ask the wiring layer to load older.
@@ -696,11 +512,6 @@ export function createChatPanel(
     toolPane,
     toolPaneBody,
     failurePanel,
-    sessionBar,
-    sessionSelect,
-    newChatButton,
-    titleEditor,
-    deleteButton,
     topSentinel,
     getInputMarkdown,
     setInputMarkdown,
@@ -715,15 +526,6 @@ export function createChatPanel(
       parent.removeChild(root);
     },
   };
-}
-
-function sessionLabel(s: ChatSessionSummary): string {
-  if (s.title && s.title.length > 0) return s.title;
-  if (s.lastMessageAt > 0) {
-    const date = new Date(s.lastMessageAt * 1000);
-    return `Chat ${date.toLocaleString()}`;
-  }
-  return `Chat ${s.id.slice(0, 8)}`;
 }
 
 function renderToolCallSummary(
