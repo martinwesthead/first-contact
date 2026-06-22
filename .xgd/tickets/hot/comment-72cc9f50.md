@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-46
 created_by: xgd
 created_at: '2026-06-20T22:49:54.691670+00:00'
-updated_at: '2026-06-22T18:11:00.835655+00:00'
+updated_at: '2026-06-22T18:11:06.434878+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -331,5 +331,17 @@ Which one — (1) or (2)?
 <!-- xgd-chat role="user" ts="2026-06-22T18:10:47.527Z" -->
 #### You
 Ah I see the problem - I never expect to use this tool in Cloudflare it is for DEVELOPMENT locally on my machine - does what you have built work locally? I just need to fire up another webserver?
+
+<!-- xgd-turn id="0afdcb3d-ff8f-47f3-a576-73b1ae34dfd0-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T18:11:06.433Z" -->
+#### Claude
+Yes — what I built works locally, fully. The smoke test I ran earlier proved it end-to-end: a real chat request → real Anthropic call → real `xgd ticket list` against `~/Projects/first-contact` → real ticket list back to the AI. It's already gated off in production by `DEV_TOOLS_ENABLED`, so Cloudflare never sees it.
+
+And yes, right now you'd need to start two processes: `pnpm dev:control` (your existing wrangler) **and** the sidecar (`node tools/dev-tools-server/bin/start.mjs`). That's the part that's actually annoying.
+
+**Easy fix: fold the sidecar into the existing `concurrently` setup so one command starts both.** `apps/control-app/package.json` already runs `bundle` + `wrangler` concurrently — I just add a third entry for the sidecar. Then `pnpm dev:control` boots everything; you never think about it again. Two-line change to one `package.json`, no architectural shift, no rewrite of what's already shipped.
+
+Want me to do that now (small `[FREE-CODED]` follow-up on REQ-46)?
 
 <!-- xgd-chat-end -->
