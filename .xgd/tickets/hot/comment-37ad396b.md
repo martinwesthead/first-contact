@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T21:10:36.598487+00:00'
+updated_at: '2026-06-22T21:11:02.974026+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -795,5 +795,114 @@ Want to start with the custom-domain question specifically, or the broader accou
 A - as far as I know this has not yet been designed. What do you propose
 B - for now I think we need the infrastructure for logging in. If First contact goes live it needs to be protected by authentication. However we do not need self sign-up as a flow from get go. It is sufficient to have the AI generate an account if I need one.
 C - at this point all we have is a builder widget really there isn't much of a site. We should probably distinguish between the tool and the site. The site will be a first contact site the tool is different.
+
+<!-- xgd-turn id="b32645d3-c16c-4c91-9a9a-bcdb58e23bc7-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T21:11:02.971Z" -->
+#### Claude
+OK. Taking each in turn, with A as the substantive proposal.
+
+## A — Data model proposal
+
+Working principles:
+- Account = tenant boundary, owns one or more sites
+- Site = a published web presence with one canonical custom domain + aliases (apex/www)
+- Slug = stable internal identifier; also doubles as default-subdomain on a platform domain before a custom domain is wired
+
+### Schema additions
+
+**No change to `accounts`** for v1 — current shape is sufficient.
+
+**Augment `sites`** with the one column the form pipeline actually needs to become multi-site-aware:
+
+```sql
+ALTER TABLE sites ADD COLUMN email_notify_to TEXT;  -- per-site recipient for "new lead" emails
+```
+
+The existing `forms.ts` reads `RESEND_NOTIFY_TO` from env vars, which is single-site. Moving it to a per-site column is the cheapest unlock for serving multiple sites from one Worker.
+
+**New `site_domains` table** — separate from `sites` because one site has many domains (apex + www at minimum):
+
+```sql
+CREATE TABLE site_domains (
+  domain        TEXT PRIMARY KEY,         -- e.g. "gendevlabs.ai" or "www.gendevlabs.ai"
+  site_id       TEXT NOT NULL REFERENCES sites(id),
+  kind          TEXT NOT NULL,            -- 'primary' | 'alias' | 'redirect_to_primary'
+  verified_at   INTEGER,                  -- null until DNS-verified
+  created_at    INTEGER NOT NULL
+);
+CREATE INDEX idx_site_domains_site ON site_domains(site_id);
+```
+
+`domain` is the PK because hostname → site is the hot read on every public-site request. For `gendevlabs.ai`: two rows, both `site_id = <gendevlabs site>`, one `kind='primary'`, one `kind='redirect_to_primary'` (so Worker canonicalises www → apex or vice versa).
+
+### Scoping decisions
+
+| Concern | Scope | Notes |
+|---|---|---|
+| Billing, plan tier, owner identity | Account | One bill, one plan; multiple sites share the allowance |
+| Site count limit | Account, plan-tier-derived | v1 doesn't enforce; designed for it |
+| Site definition, content, design tokens | Site | |
+| Custom domain(s) | Site (via `site_domains`) | |
+| Form notification recipient | Site (with account default fallback) | Different sites have different operators |
+| Outbound email **from-address** | Platform default for v1 (e.g. `noreply@notifications.firstcontact.app`) | Site-level verified-domain sender deferred to v1.1; the verification model is real work and not needed for closed beta |
+| R2 assets | Site-keyed | Convention `sites/{site_id}/...` matches the existing `assetRef` pattern. Per-account quotas summed across the account's sites. |
+| Leads, chat sessions, revisions | Site | Already in schema, all carry site_id |
+| Magic-link sessions | Account | Session = logged-in user, who can then switch among their sites |
+
+### Deferred (designed-for, not built)
+
+- **Memberships** (multiple users per account) — DOC-12 §17 already deferred this for mobile; same here. v1 is one owner email per account; memberships table arrives when an account needs multiple operators.
+- **Programmatic DNS** via Cloudflare API. v1 is operator-manual: customer points their DNS at the platform; we verify on next request.
+- **Site-level verified sender domain** — comes when there's a customer who's actually paying and demands `noreply@theirbrand.com`. Until then platform-default `from` is fine.
+
+### Hostname → site resolution
+
+What the public-site Worker does on every request, replacing the hardcoded `SITE_ID` env var:
+
+```
+request.url.hostname
+  → SELECT site_id, kind FROM site_domains WHERE domain = ?
+  → kind='redirect_to_primary': 301 to the primary domain
+  → kind='primary'|'alias': serve that site's built output
+  → no row: 404 / "this domain isn't configured"
+```
+
+D1 indexed PK on TEXT is sub-millisecond; can be KV-cached later if measurement says so.
+
+## B — Auth (acknowledgement, design next)
+
+Hearing: protected from go-live, no self-sign-up, AI tool creates accounts when needed.
+
+What this implies in scope (not designing it yet — flagging shape):
+- Magic-link auth implementation per DOC-5 (request link → emailed token → click → session)
+- Session storage (D1 `sessions` is natural; KV is the alternative — discuss when we get to it)
+- New AI tool-surface category: account/site lifecycle tools (`create_account`, `create_site`, `attach_domain`, etc.) — operator-only, not exposed to regular accounts
+- An `is_operator` flag (or role) on the account record — Martin is the operator who can create accounts; regular owners can manage their own sites only
+
+This is well-bounded and worth a separate design pass once A is settled.
+
+## C — Tool vs site distinction
+
+Right and load-bearing. Stating it cleanly:
+
+- **The tool** = 1st Contact platform: `apps/control-app` + `apps/public-site` + `packages/framework` + `packages/site-schema` + `tools/generate` + `packages/builder-ui`
+- **The site** = any marketing surface built BY the tool. There currently isn't one in any real sense — `sites/1stcontact/site.json` is a definition, `0005` seeds it into D1, but the actual served content (whatever's in `apps/public-site/public/`) likely isn't built from either.
+
+Implication: "build gendevlabs.ai" = use the tool to create a site definition in D1, build via `tools/generate`, serve at the domain. The 1stcontact.io marketing site is sibling work — same workflow, different content + domain. Both are downstream of the tool being capable enough.
+
+So the audit cleanly splits into two:
+- **Tool audit** — what can the framework/builder/generate/Worker actually do today? Foundation for everything else.
+- **Site audit** — what content + modules does gendevlabs.ai (and eventually 1stcontact.io) need? Assumes tool capability.
+
+## Where to go from here
+
+If A looks reasonable, the next things to settle in roughly this order:
+1. **React to / amend A** — particularly the `site_domains` table shape, whether the email-notify column is best on `sites` vs a separate table, and the deferral of site-level sender verification
+2. **Design pass for B** — auth flow + operator role + account/site lifecycle AI tools
+3. **Implementation choice that A enables**: shared-Worker hostname routing (clearly the right call now)
+4. **Tool audit, then site audit**
+
+Three steps ahead is far enough. What about A stands out as wrong or worth pushing back on?
 
 <!-- xgd-chat-end -->
