@@ -21,7 +21,11 @@ describe("UAT FC REQ-8: site definition persists across reloads via localStorage
     // First session: load the bundled site, run two chat turns that mutate it.
     const initialSite = load1stContactSite();
     const first = new BuilderStore(
-      { siteDefinition: initialSite, chatHistory: [] },
+      {
+        siteDefinition: initialSite,
+        chatHistory: [],
+        activeSessionId: "sess_test_REQ-8_persist",
+      },
       { storage },
     );
 

@@ -16,6 +16,7 @@ describe("UAT FC REQ-34: chat-driver applies the cleared scaffold to the store b
     const store = new BuilderStore({
       siteDefinition: startingSite,
       chatHistory: [],
+      activeSessionId: "sess_uat_req34_test",
     });
     const catalog = buildFrameworkCatalog();
 

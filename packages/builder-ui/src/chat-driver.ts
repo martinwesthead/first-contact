@@ -1,6 +1,7 @@
 import type { Site } from "@1stcontact/site-schema";
 import { validateSite } from "@1stcontact/site-schema";
 import type { FrameworkCatalog } from "./catalog.js";
+import { ChatsApi } from "./chats-api.js";
 import type {
   BuilderStore,
   ChatMessage,
@@ -32,6 +33,13 @@ export interface ChatDriverOptions {
   catalog: FrameworkCatalog;
   endpoint?: string;
   fetch?: typeof fetch;
+  /**
+   * REQ-25: ID of the chat session this turn belongs to. Sent in the body
+   * (server reads stored history; `history` field is gone). The store's
+   * activeSessionId is used as a fallback. If neither is set the turn
+   * aborts before the network call.
+   */
+  chatSessionId?: string | null;
   /**
    * Builder session ID. Sent as the `x-session-id` header on every POST so
    * the operator-action handlers (e.g. transcribe_site convert-consent
@@ -65,7 +73,7 @@ interface ChatDonePayload {
 /**
  * One end-to-end chat turn (REQ-36 G9 streaming version):
  *   1. Append the user message + an empty in-flight assistant bubble.
- *   2. POST {history, siteDefinition, frameworkCatalog} to /api/chat (SSE).
+ *   2. POST {sessionId, userMessage, siteDefinition, frameworkCatalog} to /api/chat (SSE).
  *   3. As `token` events arrive, grow the in-flight assistant message.
  *   4. As `tool_call` events arrive, fire onToolCallStart for the live
  *      tool-use pane and locally apply the tool call to the working site
@@ -85,17 +93,36 @@ export async function runChatTurn(
 ): Promise<ChatTurnResult> {
   const endpoint = options.endpoint ?? "/api/chat";
   const fetchImpl = options.fetch ?? globalThis.fetch;
+  const chatSessionId =
+    options.chatSessionId ?? options.store.getState().activeSessionId;
+  if (!chatSessionId) {
+    throw new Error(
+      "runChatTurn: no chat session id (set options.chatSessionId or activate a session)",
+    );
+  }
 
-  // REQ-37: if the prior turn left rejected tool calls, prepend a synthetic
-  // system message describing them so the AI can self-correct without the
-  // operator restating the failure. The note enters chatHistory so it
-  // persists in the transcript and survives reloads.
+  const chatsApi = new ChatsApi({ fetch: fetchImpl });
+
+  // REQ-25 / REQ-37: prior turn's rejected tool calls are persisted as a
+  // synthetic system message on the session so the server's tail-load picks
+  // them up. (The dead `history` field is gone — we can't prepend it in-band
+  // anymore.) Errors here are non-fatal: the panel still surfaces the
+  // failure, and the next turn proceeds without the note.
   const carriedFailures = options.store.getState().pendingToolFailures;
   if (carriedFailures.length > 0) {
-    options.store.appendChatMessage({
-      role: "system",
-      content: formatFailureNote(carriedFailures),
-    });
+    const noteContent = formatFailureNote(carriedFailures);
+    try {
+      await chatsApi.appendMessage(chatSessionId, "system", noteContent);
+      options.store.appendChatMessage({
+        role: "system",
+        content: noteContent,
+      });
+    } catch (err) {
+      console.warn(
+        "[chat-driver] failed to persist tool-failure note; continuing without reinjection",
+        err,
+      );
+    }
     options.store.clearToolFailures();
   }
 
@@ -109,9 +136,6 @@ export async function runChatTurn(
 
   if (options.onTurnStart) options.onTurnStart();
 
-  const history = options.store
-    .getState()
-    .chatHistory.filter((m, i, all) => !(i === all.length - 1 && m.role === "assistant"));
   const siteDefinition = options.store.getState().siteDefinition;
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -121,7 +145,8 @@ export async function runChatTurn(
     method: "POST",
     headers,
     body: JSON.stringify({
-      history: history.map((m) => ({ role: m.role, content: m.content })),
+      sessionId: chatSessionId,
+      userMessage: userText,
       siteDefinition,
       frameworkCatalog: options.catalog,
     }),

@@ -15,7 +15,11 @@ describe("UAT FC REQ-8: invalid tool call is rejected by the validator", () => {
 
   it("rejects a set_module_dial with an out-of-enum value, leaves state unchanged, and records the structured error on the chat log", async () => {
     const site = load1stContactSite();
-    const store = new BuilderStore({ siteDefinition: site, chatHistory: [] });
+    const store = new BuilderStore({
+      siteDefinition: site,
+      chatHistory: [],
+      activeSessionId: "sess_test_REQ-8_invalid",
+    });
     const catalog = buildFrameworkCatalog();
 
     // Find a hero instance from the bundled site to target.

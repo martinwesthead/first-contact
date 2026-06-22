@@ -11,11 +11,19 @@ export {
   type BuilderStateInit,
   type BuilderStoreOptions,
   type ChatMessage,
+  type ChatSessionSummary,
   type ChatToolCallRecord,
   type ChatToolResultRecord,
   type Listener,
   type PendingToolFailure,
 } from "./store.js";
+export {
+  ChatsApi,
+  type ChatsApiOptions,
+  type LoadedMessage,
+  type MessagesPage,
+  type SessionSummary,
+} from "./chats-api.js";
 export {
   applyToolCall,
   type ApplyResult,
