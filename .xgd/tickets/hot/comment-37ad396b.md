@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:41:22.950063+00:00'
+updated_at: '2026-06-22T20:42:17.254591+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -582,5 +582,54 @@ Let's prioritize based on the order that I think I need things.
    6. AI plan
    
    The Lead gen tool could help with planning 3, 5 and 6 and managing SEO
+
+<!-- xgd-turn id="c2faa377-3bf0-43c7-b441-c2cf47beb597-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T20:42:17.251Z" -->
+#### Claude
+Got it — that prioritization changes the recommendation. Lead Gen earns its way in at priority 3, not 1. The actual unblocker is the framework being able to render XGD's marketing site with email capture for the closed beta.
+
+## Your priorities mapped to architecture work
+
+| You | Architecture work | Where in existing design |
+|---|---|---|
+| **1. Basic site + email capture (closed beta)** | XGD marketing site definition + framework catalog gap fills + public form → D1 lead record → confirmation email | `sites/xgd/site.json` (or wherever — see open Q below), `packages/framework`, `apps/public-site` Worker. Form pipeline roughed in per DOC-5 §"Rendering and Publishing". |
+| **2. Whitepapers (Google Docs → PDF upload)** | PDF asset hosting (R2) + a "resources" page/module + (probably) email-gated download | R2 already in place. Asset model handles images today via assetRef; PDF/non-image path may need extending. Email-gating adds the email-send dependency (open in DOC-5). |
+| **3a. Blog on site + repost to Medium/LinkedIn** | Blog-index module + post-page template + RSS feed; reposts are manual | Catalog gap — `text-block` covers a single article per DOC-7 §7.4 but a blog-index pattern likely isn't there yet. Worth confirming. |
+| **3b. YouTube series (open-source MD editor)** | None platform-side; pure production work | N/A |
+| **3c. Meetups + conferences** | None now; relationship tracking lands when CRM Lite does | CRM Lite covers this later |
+| **4. Beta management + payment-ready** | Subscription pipeline DOC + REQs (Stripe-aware pricing module + Checkout + webhook → account provisioning + portal) | New work at DOC-4/5/7 level + REQs |
+| **5. SEM plan** | Lead Gen pillar (planning + analysis surface) | Promoted from "Future Expansion" — needs DOC + REQs |
+| **6. AI visibility plan** | Lead Gen pillar capability | Same DOC as #5 |
+
+Lead Gen tool serves 3a (blog/content calendar), 5 (SEM ticket types), 6 (AI visibility audits + content). Its v1 doesn't need the SEM/AI surfaces — those land as v1.5.
+
+## Recommended sequence (following your priorities)
+
+1. **Catalog gap audit + closed-beta site** — concrete read of XGD's marketing-site needs (landing, methodology, blog, beta-signup, resources, contact) against the current `packages/framework` catalog. Output: list of modules/variants/dials to add via REQs + the page+module composition of `sites/xgd/site.json`. Unblocks shipping a live site for the closed beta.
+2. **Email-gated PDF resources** — extend the asset path to non-image files + introduce the email-send dependency for the gate.
+3. **Blog support** — blog-index module + post-page template + RSS feed.
+4. **Lead Gen pillar v1 DOC + REQs** — manual ticket creation + per-ticket AI conversation + per-ticket outcome tracking. Aimed at your priority 3 campaign work.
+5. **Subscription pipeline DOC + REQs** — Stripe-aware module + Checkout + webhook provisioning + portal. Triggers when beta → paid.
+6. **Lead Gen v1.5** — SEM ticket types + AI visibility audits.
+
+## Open questions to answer before the audit starts
+
+1. **Where does XGD's marketing site live?** Three options:
+   - `sites/xgd/site.json` in this repo, served by `public-site` Worker on its own domain (multi-domain routing on the Worker — not currently spelled out in DOC-7 §10).
+   - XGD as account #1 in D1, via the platform's normal customer-site pipeline (true customer-zero, but the D1-based customer-site path isn't fully built yet).
+   - Conflate with `sites/1stcontact` if they share one marketing surface (probably wrong — different products, different audiences).
+   
+   My instinct: **option 1 for speed** — file-based site definition gets to a live site in days; D1-based requires more of the platform to land first. Migrating XGD's site into D1 later, when the customer-site pipeline matures, is cheap because the site definition format is the same either way.
+
+2. **What domain does XGD's marketing live on?** Affects DNS + Worker routing config. (gigabytealchemy.com? xgd.dev? Something else?)
+
+3. **Whitepapers — email-gated or free downloads?** B2B norm is email-gated since that's the whole point of producing them. If gated, priority 2 needs the email-send dependency unblocked.
+
+4. **Email provider.** DOC-5 lists this as open. Once beta signup needs a confirmation email, this gets blocking. **Resend** is the natural Cloudflare-friendly choice and is already named in DOC-12 §12 — recommend picking it now.
+
+If you confirm domain + site-location path (option 1 vs 2), I'll start the catalog gap audit. Want me to pin those questions first, or do you have answers ready?
+
+Memory updated with your priority order so future conversations know the sequence. Ready to start the catalog gap audit as soon as you answer site-location (file-based `sites/xgd/` vs D1) and domain.
 
 <!-- xgd-chat-end -->
