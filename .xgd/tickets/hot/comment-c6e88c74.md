@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:12:19.372545+00:00'
+updated_at: '2026-06-22T22:12:35.023985+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -711,5 +711,65 @@ The recommendation, hybrid, and trip-wires I sent in the previous message are al
 <!-- xgd-chat role="user" ts="2026-06-22T22:11:29.166Z" -->
 #### You
 I'm not sure you're making sense please walk me through your proposal. There is about 3 days of work on 1st contact so far so the distinction between C and D is low. And your work estimates can be massively reduced because we are using XGD
+
+<!-- xgd-turn id="46f93a13-f4bc-40ae-8771-04b6ff8b1e0d-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T22:12:34.990Z" -->
+#### Claude
+Fair pushback. Let me restart, cleaner.
+
+## The proposal in one sentence
+
+**Use XGD for marketing work now. When it hurts enough, use XGD to build the replacement as part of First Contact.** There's no separate "marketing tool" project — FC is the build target.
+
+That's two phases, not four options. The four-option framing was the wrong shape.
+
+## Two corrections that change the picture
+
+1. **FC is ~3 days old.** So "leverage FC's existing substrate" is mostly fiction. Options C and D collapse — there's nothing meaningful to leverage; both mean "build it on FC."
+2. **We build with XGD.** The 4-6 month estimate I quoted assumed solo human coding. With XGD doing the work, that becomes weeks of XGD dev sessions.
+
+## Phase 1 — now
+
+Use XGD for marketing work as-is:
+- Whitepapers as ticket comments (or migrate to `docs/whitepapers/*.md` in the repo when revision history starts mattering)
+- Campaign tracking as tickets
+- Strategic chats as CHAT tickets (CHAT-21, CHAT-22 — already doing it)
+
+Cost: zero. What you get from this is evidence about which marketing-tooling pains are actually load-bearing, vs. which I'm speculating about.
+
+## Phase 2 — when pain accumulates
+
+Use XGD to build the marketing surface inside FC. The surface IS part of FC, not a sibling project. Tickets, chats, calendar, doc editor — web-deployable, multi-tenant, on the JS/Cloudflare stack you've already committed to.
+
+The trigger to start Phase 2 is the same trip-wire list as before (mobile/sharing pain, revision-history pain, contractor access, FC product needs polymorphic entities, Lead Gen gets promoted). When two fire, Phase 2 starts.
+
+## The mistake I was making
+
+I was treating Phase 2 as "FC has to reinvent Claude Code." It doesn't.
+
+FC at runtime needs *user-facing* AI features: a chat per ticket that calls the Anthropic API, tools execute, conversation persists in D1. That's the SDK's easy half — bounded work.
+
+What it does *not* need is XGD's *build-time* agentic harness — long-running multi-agent orchestration, FSM-driven dev loops, capability matrices. Those stay in XGD, where they belong, because XGD is the dev tool, not the runtime.
+
+That single conflation inflated every Phase 2 estimate I quoted. With it removed, Phase 2 is "use XGD to build a ticket/chat/calendar/doc UI on FC's Cloudflare stack" — weeks, not months.
+
+## Mapping back to the four options
+
+- **A (use XGD as-is)** = Phase 1. Right starting move.
+- **B (fork XGD)** = dead. Inherits localhost/CLI constraint that's wrong for marketing AND splits maintenance for no gain.
+- **C (build on FC)** = Phase 2.
+- **D (rewrite from scratch)** = same as C given FC's 3-day age. Not a separate option.
+
+## What I'd want to nail down
+
+Two things, when Phase 2 actually starts:
+
+1. Is the marketing surface the same web app as the rest of FC (Builder / CRM / Portal), or a separate app sharing the substrate? Probably same app.
+2. Does the doc-writing tool live on this same surface, or sit alongside? Probably same surface — it's "entity + chat + ACL + revisions," which is what tickets need too.
+
+Neither needs to be answered now. They get answered when Phase 1 has produced enough evidence to make them obvious.
+
+Does this version hang together?
 
 <!-- xgd-chat-end -->
