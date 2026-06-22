@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:08:57.725408+00:00'
+updated_at: '2026-06-22T22:12:19.372545+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -705,5 +705,11 @@ Optionality preserved:         Theoretical maximum, actual minimum (no shipped
 ---
 
 The recommendation, hybrid, and trip-wires I sent in the previous message are all still in this thread — let me know if any of those went missing too and I'll reproduce them.
+
+<!-- xgd-turn id="46f93a13-f4bc-40ae-8771-04b6ff8b1e0d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T22:11:29.166Z" -->
+#### You
+I'm not sure you're making sense please walk me through your proposal. There is about 3 days of work on 1st contact so far so the distinction between C and D is low. And your work estimates can be massively reduced because we are using XGD
 
 <!-- xgd-chat-end -->
