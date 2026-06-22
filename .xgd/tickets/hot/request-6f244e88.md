@@ -5,9 +5,9 @@ type: request
 title: 'Builder UI: persistent chat sessions (session list, new-chat, infinite scroll)'
 created_by: xgd
 created_at: '2026-06-16T23:27:06.916520+00:00'
-updated_at: '2026-06-16T23:27:06.916520+00:00'
+updated_at: '2026-06-22T20:13:27.329315+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: draft
 fields:
   priority: medium
@@ -132,3 +132,17 @@ Tests under `tests/`, named `test_UAT_FC_<TICKET-ID>_*.ts`. Stack: vitest + Mini
 ### Implication of "multiple sessions per site" (CHAT-13 + this conversation)
 
 The "new chat" affordance is necessary because sessions don't grow without bound at the operator's expense — they can choose to scope a fresh topic in a fresh thread, while old threads remain accessible.
+
+
+---
+
+## Implementer addendum (REQ-25 free-coding session)
+
+**Side effects on existing behaviour:**
+
+- `chat-driver.ts` previously sent `{history, siteDefinition, frameworkCatalog}`. The new contract from REQ-24 requires `{sessionId, userMessage, siteDefinition, frameworkCatalog}` (no `history`). The driver now sends only the new turn; the server reads stored session messages.
+- **REQ-37 pending-tool-failure reinjection** previously prepended a synthetic `system` message to outbound `history`. Under the new contract, that synthetic note is persisted via `POST /api/chats/:id/messages` (role=`system`) before the chat call so the server's tail-load picks it up naturally. The associated REQ-37 driver test is updated to verify the new wire shape; the user-facing behaviour (panel surfaces the failure, dismiss clears it, AI sees the note next turn) is preserved.
+
+**Tail load returns oldest → newest.** The client appends optimistic messages at the end and pages older messages via `?before=:loadedFromOrd`.
+
+**Optimistic UX, no inline refresh.** The driver appends a user message + empty assistant bubble locally, streams tokens into the bubble, and trusts the server to persist on `done`. We do not refresh the tail per turn; reload pulls from the canonical store.
