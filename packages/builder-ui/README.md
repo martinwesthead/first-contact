@@ -1,4 +1,4 @@
-# @1stcontact/builder-ui
+# @gendev/builder-ui
 
 The chat-left / live-preview-right builder SPA.
 

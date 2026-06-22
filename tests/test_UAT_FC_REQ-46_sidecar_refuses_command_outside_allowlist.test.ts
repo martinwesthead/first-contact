@@ -4,7 +4,7 @@ import {
   handleXgdTicket,
   type HandlerConfig,
   type Spawner,
-} from "@1stcontact/dev-tools-server/handler";
+} from "@gendev/dev-tools-server/handler";
 
 function recordingSpawner(): {
   spawn: Spawner;

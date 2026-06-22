@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { validateSite } from "@1stcontact/site-schema";
-import type { Site } from "@1stcontact/site-schema";
+import { validateSite } from "@gendev/site-schema";
+import type { Site } from "@gendev/site-schema";
 import {
   buildEmptyScaffold,
   applyTranscribeEvent,
   createTranscribeProgressCard,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
 
 describe("UAT FC REQ-34: convert flow clears the operator's draft to an empty scaffold before reconstruction", () => {

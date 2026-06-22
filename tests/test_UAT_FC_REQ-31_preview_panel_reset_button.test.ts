@@ -4,7 +4,7 @@ import {
   bootBuilder,
   createPreviewPanel,
   DEFAULT_STORAGE_KEY,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
 

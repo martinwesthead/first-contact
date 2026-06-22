@@ -8,24 +8,24 @@ importers:
 
   .:
     devDependencies:
-      '@1stcontact/builder-ui':
-        specifier: workspace:*
-        version: link:packages/builder-ui
-      '@1stcontact/dev-tools-server':
-        specifier: workspace:*
-        version: link:tools/dev-tools-server
-      '@1stcontact/framework':
-        specifier: workspace:*
-        version: link:packages/framework
-      '@1stcontact/generate':
-        specifier: workspace:*
-        version: link:tools/generate
-      '@1stcontact/site-schema':
-        specifier: workspace:*
-        version: link:packages/site-schema
       '@cloudflare/workers-types':
         specifier: ^4.20260617.1
         version: 4.20260620.1
+      '@gendev/builder-ui':
+        specifier: workspace:*
+        version: link:packages/builder-ui
+      '@gendev/dev-tools-server':
+        specifier: workspace:*
+        version: link:tools/dev-tools-server
+      '@gendev/framework':
+        specifier: workspace:*
+        version: link:packages/framework
+      '@gendev/generate':
+        specifier: workspace:*
+        version: link:tools/generate
+      '@gendev/site-schema':
+        specifier: workspace:*
+        version: link:packages/site-schema
       '@vitest/coverage-v8':
         specifier: ^2.1.9
         version: 2.1.9(vitest@2.1.9(@types/node@20.19.43)(jsdom@29.1.1))
@@ -56,18 +56,18 @@ importers:
 
   apps/control-app:
     dependencies:
-      '@1stcontact/builder-ui':
-        specifier: workspace:*
-        version: link:../../packages/builder-ui
-      '@1stcontact/extractor':
-        specifier: workspace:*
-        version: link:../../packages/extractor
-      '@1stcontact/web-fetch-safety':
-        specifier: workspace:*
-        version: link:../../packages/web-fetch-safety
       '@cloudflare/puppeteer':
         specifier: ^1.1.0
         version: 1.1.0
+      '@gendev/builder-ui':
+        specifier: workspace:*
+        version: link:../../packages/builder-ui
+      '@gendev/extractor':
+        specifier: workspace:*
+        version: link:../../packages/extractor
+      '@gendev/web-fetch-safety':
+        specifier: workspace:*
+        version: link:../../packages/web-fetch-safety
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20260617.1
@@ -84,7 +84,7 @@ importers:
 
   apps/public-site:
     dependencies:
-      '@1stcontact/generate':
+      '@gendev/generate':
         specifier: workspace:*
         version: link:../../tools/generate
     devDependencies:
@@ -98,12 +98,34 @@ importers:
         specifier: ^4.103.0
         version: 4.103.0(@cloudflare/workers-types@4.20260620.1)
 
+  packages/api-contracts:
+    dependencies:
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
+  packages/auth:
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
+  packages/billing:
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
   packages/builder-ui:
     dependencies:
-      '@1stcontact/framework':
+      '@gendev/framework':
         specifier: workspace:*
         version: link:../framework
-      '@1stcontact/site-schema':
+      '@gendev/site-schema':
         specifier: workspace:*
         version: link:../site-schema
       '@tiptap/core':
@@ -134,13 +156,13 @@ importers:
 
   packages/extractor:
     dependencies:
-      '@1stcontact/framework':
+      '@gendev/framework':
         specifier: workspace:*
         version: link:../framework
-      '@1stcontact/site-schema':
+      '@gendev/site-schema':
         specifier: workspace:*
         version: link:../site-schema
-      '@1stcontact/web-fetch-safety':
+      '@gendev/web-fetch-safety':
         specifier: workspace:*
         version: link:../web-fetch-safety
       linkedom:
@@ -156,7 +178,7 @@ importers:
 
   packages/framework:
     dependencies:
-      '@1stcontact/site-schema':
+      '@gendev/site-schema':
         specifier: workspace:*
         version: link:../site-schema
       astro:
@@ -170,6 +192,12 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
+  packages/portal-ui:
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
   packages/site-schema:
     dependencies:
       zod:
@@ -179,8 +207,6 @@ importers:
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
-
-  packages/ui-kit: {}
 
   packages/web-fetch-safety:
     devDependencies:
@@ -209,10 +235,10 @@ importers:
 
   tools/generate:
     dependencies:
-      '@1stcontact/framework':
+      '@gendev/framework':
         specifier: workspace:*
         version: link:../../packages/framework
-      '@1stcontact/site-schema':
+      '@gendev/site-schema':
         specifier: workspace:*
         version: link:../../packages/site-schema
       astro:

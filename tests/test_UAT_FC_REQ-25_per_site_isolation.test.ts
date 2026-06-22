@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { ChatsApi } from "@1stcontact/builder-ui";
+import { ChatsApi } from "@gendev/builder-ui";
 import { createMockChatApi } from "./_helpers_REQ-25_chat_api.js";
 
 describe("UAT FC REQ-25: session lists are per-site; site B can't see site A's sessions (AC3)", () => {

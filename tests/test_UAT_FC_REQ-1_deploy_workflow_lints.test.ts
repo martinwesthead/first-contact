@@ -60,7 +60,7 @@ describe("UAT FC REQ-1: deploy.yml workflow shape", () => {
       .filter((r) => r.includes("wrangler deploy"));
     expect(runs.length).toBeGreaterThanOrEqual(2);
     const all = runs.join("\n");
-    expect(all).toContain("@1stcontact/public-site");
-    expect(all).toContain("@1stcontact/control-app");
+    expect(all).toContain("@gendev/public-site");
+    expect(all).toContain("@gendev/control-app");
   });
 });

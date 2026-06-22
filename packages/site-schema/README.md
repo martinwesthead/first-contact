@@ -1,4 +1,4 @@
-# @1stcontact/site-schema
+# @gendev/site-schema
 
 JSON schema + TypeScript types for site definitions.
 

@@ -3,7 +3,7 @@ import {
   getModule,
   imageGalleryMeta,
   listRegisteredModules,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 describe("UAT FC REQ-41: image-gallery is registered in the framework catalog", () => {
   it("listRegisteredModules contains (image-gallery, v1)", () => {

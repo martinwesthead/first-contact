@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateSite } from "@1stcontact/site-schema";
+import { validateSite } from "@gendev/site-schema";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
 describe("UAT FC REQ-14: Site.superRefine nav cross-reference validation", () => {

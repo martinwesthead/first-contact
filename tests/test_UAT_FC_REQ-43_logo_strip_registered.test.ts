@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getModule, listRegisteredModules } from "@1stcontact/framework";
+import { getModule, listRegisteredModules } from "@gendev/framework";
 
 describe("UAT FC REQ-43: logo-strip registered in framework catalog", () => {
   it("getModule('logo-strip', 1) returns logo-strip v1 with meta and Component", () => {

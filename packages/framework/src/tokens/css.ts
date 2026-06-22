@@ -1,4 +1,4 @@
-import type { PaletteTokens, ThemeTokens } from "@1stcontact/site-schema";
+import type { PaletteTokens, ThemeTokens } from "@gendev/site-schema";
 import { defaultThemeTokens } from "./defaults.js";
 import { evaluateSurfaceContrast } from "./contrast.js";
 

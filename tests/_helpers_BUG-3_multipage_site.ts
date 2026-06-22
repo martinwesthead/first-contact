@@ -1,4 +1,4 @@
-import type { Site } from "@1stcontact/site-schema";
+import type { Site } from "@gendev/site-schema";
 import { makeThemeTokens } from "./_fixtures_REQ-3_site.js";
 
 /**

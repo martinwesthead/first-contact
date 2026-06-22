@@ -32,7 +32,7 @@ jobs:
         run: pnpm -r build
 
       - name: Generate public-site static output
-        run: pnpm --filter @1stcontact/public-site generate
+        run: pnpm --filter @gendev/public-site generate
 
       - name: Run tests
         run: pnpm test

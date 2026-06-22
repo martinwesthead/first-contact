@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Banner } from "@1stcontact/framework";
+import { Banner } from "@gendev/framework";
 
 describe("UAT FC REQ-42: banner renders with with-cta variant", () => {
   it("emits the CTA anchor with label and href when cta provided", async () => {

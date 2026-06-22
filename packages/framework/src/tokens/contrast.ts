@@ -1,4 +1,4 @@
-import type { PaletteTokens } from "@1stcontact/site-schema";
+import type { PaletteTokens } from "@gendev/site-schema";
 
 export type SurfaceVariant = "default" | "subtle" | "inverse" | "accent";
 

@@ -6,7 +6,7 @@
  * Bundled by apps/control-app/scripts/build-builder-bundle.mjs to
  * apps/control-app/public/_assets/builder.js.
  */
-import type { Site } from "@1stcontact/site-schema";
+import type { Site } from "@gendev/site-schema";
 import { bootBuilder } from "./main.js";
 
 const params = new URLSearchParams(window.location.search);

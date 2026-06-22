@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { encodeAnthropicSSE } from "./_helpers_REQ-36_chat_sse.js";
 import { REPRODUCING_A_WEBSITE_DOC } from "../apps/control-app/src/llm-context.js";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 

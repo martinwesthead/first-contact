@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { createPreviewPanel } from "@1stcontact/builder-ui";
+import { createPreviewPanel } from "@gendev/builder-ui";
 
 describe("UAT FC REQ-8: preview panel fills the available height", () => {
   afterEach(() => {

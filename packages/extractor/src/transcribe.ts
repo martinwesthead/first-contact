@@ -1,5 +1,5 @@
-import type { ThemeTokens } from "@1stcontact/site-schema";
-import { defaultThemeTokens } from "@1stcontact/framework/tokens";
+import type { ThemeTokens } from "@gendev/site-schema";
+import { defaultThemeTokens } from "@gendev/framework/tokens";
 import {
   NOT_DETECTED,
   type ReferenceDigest,
