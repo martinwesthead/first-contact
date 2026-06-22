@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T18:35:31.413877+00:00'
+updated_at: '2026-06-22T19:08:33.535977+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -77,5 +77,23 @@ That reframe doesn't change v1 scope, but it changes what the roadmap *means*: e
 ---
 
 Want to pull on any particular thread? The two I'd prioritise are (a) the AI-visibility piece because it's defensible and novel, and (b) the email-nurture + reviews flywheel because both are immediate revenue impact for *every* customer, not just hers.
+
+<!-- xgd-turn id="05235dd0-6e6b-439f-9b0d-24322dba86d5-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T19:07:06.403Z" -->
+#### You
+This is very interesting. Lets talk in general about how this looks as a product? Right now first contact is expected to have Builder, Monitoring, CRM, Lead gen could be a 4th pillar - what I want to explore is how well these could operate independently, is there real value to all in one place? What does the Lead Generation tab look like?
+
+There's different things on your list:
+1. Technical stuff she would have to do herself, but you could guide her through
+2. Changes to the site - that we could do autonomously iff we own the site
+3. Creation of additional marketing materials 
+4. Partnership and outreach
+
+So what's the product look like - I could imagine you creating "TODO" tickets for each of these features and having a conversation with the AI about each of them just as I do with XGD.
+
+your 6 and 7 sound like CRM features
+
+I was expecting you to say more "She needs to create a constant stream of Facebook posts" and I was imagining products around that - content calendars, automated content production etc. You did not which is interesting and worth discussing.
 
 <!-- xgd-chat-end -->
