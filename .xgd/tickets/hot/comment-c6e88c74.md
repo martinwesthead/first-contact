@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:49:59.216085+00:00'
+updated_at: '2026-06-22T23:50:19.174452+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1469,5 +1469,81 @@ Want me to draft that DOC ticket in 1C? It'd be the first artifact that turns th
 <!-- xgd-chat role="user" ts="2026-06-22T23:49:05.035Z" -->
 #### You
 There is another factoring question here. We are trying to extract a common component system that would consist of the XGD interface plus these backhanded pieces that we are going to reconstruct. Does that deserve a project in its own right?
+
+<!-- xgd-turn id="a7fd777c-1f1c-4f67-8d89-cc918c1e264b-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T23:50:18.169Z" -->
+#### Claude
+Yes — and the question is asking the right thing. The factoring is real because the framework has three identifiable consumers (XGD eventually, 1C now, book tool later) and a coherent identity ("agentic-app framework — tickets, chat, knowledge, components"). Burying it inside 1C would invert ownership later when XGD's frontend eventually wants to consume it.
+
+## What the framework project contains
+
+```
+@<framework>/substrate        — JS ticket/chat/comment model, events, query API
+@<framework>/storage-fs       — FsAdapter
+@<framework>/storage-r2       — R2Adapter (later)
+@<framework>/knowledge        — tags, catalog, search (later)
+@<framework>/ui-chat          — Chat panel + transcript renderer
+@<framework>/ui-tickets       — TicketList, TicketDetail
+@<framework>/ui-documents     — Document viewer/editor
+@<framework>/ui-files         — File/asset browser
+```
+
+Packages publish independently. Apps consume via package.json dependencies.
+
+## What stays out
+
+- XGD's Python substrate, workflow engine, dispatcher, capability matrix, quality gates — all stay in xgendev-main.
+- XGD-specific tabs (Status, Workflows, Capabilities, Logs) — stay in xgendev-main as the XGD app shell.
+- 1C product surfaces (Builder, CRM, marketing tool composition) — stay in first-contact.
+
+The framework is the *reusable* substrate + UI. Each app builds the rest.
+
+## Repo structure — one decision to make
+
+**Option A: Separate repo.** Cleanest factoring. Forces interface discipline (consumers use published versions). Cost: cross-repo workflow when framework and consumer change together.
+
+**Option B: Monorepo with pnpm/npm workspaces.** Framework packages live alongside consumer apps in one repo. XGD-driven dev sees everything in one checkout. No cross-repo PRs. Still publishes as separate packages.
+
+For a one-person team using XGD to build everything, **B is meaningfully better DX**. You don't pay cross-repo coordination cost; you get all the same factoring discipline at the package level; you can still publish each package independently when you want to.
+
+Layout under B:
+```
+<framework-repo>/
+  packages/
+    substrate/
+    storage-fs/
+    ui-chat/
+    ui-tickets/
+    ...
+  apps/
+    marketing/       (the 1C marketing tool — moves out of first-contact)
+    book/            (when it exists)
+  examples/
+```
+
+XGD itself stays in xgendev-main; it consumes the framework via npm dep when the time comes.
+
+## Naming
+
+Worth picking deliberately. Some candidates:
+- **agentic-framework** — honest but generic
+- **xgd-app** or **xgd-ui** — signals "the app side of XGD"
+- **librarian** — gestures at the knowledge thesis, ambiguous on substrate
+- something invented
+
+This is your call — naming has long-tail consequences (URLs, npm scope, public perception when/if open-sourced).
+
+## What this changes about next steps
+
+The DOC ticket I was about to draft in first-contact's CHAT-22 scope should arguably live in the framework repo's tickets, not 1C's. That ticket scopes the substrate format + API; it's a framework concern, not a 1C concern.
+
+So the sequence is:
+1. Create the framework project (repo, scope, name).
+2. First DOC ticket there scopes the substrate.
+3. 1C marketing tool consumes the framework as it's built.
+4. Eventually XGD's frontend migrates to consuming it too.
+
+Do you want to pick a name and structure now, or keep thinking? I can also make a CHAT or DOC ticket capturing this conversation's conclusions before we lose them, scoped to either first-contact or xgendev-main.
 
 <!-- xgd-chat-end -->
