@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:05:03.512244+00:00'
+updated_at: '2026-06-22T20:09:58.866188+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -410,5 +410,11 @@ When that slice works, you've validated: AI authoring, payment flow, gated conte
 ---
 
 Want me to turn this into actual XGD tickets — a scope ticket + the breakdown into implementation tickets — or sit with the shape another round before committing to it?
+
+<!-- xgd-turn id="dfec2428-e3a8-4c71-9028-0b15aacc2aa6-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:08:27.369Z" -->
+#### You
+I am honestly nervous about single tenancy. My experience is that adding multiple tenants to a single tenant project is really hard where it's building multiple tenancy is basically a field in a database. I think it needs to have multi tenancy data structures built from day one. We can figure out the UI whenever but the data has to support multi tenancy out of the gate
 
 <!-- xgd-chat-end -->
