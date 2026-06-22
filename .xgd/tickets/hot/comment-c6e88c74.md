@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:46:59.814483+00:00'
+updated_at: '2026-06-22T23:49:59.216085+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1463,5 +1463,11 @@ The full JS knowledge layer (vector search via transformers.js or Workers AI, Li
 A DOC ticket in 1C scoping the JS substrate: format spec (compatible subset of XGD's frontmatter), Storage adapter interface, ticket/chat/comment models, query API, events. Once that's written down, you (or rather XGD-on-1C) can build it in a day-ish. Marketing tool starts using it immediately.
 
 Want me to draft that DOC ticket in 1C? It'd be the first artifact that turns this conversation into shippable scope.
+
+<!-- xgd-turn id="a7fd777c-1f1c-4f67-8d89-cc918c1e264b-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:49:05.035Z" -->
+#### You
+There is another factoring question here. We are trying to extract a common component system that would consist of the XGD interface plus these backhanded pieces that we are going to reconstruct. Does that deserve a project in its own right?
 
 <!-- xgd-chat-end -->
