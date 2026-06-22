@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-25
 created_by: xgd
 created_at: '2026-06-22T18:08:26.910800+00:00'
-updated_at: '2026-06-22T23:09:31.209312+00:00'
+updated_at: '2026-06-22T23:17:12.195451+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -141,5 +141,46 @@ Done. REQ-25 is `free_coded` at version 0.0.33.
 #### You
 1) This should start with an initial session established 
 2) the "+ New Chat Session" is broken. TBH I don't need or want session management on the page rightr now I just want a single chat session per tab (only one tab right now) to persist
+
+<!-- xgd-turn id="4392ea12-3289-4c1d-aa95-cb88e96a4ffa-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T23:17:12.193Z" -->
+#### Claude
+Got it — simplify to a single auto-created persisted session per site, no session-management UI. Let me check the current package state first.
+
+Strip the session UI out of chat-panel.
+
+Now strip the renderSessionBar block and all the click handlers, but keep the IntersectionObserver. Let me locate it.
+
+Now strip the dropped fields from the returned handle and remove `sessionLabel`.
+
+Now simplify main.ts.
+
+Good — `@gendev/site-schema` is correct. Now run typecheck.
+
+Now delete the tests that exercise dropped UI, and rewrite the first_session test to verify auto-creation.
+
+All REQ-25 tests pass. Let me also drop the now-unused `ChatSessionSummary` import from store re-export and verify chats-api compatibility.
+
+Let me also trim the dead session-management methods from the store, per project's "no speculative code" rule.
+
+Now find and remove the dead methods `setSessions`, `upsertSession`, `removeSession`.
+
+Now drop the export of `ChatSessionSummary` from the index.
+
+All 89 affected tests pass. Quality gate + commit.
+
+Done. REQ-25 is now `free_coded` at version 0.0.35 with the scope reduction applied.
+
+**What changed in this pass:**
+- **chat-panel**: dropped `sessionBar`, `sessionSelect`, `newChatButton`, `titleEditor`, `deleteButton`, and all the click/title/confirm handlers. Only the infinite-scroll hook (`onScrollToTop`) and the `topSentinel` + `IntersectionObserver` remain.
+- **main.ts**: new `ensureActiveSession` that picks `localStorage` id → most-recent session → auto-creates one. On boot the operator always has a live session; no empty state, no "click new chat to start".
+- **store**: removed the now-unused `ChatSessionSummary` type and `setSessions`/`upsertSession`/`removeSession` methods (no callers after UI removal).
+- **tests**: deleted `_session_switch`, `_delete_session`, `_title_edit`; rewrote `_first_session` to cover the two boot paths (auto-create on empty, reuse existing).
+
+**Backing machinery preserved:** The REQ-23 schema and REQ-24 endpoints still support multi-session — re-exposing it later is UI-only.
+
+**Quality gate:** ✅ all-tests pass.
+**Commits:** `7e91942` (feature) + `3a5f59d` (bump).
 
 <!-- xgd-chat-end -->
