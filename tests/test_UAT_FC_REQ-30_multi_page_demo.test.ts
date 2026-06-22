@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
@@ -8,6 +8,7 @@ import {
   consumeChatSSE,
   encodeAnthropicSSE,
 } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 function minimalDigest(title: string, navLinks: ReferenceDigest["signals"]["content"]["navLinks"], formFields: ReferenceDigest["signals"]["content"]["formFields"]): Partial<ReferenceDigest> {
   return {
@@ -35,6 +36,13 @@ function minimalDigest(title: string, navLinks: ReferenceDigest["signals"]["cont
 }
 
 describe("UAT FC REQ-30: multi-page killer demo with mocked LLM (AC10)", () => {
+  let chatEnv: SeededChatEnv;
+  beforeAll(async () => {
+    chatEnv = await seedChatSession({ sessionId: "sess_req30_multi" });
+  });
+  afterAll(async () => {
+    await chatEnv.cleanup();
+  });
   it("scripted chat loop adds pages from perPagePlan and the working draft ends up with ≥3 pages", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-multi" });
     const navLinks = [
@@ -114,14 +122,15 @@ describe("UAT FC REQ-30: multi-page killer demo with mocked LLM (AC10)", () => {
         "x-plan-tier": "trial",
       },
       body: JSON.stringify({
-        history: [{ role: "user", content: "convert https://acme.test/ — keep all pages" }],
+        sessionId: chatEnv.sessionId,
+        userMessage: "convert https://acme.test/ — keep all pages",
         siteDefinition: baseSite,
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key", ASSETS_BUCKET: h.env.ASSETS_BUCKET },
+      { CLAUDE_API_KEY: "test-key", ASSETS_BUCKET: h.env.ASSETS_BUCKET, SITES_DB: chatEnv.db },
       { fetch: upstreamFetch as unknown as typeof fetch },
     );
     expect(response.status).toBe(200);

@@ -1,16 +1,40 @@
 import { applyToolCall, type ToolName } from "@1stcontact/builder-ui/tools";
 import type { FrameworkCatalog } from "@1stcontact/builder-ui/catalog";
-import type { Site } from "@1stcontact/site-schema";
+import type { ChatMessageToolCall, Site } from "@1stcontact/site-schema";
 import {
   mintIntentToken,
   operatorMessageImpliesIntent,
 } from "@1stcontact/web-fetch-safety";
+import {
+  appendMessage,
+  getSession,
+  listReferenceDocs,
+  loadTail,
+  readReferenceDoc,
+  readSessionRange,
+  realClock,
+  realIdGen,
+  searchTranscripts,
+  updateSessionTitle,
+  type Clock,
+  type D1Binding,
+  type IdGen,
+  type ReferenceDocSummary,
+} from "./chat-db.js";
+
+// chat-db uses a structural D1Binding so tests can pass Miniflare's D1.
+// At runtime the SITES_DB binding is Cloudflare's D1Database which satisfies
+// that shape — narrow once here so downstream module calls stay typed.
+function asD1Binding(db: D1Database): D1Binding {
+  return db as unknown as D1Binding;
+}
 import { REPRODUCING_A_WEBSITE_DOC } from "./llm-context.js";
 import { sessionEventBus, type SseEvent } from "./operator/events.js";
 import {
   findAction,
   visibleToolSpecs,
   type ActionResult,
+  type ToolSpec,
 } from "./operator/registry.js";
 import { extractSession, type Session } from "./operator/types.js";
 
@@ -24,6 +48,9 @@ export interface ChatHandlerEnv {
   BROWSER_BUDGET_KV?: KVNamespace;
   BROWSER?: unknown;
   ASSETS_BUCKET?: R2Bucket;
+  SITES_DB?: D1Database;
+  /** Char budget for tail-prime; REQ-24 §1.6. Default 5000. */
+  CHAT_TAIL_CHARS?: string;
   /** REQ-46: when "true", exposes the dev-only xgd_ticket tool to the AI. */
   DEV_TOOLS_ENABLED?: string;
   /** REQ-46: localhost URL of the dev-tools-server sidecar. Defaults to http://127.0.0.1:7878/xgd-ticket. */
@@ -33,12 +60,9 @@ export interface ChatHandlerEnv {
 export interface ChatHandlerDeps {
   fetch?: typeof fetch;
   log?: (event: string, detail: Record<string, unknown>) => void;
-  /**
-   * REQ-38: per-call result survivability. Injected so a UAT can deterministically
-   * force one call in a batch to throw and verify the surrounding calls still
-   * receive their own tool_result events. Production uses the imported default.
-   */
   applyToolCall?: typeof applyToolCall;
+  clock?: Clock;
+  ids?: IdGen;
 }
 
 export interface CatalogEntryShape {
@@ -53,8 +77,14 @@ export interface FrameworkCatalogShape {
   themeTokenNames: ReadonlyArray<string>;
 }
 
+/**
+ * REQ-24 §IN — `chat.ts` refactor: server is the source of truth. Client
+ * sends a session id + the new user message; the server appends, loads the
+ * tail, and primes Anthropic. The old `history` field is gone.
+ */
 export interface ChatRequestBody {
-  history: Array<{ role: "user" | "assistant" | "system"; content: string }>;
+  sessionId: string;
+  userMessage: string;
   siteDefinition: unknown;
   frameworkCatalog: FrameworkCatalogShape;
 }
@@ -65,11 +95,6 @@ export interface SystemActionInvocation {
   readonly result: ActionResult;
 }
 
-/**
- * Structured tool result handed to the AI on the next turn (REQ-13 §Part 1).
- * The same shape is what the FE driver reads back so it can surface a
- * `tool_result` in the chat UI consistently.
- */
 export type ChatToolResult =
   | {
       readonly ok: true;
@@ -89,10 +114,6 @@ export type ChatToolResult =
       };
     };
 
-/**
- * Final payload emitted on the `done` SSE event. Everything the FE driver
- * needs to commit the turn to the store after streaming completes.
- */
 export interface ChatDonePayload {
   text: string;
   toolCalls: Array<{
@@ -107,27 +128,74 @@ export interface ChatDonePayload {
 const ANTHROPIC_DEFAULT_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const MAX_TOOL_TURNS = 8;
+const DEFAULT_TAIL_CHARS = 5000;
+const MAX_TITLE_CHARS = 60;
 
-/**
- * REQ-36 G9: stream chat responses end-to-end as Server-Sent Events.
- *
- * Event protocol (client-facing):
- *   - `token`         { delta: string }                — text delta from the AI
- *   - `tool_call`     { name, input, toolUseId }       — tool_use block completed
- *   - `tool_result`   { name, input, result, toolUseId } — server-side result of the tool
- *   - `done`          ChatDonePayload                  — final aggregate; turn complete
- *   - `error`         { error: string }                — fatal error; stream ends
- *
- * Each event is forwarded as soon as the underlying Anthropic SSE chunk
- * arrives, so the FE can render text progressively and surface tool calls
- * in the live tool-pane while the model is still thinking.
- */
+const MEMORY_TOOL_NAMES = new Set<string>([
+  "search_transcripts",
+  "read_session_range",
+  "list_reference_docs",
+  "read_reference_doc",
+]);
+
+const MEMORY_TOOL_SPECS: ReadonlyArray<ToolSpec> = [
+  {
+    name: "search_transcripts",
+    description:
+      "Search prior chat-message text for this site. Site-scoped automatically. Returns matches with session + ord + snippet; follow up with read_session_range to expand context.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string" },
+        limit: { type: "number" },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "read_session_range",
+    description:
+      "Read a contiguous range of messages from any session belonging to the current site.",
+    input_schema: {
+      type: "object",
+      properties: {
+        session_id: { type: "string" },
+        from_ord: { type: "number" },
+        to_ord: { type: "number" },
+      },
+      required: ["session_id", "from_ord", "to_ord"],
+    },
+  },
+  {
+    name: "list_reference_docs",
+    description:
+      "List platform reference documents (modules, framework principles, design decisions) the AI can read.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "read_reference_doc",
+    description:
+      "Read a platform reference document. Optionally narrow to one section via the section param (section_slug from the doc's table of contents).",
+    input_schema: {
+      type: "object",
+      properties: {
+        slug: { type: "string" },
+        section: { type: "string" },
+      },
+      required: ["slug"],
+    },
+  },
+];
+
 export async function handleChatRequest(
   request: Request,
   env: ChatHandlerEnv,
   deps: ChatHandlerDeps = {},
 ): Promise<Response> {
   const log = deps.log ?? ((event, detail) => console.log(event, detail));
+  const clock = deps.clock ?? realClock;
+  const ids = deps.ids ?? realIdGen;
+
   if (request.method !== "POST") {
     return jsonError("POST required", 405);
   }
@@ -141,37 +209,64 @@ export async function handleChatRequest(
   } catch {
     return jsonError("invalid JSON body", 400);
   }
-  if (!isPlainObject(body) || !Array.isArray(body.history)) {
-    return jsonError("body must include 'history' array", 400);
+  if (!isPlainObject(body)) {
+    return jsonError("body must be a JSON object", 400);
+  }
+  if ((body as Record<string, unknown>).history !== undefined) {
+    return jsonError(
+      "'history' is no longer accepted; the server reads stored session messages",
+      400,
+    );
+  }
+  if (typeof body.sessionId !== "string" || body.sessionId.length === 0) {
+    return jsonError("body must include 'sessionId' string", 400);
+  }
+  if (typeof body.userMessage !== "string" || body.userMessage.length === 0) {
+    return jsonError("body must include non-empty 'userMessage' string", 400);
   }
   if (!env.CLAUDE_API_KEY) {
     return jsonError("CLAUDE_API_KEY is not configured", 500);
   }
+  if (!env.SITES_DB) {
+    return jsonError("SITES_DB binding missing", 500);
+  }
 
-  const session = extractSession(request);
-  const tools = visibleToolSpecs(session.plan_tier, {
-    devToolsEnabled: env.DEV_TOOLS_ENABLED === "true",
-  });
-  const intentToken = await maybeMintIntentToken(env, session, body.history);
-  const operatorLastMessage =
-    [...body.history].reverse().find((m) => m.role === "user")?.content ?? null;
+  const db = asD1Binding(env.SITES_DB);
+  const session = await getSession(db, body.sessionId);
+  if (!session) return jsonError("session not found", 404);
+  const siteId = session.site_id;
+  const isFirstTurn = session.message_count === 0;
+  const opSession = extractSession(request);
+
+  // Append the new user message before priming so tail-load sees it.
+  await appendMessage(
+    db,
+    { session_id: body.sessionId, role: "user", content: body.userMessage },
+    ids,
+    clock,
+  );
+
+  const tailCharBudget = parseTailCharBudget(env.CHAT_TAIL_CHARS);
+  const tail = await loadTail(db, body.sessionId, tailCharBudget);
+  const initialMessages = tailToAnthropicMessages(tail);
+
+  const refDocsIndex = await listReferenceDocs(db);
+
+  const tools: ToolSpec[] = [
+    ...visibleToolSpecs(opSession.plan_tier, {
+      devToolsEnabled: env.DEV_TOOLS_ENABLED === "true",
+    }),
+    ...MEMORY_TOOL_SPECS,
+  ];
+
+  const intentToken = await maybeMintIntentToken(env, opSession, body.userMessage);
 
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const applyImpl = deps.applyToolCall ?? applyToolCall;
   const url = env.ANTHROPIC_API_URL ?? ANTHROPIC_DEFAULT_URL;
   const model = env.CLAUDE_MODEL ?? DEFAULT_MODEL;
-
-  const initialMessages: AnthropicMessageEntry[] = body.history
-    .filter(
-      (m): m is { role: "user" | "assistant"; content: string } =>
-        m.role === "user" || m.role === "assistant",
-    )
-    .map((m) => ({ role: m.role, content: m.content }));
-
   const catalog = body.frameworkCatalog as FrameworkCatalog;
 
-  // The stream body — runs the multi-turn loop and yields SSE events to the
-  // client as text deltas / tool calls arrive.
   const stream = new ReadableStream<Uint8Array>({
     async start(controller): Promise<void> {
       const encoder = new TextEncoder();
@@ -186,13 +281,14 @@ export async function handleChatRequest(
         input: Record<string, unknown>;
         result: ChatToolResult;
       }> = [];
+      const persistedToolCalls: ChatMessageToolCall[] = [];
       const allSystemActions: SystemActionInvocation[] = [];
       let workingSite: unknown = body.siteDefinition;
       const messages: AnthropicMessageEntry[] = [...initialMessages];
 
       try {
         for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
-          const system = buildSystemPrompt(catalog, workingSite);
+          const system = buildSystemPrompt(catalog, workingSite, refDocsIndex);
           let anthropicResponse: Response;
           try {
             anthropicResponse = await fetchImpl(url, {
@@ -213,9 +309,7 @@ export async function handleChatRequest(
             });
           } catch (err) {
             log("anthropic_call_failed", { error: String(err), turn });
-            sendEvent("error", {
-              error: "upstream chat provider unreachable",
-            });
+            sendEvent("error", { error: "upstream chat provider unreachable" });
             controller.close();
             return;
           }
@@ -258,6 +352,30 @@ export async function handleChatRequest(
             const callInput = block.input as Record<string, unknown>;
             const toolUseId = block.id;
 
+            persistedToolCalls.push({ name: callName, input: callInput });
+
+            if (MEMORY_TOOL_NAMES.has(callName)) {
+              // Memory tools execute server-side and are invisible to the FE
+              // tool pane (REQ-24 §IN — server-resident history). We still
+              // feed the result back to the model so it can chain memory
+              // lookups within the same turn.
+              const memoryResult = await dispatchMemoryTool(
+                db,
+                siteId,
+                body.sessionId,
+                callName,
+                callInput,
+                log,
+              );
+              toolResultBlocks.push({
+                type: "tool_result",
+                tool_use_id: toolUseId,
+                content: JSON.stringify(memoryResult),
+                ...(memoryResult.ok ? {} : { is_error: true }),
+              });
+              continue;
+            }
+
             sendEvent("tool_call", {
               name: callName,
               input: callInput,
@@ -277,12 +395,6 @@ export async function handleChatRequest(
               };
               allToolCalls.push({ name: callName, input: callInput, result });
             } else if (action.category === "state_edit") {
-              // REQ-38: a throw inside applyToolCall used to escape the
-              // for-loop, get caught by the outer stream-level handler, and
-              // collapse the whole batch to a single `error` event — the AI
-              // lost every other call's result in the same turn. Wrap it so
-              // a single thrower turns into one structured ok:false result
-              // and the surrounding calls keep producing their own results.
               let applyResult: ReturnType<typeof applyToolCall>;
               try {
                 applyResult = applyImpl(
@@ -316,10 +428,7 @@ export async function handleChatRequest(
               } else {
                 result = {
                   ok: false,
-                  error: {
-                    tool: callName,
-                    validation: applyResult.error,
-                  },
+                  error: { tool: callName, validation: applyResult.error },
                 };
               }
               allToolCalls.push({ name: callName, input: callInput, result });
@@ -339,11 +448,11 @@ export async function handleChatRequest(
                 let actionResult: ActionResult;
                 try {
                   actionResult = await action.handler(callInput, {
-                    session,
+                    session: opSession,
                     env,
-                    emit: sessionEmitter(session),
+                    emit: sessionEmitter(opSession),
                     siteDefinition: workingSite,
-                    operatorLastMessage,
+                    operatorLastMessage: body.userMessage,
                   });
                 } catch (err) {
                   actionResult = {
@@ -415,8 +524,28 @@ export async function handleChatRequest(
           messages.push({ role: "user", content: toolResultBlocks });
         }
 
+        const finalText = accumulatedText.join("").trim();
+        await appendMessage(
+          db,
+          {
+            session_id: body.sessionId,
+            role: "assistant",
+            content: finalText,
+            tool_calls: persistedToolCalls.length > 0 ? persistedToolCalls : null,
+          },
+          ids,
+          clock,
+        );
+
+        if (isFirstTurn) {
+          const title = deriveTitleFromMessage(body.userMessage);
+          if (title.length > 0) {
+            await updateSessionTitle(db, body.sessionId, title, clock);
+          }
+        }
+
         const donePayload: ChatDonePayload = {
-          text: accumulatedText.join("").trim(),
+          text: finalText,
           toolCalls: allToolCalls,
           systemActions: allSystemActions,
           intentToken: intentToken ?? null,
@@ -445,27 +574,124 @@ export async function handleChatRequest(
   });
 }
 
-/**
- * Consume an Anthropic streaming Messages API response. Calls `onTextDelta`
- * for each text_delta chunk so the caller can forward it to the client
- * immediately. Returns the reassembled content blocks (text + tool_use with
- * fully accumulated JSON inputs) for the multi-turn message history.
- */
+type MemoryToolResult =
+  | { ok: true; data: unknown }
+  | { ok: false; error: string };
+
+async function dispatchMemoryTool(
+  db: D1Binding,
+  siteId: string,
+  sessionId: string,
+  name: string,
+  input: Record<string, unknown>,
+  log: (event: string, detail: Record<string, unknown>) => void,
+): Promise<MemoryToolResult> {
+  try {
+    switch (name) {
+      case "search_transcripts": {
+        const query = typeof input.query === "string" ? input.query : "";
+        const limit = typeof input.limit === "number" ? input.limit : 20;
+        if (query.length === 0) {
+          return { ok: false, error: "query is required" };
+        }
+        const hits = await searchTranscripts(db, siteId, query, limit);
+        return { ok: true, data: { hits } };
+      }
+      case "read_session_range": {
+        const sid =
+          typeof input.session_id === "string" ? input.session_id : null;
+        const fromOrd =
+          typeof input.from_ord === "number" ? input.from_ord : null;
+        const toOrd = typeof input.to_ord === "number" ? input.to_ord : null;
+        if (sid === null || fromOrd === null || toOrd === null) {
+          return {
+            ok: false,
+            error: "session_id, from_ord, to_ord required",
+          };
+        }
+        const messages = await readSessionRange(db, siteId, sid, fromOrd, toOrd);
+        if (messages === null) {
+          return { ok: false, error: "session not found in this site" };
+        }
+        return {
+          ok: true,
+          data: {
+            session_id: sid,
+            messages: messages.map((m) => ({
+              ord: m.ord,
+              role: m.role,
+              content: m.content,
+              ts: m.ts,
+            })),
+          },
+        };
+      }
+      case "list_reference_docs": {
+        const docs = await listReferenceDocs(db);
+        return { ok: true, data: { docs } };
+      }
+      case "read_reference_doc": {
+        const slug = typeof input.slug === "string" ? input.slug : null;
+        if (slug === null) return { ok: false, error: "slug required" };
+        const section =
+          typeof input.section === "string" ? input.section : null;
+        const doc = await readReferenceDoc(db, slug, section);
+        if (!doc) return { ok: false, error: `no reference doc with slug '${slug}'` };
+        return { ok: true, data: doc };
+      }
+      default:
+        return { ok: false, error: `unknown memory tool '${name}'` };
+    }
+  } catch (err) {
+    log("memory_tool_threw", {
+      tool: name,
+      error: String(err),
+      session_id: sessionId,
+    });
+    return { ok: false, error: `memory tool '${name}' threw: ${String(err)}` };
+  }
+}
+
+function tailToAnthropicMessages(
+  tail: ReadonlyArray<{
+    role: string;
+    content: string;
+    tool_calls: ReadonlyArray<ChatMessageToolCall> | null;
+  }>,
+): AnthropicMessageEntry[] {
+  // The Anthropic Messages API only accepts alternating user/assistant turns.
+  // We collapse system/tool_result rows (which the DB stores for completeness)
+  // by skipping them; they're for our own observability, not prompt context.
+  return tail
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+}
+
+function parseTailCharBudget(raw: string | undefined): number {
+  if (!raw) return DEFAULT_TAIL_CHARS;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_TAIL_CHARS;
+  return Math.floor(n);
+}
+
+function deriveTitleFromMessage(userMessage: string): string {
+  const collapsed = userMessage.replace(/\s+/g, " ").trim();
+  if (collapsed.length === 0) return "";
+  if (collapsed.length <= MAX_TITLE_CHARS) return collapsed;
+  return `${collapsed.slice(0, MAX_TITLE_CHARS - 1).trimEnd()}…`;
+}
+
 async function consumeAnthropicStream(
   response: Response,
   onTextDelta: (delta: string) => void,
 ): Promise<{ blocks: AnthropicContentBlock[] }> {
-  if (!response.body) {
-    return { blocks: [] };
-  }
+  if (!response.body) return { blocks: [] };
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   const blocks: Record<number, AnthropicContentBlock> = {};
   const toolInputBuffers: Record<number, string> = {};
 
-  // SSE frames are delimited by a blank line. Buffer until we see one,
-  // then parse the event/data lines.
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -480,7 +706,6 @@ async function consumeAnthropicStream(
       handleAnthropicEvent(parsed.event, parsed.data, blocks, toolInputBuffers, onTextDelta);
     }
   }
-  // Flush any final frame without trailing blank line.
   if (buffer.trim().length > 0) {
     const parsed = parseSseFrame(buffer);
     if (parsed) {
@@ -488,8 +713,6 @@ async function consumeAnthropicStream(
     }
   }
 
-  // Materialise blocks in index order, finalising tool_use input from its
-  // accumulated JSON buffer (tool_use deltas arrive as partial JSON).
   const ordered = Object.keys(blocks)
     .map((k) => Number(k))
     .sort((a, b) => a - b)
@@ -582,8 +805,6 @@ function handleAnthropicEvent(
       return;
     }
     default:
-      // content_block_stop / message_start / message_delta / message_stop /
-      // ping — nothing to do at this layer.
       return;
   }
 }
@@ -596,12 +817,10 @@ function numericField(obj: Record<string, unknown>, field: string): number | nul
 async function maybeMintIntentToken(
   env: ChatHandlerEnv,
   session: Session,
-  history: ChatRequestBody["history"],
+  userMessage: string,
 ): Promise<string | null> {
   if (!env.FETCH_RATE_KV || !session.session_id) return null;
-  const lastUser = [...history].reverse().find((m) => m.role === "user");
-  if (!lastUser || typeof lastUser.content !== "string") return null;
-  if (!operatorMessageImpliesIntent(lastUser.content)) return null;
+  if (!operatorMessageImpliesIntent(userMessage)) return null;
   const { token } = await mintIntentToken(
     { FETCH_RATE_KV: env.FETCH_RATE_KV },
     { sessionId: session.session_id, accountId: session.account_id },
@@ -718,6 +937,7 @@ function stringy(v: unknown): string {
 function buildSystemPrompt(
   catalog: FrameworkCatalogShape,
   siteDefinition: unknown,
+  refDocs: ReadonlyArray<ReferenceDocSummary>,
 ): string {
   const modulesSection = catalog.modules
     .map((m) => {
@@ -731,6 +951,14 @@ ${dials}`;
     })
     .join("\n");
   const tokensSection = catalog.themeTokenNames.map((t) => `  - ${t}`).join("\n");
+  const memoryNote = [
+    "You are seeing the TAIL of the active session. Older messages and prior sessions are accessible via `search_transcripts` and `read_session_range`. Platform reference docs are listed below; read them on demand via `read_reference_doc`.",
+  ].join("\n");
+  const refDocsSection = refDocs.length > 0
+    ? refDocs
+        .map((d) => `  - ${d.slug} — ${d.title}\n      ${d.summary}`)
+        .join("\n")
+    : "  (no reference docs are currently seeded)";
   return [
     "You are the 1st Contact builder AI. You translate the operator's plain-English nudges into structured tool calls against their site definition. You DO NOT write code, CSS, or HTML. Every change is a tool call.",
     "",
@@ -748,6 +976,11 @@ ${dials}`;
     "- Prefer duplicate_module over reconstructing a similar module from scratch: it deep-clones type/version/variant/dials/content on the same page and assigns a fresh id.",
     "- When you add or remove pages, keep the site nav consistent — call set_nav_entries with the updated page list so every page stays reachable; nav targets must reference real page / module ids.",
     "- When done, reply with one short sentence describing what you changed.",
+    "",
+    memoryNote,
+    "",
+    "Available reference docs:",
+    refDocsSection,
     "",
     REPRODUCING_A_WEBSITE_DOC,
     "",

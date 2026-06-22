@@ -1,10 +1,19 @@
 import { handleAssetsRequest, matchAssetsRoute, type AssetsEnv } from "./assets/routes.js";
 import { handleChatRequest, type ChatHandlerEnv } from "./chat.js";
+import {
+  handleChatRoute,
+  matchChatRoute,
+  type ChatRoutesEnv,
+} from "./chat-routes.js";
 import { handleSseEndpoint } from "./operator/events.js";
 import { handleOperatorActionRequest } from "./operator/router.js";
 import { handleSafetyHealth, type SafetyHealthEnv } from "./safety/health.js";
 
-export interface Env extends ChatHandlerEnv, AssetsEnv, SafetyHealthEnv {
+export interface Env
+  extends ChatHandlerEnv,
+    AssetsEnv,
+    SafetyHealthEnv,
+    ChatRoutesEnv {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
   FETCH_RATE_KV: KVNamespace;
   BROWSER_BUDGET_KV?: KVNamespace;
@@ -19,6 +28,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/api/chat") {
       return handleChatRequest(request, env);
+    }
+    if (matchChatRoute(url)) {
+      return handleChatRoute(request, env);
     }
     if (url.pathname === SAFETY_HEALTH_PATH) {
       return handleSafetyHealth(request, env);
