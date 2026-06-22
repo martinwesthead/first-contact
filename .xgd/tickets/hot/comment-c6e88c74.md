@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:36:32.706390+00:00'
+updated_at: '2026-06-22T23:38:17.527398+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1268,5 +1268,112 @@ Then take a look at the tabs on the UI
 of the 9 tabs Chat and Documents are reusable immediately. Intents would need adjusting for 1C. Files would need adjuting for assets
 
 What I am thinking here is that half the tabs are very specific ticket views. I think the new framework would want to support reusable components (like chat and the chat ticket views). And then each application would add an arrange its own tab set. Capabilities is very XGD specific, for example
+
+<!-- xgd-turn id="a2da38d5-3aa9-4248-8d9b-1aa7336e67b2-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T23:38:16.523Z" -->
+#### Claude
+Reading RES-628/629/630 in xgendev-main now, plus surveying the dashboard tabs.
+
+Let me peek at the actual tab list to ground the response.
+
+Got it. The 9 tabs are: **Status, Documents, Intents, Tickets, Workflows, Capabilities, Logs, Files, Chat.** Your categorization holds up cleanly:
+
+**Reusable immediately (substrate-package components):**
+- Chat
+- Documents
+- Tickets (generic ticket browse/edit)
+
+**Substrate components, per-app configuration:**
+- Intents → for XGD: intent tickets with FSM state. For 1C: campaigns, blog posts, leads (same ticket-detail component, different filter + status enums)
+- Files → for XGD: repo browser. For 1C: asset library (images, copy snippets)
+
+**Fully app-specific (each app builds its own):**
+- Status (XGD FSM state)
+- Workflows (XGD workflow engine)
+- Capabilities (XGD capability matrix)
+- Logs (XGD workflow logs)
+
+So 3 universal, 2 reskinnable, 4 XGD-only. That maps directly to the framework structure.
+
+## What REQ-628/629/630 tells us about the substrate
+
+XGD's branching model (main-canonical + per-branch staging overlay, `updated_at`-wins merge, aggregated reads across active branches) is **XGD-specific and overengineered for marketing/books/FC.** Those consumers have one store, one tenant or per-tenant prefix, simple writes. They don't have worktrees or staging.
+
+This argues hard for the **storage adapter pattern** the synthesis surfaced earlier:
+
+```
+@xgd/substrate            — ticket model + chat model + events
+                            All reads/writes go through a Storage interface
+                            The substrate itself knows NOTHING about branches
+
+Storage adapters:
+  SimpleFsAdapter         — one dir, one store. For marketing tool, book tool.
+  XgdBranchAdapter        — main + per-branch staging overlay + merge logic.
+                            For XGD dev use only.
+  R2Adapter               — Cloudflare R2 + D1 index. For FC hosted / Portal.
+  MemoryAdapter           — tests.
+```
+
+The substrate API is identical for all consumers. XGD's branching is encapsulated in *its adapter*, not in the substrate model. FC, marketing, books never see it.
+
+This also makes REQ-628/630 cleaner to implement: the branching logic lives in one adapter class with a clear interface boundary, not threaded through the ticket layer.
+
+REQ-629 (consolidate config/quality.yaml reads to a single call site) is just a prerequisite hygiene refactor — doesn't affect the framework decision, but it's the right pattern (single source of truth for "where does X live") that REQ-628 needs and the substrate adapter pattern needs too.
+
+## Concrete framework shape
+
+```
+@xgd/substrate         — Storage interface, Ticket/Chat/Comment models,
+                         events (created/updated/deleted), query API
+                         Small, stable, pure logic.
+
+@xgd/knowledge         — Tags, catalog, URI queries, semantic search.
+                         Listens to substrate events.
+                         Embedding-provider abstraction.
+
+@xgd/ui-components     — TicketList, TicketDetail, ChatPanel,
+                         DocumentViewer/Editor, MarkdownEditor.
+                         The reusable tabs are these components.
+                         No assumption about which app uses them.
+
+App shells (one per product):
+  @xgd/dashboard       — composes: Chat + Documents + Tickets +
+                         Status + Workflows + Capabilities + Logs + Files
+                         Uses XgdBranchAdapter.
+                         The XGD-specific tabs live here, not in the
+                         framework.
+
+  @1c/marketing        — composes: Chat + Documents + Campaigns
+                         (= TicketList configured for marketing types) +
+                         Assets (= Files reskinned).
+                         Uses SimpleFsAdapter locally, R2Adapter hosted.
+
+  @1c/book             — composes: Chat + Documents + Library +
+                         Manuscript views (when built).
+                         Same substrate, different composition.
+```
+
+## What this means for each tab category
+
+**Universal tabs** (Chat, Documents, Tickets) become **components in `@xgd/ui-components`**. Each app imports them, drops them into its layout, passes props (filters, theme, callbacks). Same component, different app context.
+
+**Reskinnable tabs** (Intents, Files) become **the same components with different configuration**:
+- XGD's Intents tab = `<TicketList filter={type:'intent'} statusEnum={INTENT_STATES} />`
+- 1C's Campaigns tab = `<TicketList filter={type:'campaign'} statusEnum={CAMPAIGN_STATES} />`
+- XGD's Files tab = `<FileBrowser root={repoRoot} />`
+- 1C's Assets tab = `<FileBrowser root={assetsRoot} preview={imagePreview} />`
+
+**App-specific tabs** (Status/Workflows/Capabilities/Logs for XGD) live entirely in the app shell. They're not framework concerns. XGD imports its own workflow-state UI from `@xgd/dashboard`; FC never sees that code.
+
+## What this confirms about the bigger plan
+
+The substrate decision (JS + adapter pattern) survives the branching requirement. The UI decision (component library + per-app composition) is just standard JS app architecture — nothing exotic, well-trodden ground.
+
+The split also reveals an important property: **as the framework matures, the substrate and component library can be released independently**. XGD ships when its app shell is ready; 1C ships when its app shell is ready. They share the substrate but ship on their own cadence. That's the whole point of the framework boundary.
+
+Worth nailing down next: which package owns the "tab" abstraction itself? My instinct: nothing in the framework — each app builds its own tab layout (HTML structure, routing) using framework components inside. Tabs are an app convention, not a framework primitive. Lighter that way.
+
+Does this match what you were sketching?
 
 <!-- xgd-chat-end -->
