@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:07:05.888948+00:00'
+updated_at: '2026-06-22T23:11:35.074908+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1124,5 +1124,11 @@ Steps 2-3 of the earlier plan revise:
 The synthesis's "one core, two adapters, three deployment shapes" is still correct for the JS side. The error was assuming the JS substrate had to be the only substrate.
 
 Does that hang together for you?
+
+<!-- xgd-turn id="68fd53e2-3689-413a-873e-d18dca15da70-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:10:49.057Z" -->
+#### You
+That sounds surprisingly complicated why can't JS provide a direct CLI interface so we only have one codebase to maintain?
 
 <!-- xgd-chat-end -->
