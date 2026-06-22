@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n bundle,wrangler -c yellow,magenta \"pnpm build:bundle:watch\" \"wrangler dev --port 8788\"",
+    "dev": "concurrently -k -n bundle,wrangler,sidecar -c yellow,magenta,cyan \"pnpm build:bundle:watch\" \"wrangler dev --port 8788\" \"node ../../tools/dev-tools-server/bin/start.mjs\"",
     "build:bundle": "node scripts/build-builder-bundle.mjs",
     "build:bundle:watch": "node scripts/build-builder-bundle.mjs --watch",
     "build": "pnpm build:bundle && tsc --noEmit",
