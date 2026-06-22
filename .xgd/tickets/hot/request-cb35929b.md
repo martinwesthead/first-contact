@@ -5,15 +5,18 @@ type: request
 title: 'D1 schema: chat sessions + messages (FTS5) + reference docs (FTS5)'
 created_by: xgd
 created_at: '2026-06-16T23:26:59.484714+00:00'
-updated_at: '2026-06-18T22:27:26.918407+00:00'
+updated_at: '2026-06-22T18:19:40.051926+00:00'
 completed_at: null
-last_field_updated: body
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: medium
   story_points: 3
   auto_merge_back: true
   needs_review: false
+  commits:
+  - b6dd188fc00e06758368f49f564681a8de57a700
+  version: 0.0.31
 ---
 
 # D1 schema: chat sessions + messages (FTS5) + reference docs (FTS5)
