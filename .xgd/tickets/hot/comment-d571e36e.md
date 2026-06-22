@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-50
 created_by: xgd
 created_at: '2026-06-22T21:05:14.870574+00:00'
-updated_at: '2026-06-22T21:15:00.813154+00:00'
+updated_at: '2026-06-22T23:13:07.180922+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -89,5 +89,11 @@ REQ-50 is fully landed.
 2. The pre-existing `apps/control-app` build failure (DOM types in `packages/builder-ui/src/components/*.ts` when checked under control-app's `"types": ["@cloudflare/workers-types"]` tsconfig) deserves its own bug ticket.
 
 Ticket is parked at `free_coded`. Whenever you're ready to reconcile, promote to `ready_to_reconcile`.
+
+<!-- xgd-turn id="126f6a9a-f215-44a8-8481-7ee30de8ad74-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:12:32.180Z" -->
+#### You
+please just put stuff in gitignore that needs to be there. Thank you for removbing the unnecesarry buttons. However the new UI does not work
 
 <!-- xgd-chat-end -->
