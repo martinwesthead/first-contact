@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T20:09:58.866188+00:00'
+updated_at: '2026-06-22T20:11:21.598214+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -416,5 +416,84 @@ Want me to turn this into actual XGD tickets — a scope ticket + the breakdown 
 <!-- xgd-chat role="user" ts="2026-06-22T20:08:27.369Z" -->
 #### You
 I am honestly nervous about single tenancy. My experience is that adding multiple tenants to a single tenant project is really hard where it's building multiple tenancy is basically a field in a database. I think it needs to have multi tenancy data structures built from day one. We can figure out the UI whenever but the data has to support multi tenancy out of the gate
+
+<!-- xgd-turn id="dfec2428-e3a8-4c71-9028-0b15aacc2aa6-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T20:11:20.593Z" -->
+#### Claude
+You're right and I underweighted it. Retrofitting tenancy is one of the genuinely brutal refactors — every query, every authorization check, every assumption about "the user" silently means "the user in scope X." The "we'll add multi-tenancy later" trap has killed real products. Tenant from day one is cheap; tenant later is a rewrite.
+
+Holding to that, the decisions this forces *now*, before any code:
+
+## Tenancy architecture decisions to lock up front
+
+**1. Isolation model.** Pick one and commit.
+- **Shared schema + tenant_id everywhere** — most common SaaS pattern, cheapest ops, fine for tens of thousands of tenants — RECOMMEND
+- Schema-per-tenant (better isolation, harder migrations at scale)
+- Database-per-tenant (strongest isolation, very expensive ops; only worth it for compliance-driven enterprise tiers later)
+
+**2. Where the tenant filter is enforced.**
+- App-layer middleware (relies on developer discipline; one missed `WHERE tenant_id = $1` leaks data across tenants)
+- **Database-layer (Postgres RLS)** — defense in depth; database refuses cross-tenant reads even if app code is buggy — RECOMMEND
+
+This single decision prevents the entire class of "showed customer A's data to customer B" bugs. Must be on day one because adding it later means auditing every existing query.
+
+**3. Tenant resolution per request.**
+- Custom domain (`marketing.acme.com` → DNS → tenant lookup) — mandatory eventually, because that's *their* site on *their* domain
+- Subdomain (`acme.firstcontact.app`) — useful for staging/preview
+- Path prefix — fine for the admin UI
+
+MVP supports custom domain + default subdomain. Resolution is request-middleware that touches every rendered page, so it exists from day one.
+
+**4. Auth scope.**
+- Single-tenant users (simpler today)
+- **User ↔ tenant as a join table (memberships with roles)** — supports single-tenant-per-user *today* and the agency-managing-many-sites case *later* without rework — RECOMMEND
+
+Memberships in MVP always have exactly one row per user. The data shape allows N rows later; no migration needed.
+
+**5. Two distinct subscription layers — name them now so they don't get conflated.**
+- **Platform subscriptions:** tenant pays 1st Contact for the platform → entitlements on the tenant record → our Stripe account
+- **Customer subscriptions:** *their* site takes subscription payments from *their* customers → goes to *their* Stripe account via Stripe Connect
+
+For MVP: tenant record has a nullable `stripe_account_id`. When they want to take payments, they connect their own Stripe. We never hold their payment data — keeps PCI scope minimal and the model honest.
+
+## What changes in the MVP scope
+
+Most of the previous proposal survives. The changes:
+
+- **Auth/data primitive leans Supabase now.** Postgres + RLS as a native primitive is genuinely load-bearing here. Clerk + a Postgres of your choice is the other serious option. Worth a focused spike — this decision touches everything downstream.
+- **Tenant table is real from day one** with status, plan tier, brand config, stripe_account_id, custom_domain, default subdomain.
+- **Every page/module/asset/ticket carries tenant_id**, indexed appropriately, RLS-policied.
+- **Tenant context flows through everything** — ORM, jobs, logs, Sentry tags, rate limiting buckets.
+
+## What deliberately doesn't change
+
+- The **UI stays single-tenant-shaped** for MVP. Operator logs in, sees their stuff. No tenant switcher, no agency UI. The membership table exists but always has one row per user in MVP.
+- **XGD is tenant #1.** Customer-zero pattern intact — the system has tenants from day one; XGD happens to be the only real one for a while.
+- **No self-serve onboarding yet.** Tenants are created by admin script/endpoint. Self-serve signup is a separate work item for tenant #2.
+
+## Operational habits to bake in on day one
+
+These are discipline, not infrastructure — but trivially cheap on day 1, painful on day 200:
+
+- Every log line includes `tenant_id`
+- Every Sentry error tagged with `tenant_id`
+- Every background job carries tenant context
+- Every endpoint verifies caller's tenant matches the resource's tenant
+- Every DB migration reviewed with "does this query implicitly assume single tenancy?" as an explicit check
+
+## Decisions I'd want from you before scoping further
+
+1. **Auth/data primitive choice** (Supabase vs Clerk+Postgres vs other). Now load-bearing. Worth a deliberate spike or strong prior opinion.
+2. **Custom-domain handling approach** — Cloudflare-for-SaaS, Vercel custom domains, or self-built reverse proxy. Each has real cost/complexity tradeoffs.
+3. **Tenant onboarding for MVP** — manual admin endpoint? CLI script? SQL inserts? Naming it now keeps it from accidentally becoming "we need a signup flow" mid-build.
+
+None of this is exotic — every successful SaaS has solved these. The work is just making the calls early enough that they're foundational rather than retrofitted.
+
+Now let me save this architectural commitment to project memory so it survives the conversation.
+
+Memories saved. The architectural commitment (multi-tenant from day one with RLS, memberships join table, tenant-resolving middleware) and the broader product picture (four pillars sharing the dashboard+chat+ticket UI) are now durable across future conversations.
+
+Three open questions waiting for your call before scope-locking: auth/data primitive (Supabase vs Clerk+Postgres), custom-domain handling approach (Cloudflare-for-SaaS vs Vercel vs self-built), and MVP tenant onboarding mechanism (admin endpoint vs CLI script vs SQL).
 
 <!-- xgd-chat-end -->
