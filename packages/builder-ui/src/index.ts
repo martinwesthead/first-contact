@@ -11,7 +11,6 @@ export {
   type BuilderStateInit,
   type BuilderStoreOptions,
   type ChatMessage,
-  type ChatSessionSummary,
   type ChatToolCallRecord,
   type ChatToolResultRecord,
   type Listener,
