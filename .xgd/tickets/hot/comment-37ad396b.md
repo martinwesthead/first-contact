@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T21:05:03.806856+00:00'
+updated_at: '2026-06-22T21:05:12.802582+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -745,5 +745,47 @@ Want me to (a) dig into those remaining files and complete the audit, (b) skip a
 I think you're kind of racing ahead here there are important design considerations that are required let's go step at a time and not try to rush this.
 
 First off, site != tenant -> I will have many sites on this system hopefully some of my users will too
+
+<!-- xgd-turn id="4d943d1b-ea2f-4469-a973-4914a800010b-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T21:05:12.799Z" -->
+#### Claude
+Right — important correction I conflated. **Accounts are the tenant boundary; sites belong to accounts; one account owns many sites.** The schema already reflects this (`sites.account_id` FK). GenDev Labs as an account would own at least:
+
+- 1stcontact.io (existing — marketing for the platform itself)
+- gendevlabs.ai (new — corporate marketing)
+- possibly xgd.dev or similar (XGD methodology if it gets its own surface)
+- future product landing pages
+
+All under one account. And customer accounts will eventually own multiple sites too — the personal chef from earlier could own her business site + a workshop site + a cookbook landing page.
+
+I was racing past real design questions to land on REQs. Pulling back. The questions group into three clusters, and most flow from cluster A:
+
+## Cluster A — Data model (accounts × sites × domains)
+
+- `sites` table has `slug` (unique) but no `custom_domain` field — how does a site get associated with `gendevlabs.ai`? Is the slug a default subdomain (`gendevlabs.firstcontactdemo.app` before custom domain is wired), or just an internal identifier?
+- What's scoped where:
+  - **Account-level**: billing, plan tier, owner identity, R2 namespace?
+  - **Site-level**: design, content, custom domain, form notification recipient
+  - **Mixed / cross-cutting**: email from-addresses (per-site or per-account verified domain?), asset storage layout in R2
+- Multiple custom domains per site (apex + www, locale variants), or one canonical per site?
+
+## Cluster B — Operations (bootstrap + DNS)
+
+- Account creation is self-serve eventually but manual now. What's the v1 shape — admin endpoint, CLI, SQL migration?
+- Same for adding sites to an existing account.
+- Custom domain wiring: programmatic via Cloudflare API (we control the DNS), or operator points their DNS at the platform manually (CNAME / A records to the Worker)?
+
+## Cluster C — UI / runtime
+
+- Does the desktop control-app already have a site picker? DOC-12 §17 calls this out for mobile from day one; I haven't verified the desktop builder.
+- `1stcontact.io`'s current duality: it's `sites/1stcontact/site.json` (file-based, served by the public-site Worker today) **and** a seeded D1 record (`0005_seed_1stcontact.sql`). Which is the source of truth? Is the D1 record actually exercised yet, or provisional?
+- Per-site Worker vs shared-Worker (revisited). With one account immediately needing 2-3 sites, per-site Worker doesn't scale even within an account. Shared-Worker with hostname routing becomes more clearly the long-term answer — but that's downstream of A.
+
+## Where I'd start
+
+**Cluster A** — the data model question. Most other decisions follow once that's settled. **B** is operational and can be designed in parallel but probably shouldn't be designed first. **C** is largely downstream of A.
+
+Want to start with the custom-domain question specifically, or the broader account-vs-site scoping (what lives where) question? Or take this somewhere else entirely?
 
 <!-- xgd-chat-end -->
