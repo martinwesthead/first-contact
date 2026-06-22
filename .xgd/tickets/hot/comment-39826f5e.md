@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-19
 created_by: xgd
 created_at: '2026-06-22T18:22:41.166211+00:00'
-updated_at: '2026-06-22T20:59:55.381704+00:00'
+updated_at: '2026-06-22T21:00:21.020846+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -194,5 +194,18 @@ If those are good as-is, flip to `ready_to_implement` and the rename is ready to
 <!-- xgd-chat role="user" ts="2026-06-22T20:59:41.201Z" -->
 #### You
 You should NEVER EVER put a ticket into ready to implement state - that triggers automatic implementation it is a user only action
+
+<!-- xgd-turn id="fa409118-e1fa-4f95-bca2-493be6c69a73-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T21:00:20.010Z" -->
+#### Claude
+Understood — saving that as a feedback memory so I won't propose it again. REQ-50 is in `draft`; no transitions happened.
+
+Noted and saved. Won't suggest the transition again — `ready_to_implement` is yours to set when you're ready to release the spec to autonomous implementation.
+
+REQ-50 is sitting in `draft` for your review. The two open questions from my previous message still stand if you want to weigh in:
+
+- npm scope name: `@gendev` vs alternatives
+- whether to keep the tenancy decision out of REQ-50 (current shape) or fold it in
 
 <!-- xgd-chat-end -->
