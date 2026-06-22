@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-19
 created_by: xgd
 created_at: '2026-06-22T18:22:41.166211+00:00'
-updated_at: '2026-06-22T20:52:07.893143+00:00'
+updated_at: '2026-06-22T20:54:50.366559+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -163,5 +163,30 @@ Want me to draft a doc ticket capturing this — scope rename + package roadmap 
 <!-- xgd-chat role="user" ts="2026-06-22T20:52:01.096Z" -->
 #### You
 can you create a REQ for these actions please
+
+<!-- xgd-turn id="0472f9a0-c63f-482c-b1a2-ce258ba8b81e-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T20:54:50.364Z" -->
+#### Claude
+I'll check how REQs are structured here, then draft and create the ticket.
+
+I have what I need. Let me draft the REQ body and create the ticket.
+
+Created **REQ-50** capturing the architectural roadmap.
+
+**Scope of REQ-50** (status: `draft`, priority: high, story points: 3):
+
+1. **Mechanical foundation only** — npm scope rename (`@1stcontact/*` → `@gendev/*`) + empty skeletons for `packages/{api-contracts,auth,billing,portal-ui}` (replacing the `ui-kit` stub) + a documented sequencing roadmap.
+2. **No new package implementations** — each new package is its own follow-up REQ.
+3. **No D1 / tenancy work** — flagged as required prep (must precede REQ-10 going live) but deferred to a separate decision (DOC amendment or new DOC ticket).
+
+**Sequencing recorded in the REQ body** for the seven follow-up steps: tenancy decision → `api-contracts` first contract → `auth` magic-link → XGD marketing site → XGD portal (the architectural validation step) → 1stcontact tenant onboarding.
+
+**Status note:** I left this in `draft` rather than `ready_to_implement` because two judgment calls are still open and worth confirming before someone picks it up:
+
+- The chosen scope name (`@gendev` is my recommendation; `@fc` or `@webcaretaker` are alternatives — happy to swap).
+- Whether to fold the tenancy decision into this REQ vs. spin it as a separate DOC ticket as I currently have it.
+
+If those are good as-is, flip to `ready_to_implement` and the rename is ready to execute. Want me to also draft the follow-up REQ for the tenancy decision now, or hold until you've reviewed REQ-50?
 
 <!-- xgd-chat-end -->
