@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T21:47:38.381877+00:00'
+updated_at: '2026-06-22T21:57:06.107948+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -478,5 +478,15 @@ That probably argues for its own DOC ticket rather than a section in the Lead Ge
 3. External fixed dates: events or tickets? (My vote: separate event type.)
 
 Want me to draft a calendar-substrate concept doc as a DOC ticket, or keep pressure-testing — e.g. walk one of the two end-to-end scenarios (launch sequence, or one-blog-many-outputs) through the dashboard + tickets + calendar shape and see if it holds?
+
+<!-- xgd-turn id="01a3eaf7-7387-4675-a54e-d3f946eb7cd1-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T21:56:02.313Z" -->
+#### You
+No I don't wanna go to far building anything or designing specifics until we're ready for them. I think it's interesting to explore these ideas if we build calendar we can build it as a reusable widget. It turns out to be very painful getting Claude to do things that way but nevertheless it can be done and we can repurpose it wherever we need it in the dashboard.
+
+My fear here is building features that I will not use. I want to focus on the stuff that's going to be really useful. I am still trying to figure out what my conversation with Claude is during this marketing phase and what I need.
+
+Here is an interesting question – what we seem to be creating feels very much like XGD. There are a few things that are slightly different but I seem to be re-creating XGD. One possibility would be for me to prototype my ideas just using XGD.
 
 <!-- xgd-chat-end -->
