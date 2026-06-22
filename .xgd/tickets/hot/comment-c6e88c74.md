@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T21:16:12.371256+00:00'
+updated_at: '2026-06-22T21:16:31.418331+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -239,5 +239,181 @@ The pressure test I'd want next: pick **two scenarios** end-to-end and walk them
 If those two read naturally in this UI, the model is real. If they require operator gymnastics, we iterate.
 
 Want to walk one of those scenarios next, or push on something earlier in the list?
+
+<!-- xgd-turn id="6346fbd0-bd08-4dad-89b8-5ad5184ae6ca-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T21:16:31.415Z" -->
+#### Claude
+Here are the seven tables as plain text blocks.
+
+## Use cases — XGD marketing
+
+Legend: **A** = AI does the work, **U** = user does the work, **A→U** = AI drafts, user approves/executes, **U→A** = user briefs, AI runs
+
+---
+
+### Strategy & planning
+
+```
+1. "What should be my next campaign move?"
+   Who:     A (synthesis across funnel + content + outreach state)
+   Surface: Dashboard chat
+
+2. "Compare two angles for my next post — methodology vs MD editor"
+   Who:     U→A
+   Surface: Dashboard chat
+
+3. "Plan the launch sequence: closed beta → blog start → HN post → conferences"
+   Who:     U→A, produces tickets
+   Surface: Dashboard chat → spawns tickets
+
+4. Quarterly review: what worked, what didn't, what to stop
+   Who:     A→U
+   Surface: Dashboard chat (with dashboard data inline)
+
+5. "What's my funnel looking like this week?"
+   Who:     A reads, summarises
+   Surface: Dashboard (passive) + chat (Q&A)
+```
+
+---
+
+### Content production (priority 3a)
+
+```
+6. Write a methodology blog post
+   Who:     A→U (draft → review → publish)
+   Surface: Ticket — durable, multi-turn, version history
+
+7. Write "XGD vs $competitor" comparison
+   Who:     A→U
+   Surface: Ticket
+
+8. Update an existing post based on new data
+   Who:     A→U
+   Surface: Ticket (linked to original post)
+
+9. Repurpose blog post → LinkedIn carousel + Medium repost + 5 tweets
+   Who:     A→U
+   Surface: Ticket (one source, multiple distribution outputs)
+
+10. Draft a whitepaper (priority 2)
+    Who:     U (writes in Google Docs) → upload PDF → AI captures metadata
+    Surface: Ticket — but the writing happens outside
+
+11. Plan a YouTube episode (priority 3b, MD editor demo)
+    Who:     U→A (outline, talking points, code samples)
+    Surface: Ticket
+
+12. Write a case study from a beta user
+    Who:     A→U
+    Surface: Ticket
+```
+
+---
+
+### Distribution
+
+```
+13. Submit a post to Hacker News with the right framing
+    Who:     A→U (drafts title + opening, U submits)
+    Surface: Ticket (one-shot, but durable record matters)
+
+14. Cross-post to Medium / LinkedIn (manual paste)
+    Who:     A→U
+    Surface: Ticket — often a sub-ticket of the blog ticket (#6)
+
+15. Schedule a series of social posts from one blog
+    Who:     A→U
+    Surface: Ticket (one ticket, many outputs)
+
+16. Email the beta list with a new whitepaper
+    Who:     A→U
+    Surface: Ticket
+```
+
+---
+
+### Outreach (priority 3c)
+
+```
+17. "Find 10 dev meetups/podcasts that take XGD-shaped pitches"
+    Who:     A
+    Surface: Ticket — produces a list, becomes sub-tickets
+
+18. Draft a pitch email for one specific meetup organiser
+    Who:     A→U
+    Surface: Ticket (or sub-ticket of #17)
+
+19. Track a partnership conversation over weeks
+    Who:     U logs notes, A surfaces follow-ups
+    Surface: Ticket — long-lived, status-tracked
+
+20. "Who haven't I followed up with?"
+    Who:     A reads ticket states
+    Surface: Dashboard chat
+```
+
+---
+
+### SEO / SEM (priority 5, SEO continuous)
+
+```
+21. Site SEO audit (schema, meta, sitemap, internal linking)
+    Who:     A (autonomous, against the D1 site def)
+    Surface: Ticket — auto-spawned; one ticket per issue class
+
+22. "Build a 'XGD for $framework' page targeting this keyword"
+    Who:     A→U (drafts page → Builder cross-pillar ticket)
+    Surface: Ticket spawning Builder sub-ticket
+
+23. Set up SEM campaign
+    Who:     A→U (target list, ad copy, landing page)
+    Surface: Ticket
+
+24. Review SEM spend vs lead quality, adjust
+    Who:     A→U
+    Surface: Recurring ticket
+```
+
+---
+
+### AI visibility (priority 6)
+
+```
+25. Probe: "How does ChatGPT describe XGD today?"
+    Who:     A
+    Surface: Ticket — auto-spawned monthly, captures the answer
+
+26. "Make this section more LLM-citable" (FAQ, positioning paragraphs)
+    Who:     A→U (Builder cross-pillar)
+    Surface: Ticket → Builder sub-ticket
+
+27. Track AI-mention drift over time
+    Who:     A passive
+    Surface: Dashboard widget
+```
+
+---
+
+### Beta program ops (priority 4)
+
+```
+28. "Send an invite to this person"
+    Who:     U (one-shot action)
+    Surface: Dashboard quick action — not a ticket, too lightweight
+
+29. Track activations: who signed up, who actually used it
+    Who:     A→U
+    Surface: Dashboard + ticket per low-activation user
+
+30. "Email beta cohort about v0.15"
+    Who:     A→U
+    Surface: Ticket
+```
+
+---
+
+The rest of the analysis (the "where the UI strains" section, the suggested surface composition, and the next-step proposal) was prose, not tables — so it should have rendered fine. Want me to repost any of that too, or move on to walking one of the two end-to-end scenarios?
 
 <!-- xgd-chat-end -->
