@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-21
 created_by: xgd
 created_at: '2026-06-22T18:33:47.282823+00:00'
-updated_at: '2026-06-22T19:31:11.804040+00:00'
+updated_at: '2026-06-22T19:45:57.957253+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -252,5 +252,11 @@ The honesty principle applies here too: don't generate fake "her" food. That ero
 ## Where this leaves us
 
 The unified pattern + the layered content approach together produce a coherent v1 picture: four pillars, one shared UI grammar, AI-conversation everywhere, content tooling that knows its lane. The thing I'd want to write down next is the **scenario walkthroughs** — three or four end-to-end operator stories that cross pillars, told in the dashboard+chat+ticket idiom. If those read as natural, the architecture is right. If they require gymnastics, the architecture needs another iteration.
+
+<!-- xgd-turn id="efe38a41-65b1-4a7c-9d3b-90df49903074-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T19:44:59.926Z" -->
+#### You
+One step further on the PDF could be some "brochure" patterns - web pages (since we have to be good at those anyway) user fills in/edits content in the right places and we export the HTML to pdf?
 
 <!-- xgd-chat-end -->
