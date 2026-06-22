@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-19
 created_by: xgd
 created_at: '2026-06-22T18:22:41.166211+00:00'
-updated_at: '2026-06-22T19:08:57.543460+00:00'
+updated_at: '2026-06-22T19:11:24.389015+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -89,5 +89,73 @@ Want me to look at the current `apps/` and `packages/` layout and sketch a concr
 <!-- xgd-chat role="user" ts="2026-06-22T19:08:45.000Z" -->
 #### You
 Yes and take a look at the design documents - I think we are on the right architecture track here but I welcome and suggestion for course corrections?
+
+<!-- xgd-turn id="c2f9fe8a-f6cc-493b-aa4c-333d4ae69c4b-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-22T19:11:23.377Z" -->
+#### Claude
+I'll dig into the current structure and the design docs in parallel, then come back with a concrete take.
+
+Looked at the apps, packages, sites layout, and read DOC-1 (architecture policy), DOC-5 (caretaker architecture), DOC-12 (mobile/owner-API). Here's my read:
+
+## What you already have, and what it tells me
+
+The current `packages/` is well-factored — these are real primitives, not "1stcontact features":
+
+- `site-schema` — pure Zod contract, the canonical pattern
+- `framework` — section library, tokens, renderer; explicitly shared between static gen *and* in-browser preview
+- `builder-ui` — chat+preview SPA, importable
+- `extractor` — reference-site signal extraction
+- `web-fetch-safety` — SSRF/rate-limit safety primitives
+- `ui-kit` — stub (panels/splitter), placeholder
+
+The generator (`tools/generate`) takes `--site <path>` and emits static HTML. `sites/1stcontact/site.json` is the only consumer today. That `sites/<name>/site.json` shape is the seed of the multi-tenant model — every future tenant is just another sites/ entry (eventually D1-derived).
+
+DOC-12 also already names the next-tier primitives that *don't yet exist as packages*: `api-contracts`, magic-link tokenization, AccountEventBus DO, owner-facing API namespace, monitoring Worker. So the architecture has been thought through and the package shape is anticipated — it just hasn't been built.
+
+**Verdict: the architecture is on the right track.** The package boundaries are correct, the static-site model dovetails with multi-tenancy, and the framework/site-schema split is exactly the contract-driven pattern you want to repeat for auth, billing, and portal.
+
+## Five course corrections, ordered by leverage
+
+**1. Rename the npm scope `@1stcontact/*` → neutral.** This is the single highest-leverage move and it's mechanical. Every package currently *reads* as "belongs to that product." If XGD's marketing site, XGD's customer portal, and 1stcontact-the-product all import these, the scope must be neutral. Options: `@gendev/*` (brand), `@fc/*` (project codename), `@webcaretaker/*` (evocative but locks branding). I'd lean `@gendev/*` since GenDev Labs is the parent. Do this *before* you write more packages — renames compound in cost.
+
+**2. Promote `packages/api-contracts` next, before any auth/portal code.** This is the keystone. DOC-12 item 8 already specifies it. Until it exists, every consumer (control-app, future portal, mobile, XGD portal) invents its own request/response types and they drift. With it: Worker validates at the boundary, consumers infer types via `z.infer`. Make this the next package, not the next feature inside control-app.
+
+**3. Put auth / billing / portal-ui in `packages/` from day one — never in `apps/control-app/src/`.** This is the discipline that makes XGD-vs-1stcontact reuse possible. Specifically:
+- `packages/auth` — magic-link tokens, session validation, access+refresh, Bearer wrapper. Headless.
+- `packages/billing` — Stripe customer/subscription/webhook wrappers, plan-tier checks.
+- `packages/portal-ui` — opinionated pages (login, account, billing, settings, sites list) themed via tokens.
+
+`apps/control-app` becomes thin composition: bindings + route map + config. `apps/xgd-portal` is the same packages, different composition. **The test of whether the abstractions work is whether XGD's portal can be built from them.** That's also why XGD should be the first consumer, not the second.
+
+**4. Build `sites/xgd/site.json` + `apps/xgd-site` and dogfood the framework as XGD's marketing site.** You said you want this anyway. Doing it now makes the framework a real cross-product consumer (proof that `sites/<tenant>/` is a real boundary, not a 1stcontact-specific hack) and produces immediate value (XGD marketing site).
+
+**5. Decide 2-level tenancy in the schema *before* migrations land.** DOC-5 already gestures at "Organization owner / Site admin / Business staff" but doesn't commit to `org_id` vs `account_id`. The cleanest model:
+- `org_id` = the tenant (XGD-as-company, or a chef using 1stcontact)
+- `account_id` = the end-user-of-the-tenant (an XGD customer, or the chef's customer)
+- XGD is the trivial case where `account_id == org_id` for portal access; no nested tier needed.
+- 1stcontact is the 2-level case naturally.
+
+Every operational row carries `org_id` for tenant isolation. This is the only schema decision you can't easily unwind, and it costs nothing to get right at migration time.
+
+## What you should NOT do
+
+- **Don't build a speculative "portal-kit" wrapper** that tries to be a turn-key portal-as-a-service. Build XGD's portal first as a concrete composition of the auth/billing/portal-ui packages. When 1stcontact's portal arrives as the second consumer, *then* generalize — two-then-three rule. Anything more upfront is guesswork.
+- **Don't build two auth stacks** ("XGD users" vs "1stcontact tenants"). One `@gendev/auth` package, two configurations.
+- **Don't keep treating `framework` as 1stcontact-only.** It's the website kit. XGD consumes it for its own marketing site.
+
+## Suggested sequencing (concrete, ticket-sized)
+
+1. Rename `@1stcontact/*` → `@gendev/*` (or chosen scope) — one PR, mostly mechanical
+2. Spin up `packages/api-contracts` with the first owner-facing contract (`/api/owner/v1/leads`) — DOC-12 item 8
+3. Build magic-link auth as `packages/auth`, consumed by control-app's `/api/owner/v1/*` namespace — DOC-12 item 1
+4. Build XGD marketing site at `sites/xgd` + `apps/xgd-site` using the framework
+5. Build XGD's customer portal at `apps/xgd-portal` consuming auth + portal-ui + billing — *this is the architectural validation step*
+6. D1 migrations with the 2-level tenancy model
+7. Generalize to 1stcontact tenant onboarding
+
+The big reframe this gives you: **XGD becomes the first customer of every productization package, and 1stcontact becomes the second.** That ordering both justifies the work commercially (you'd build XGD's auth/billing anyway) and forces the abstractions to be honest (a single tenant case must work before multi-tenant complexity is added).
+
+Want me to draft a doc ticket capturing this — scope rename + package roadmap + ordering — so it's recorded as an architecture decision alongside DOC-5 and DOC-12?
 
 <!-- xgd-chat-end -->
