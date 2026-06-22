@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T22:26:19.688242+00:00'
+updated_at: '2026-06-22T22:40:18.698035+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -859,5 +859,13 @@ If Cloudflare-only is preferred-not-hard, the B-variant with sub-path (b) — Py
 If Cloudflare-only is hard, then we're back to a re-implementation somewhere, and the choice is between (a) doing it once cleanly in JS for FC + book tool while XGD keeps its Python version, or (c) keeping a protocol contract across both.
 
 Tell me which constraint is real and I can sharpen further. Or say "run a workflow" and I'll launch one to pressure-test the B-variant in code-level detail (modularization surgery on XGD, Cloudflare Python feasibility, service deploy options).
+
+<!-- xgd-turn id="1c7242f9-11bc-41f2-8b01-49b9f67bc121-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T22:39:16.491Z" -->
+#### You
+We remember the whole xgd frontend is in JS
+
+We can explore alternative implementation CF made sense when 1C was not a reimplementation of XGD
 
 <!-- xgd-chat-end -->
