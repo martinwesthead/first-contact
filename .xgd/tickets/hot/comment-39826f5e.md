@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-19
 created_by: xgd
 created_at: '2026-06-22T18:22:41.166211+00:00'
-updated_at: '2026-06-22T19:11:24.389015+00:00'
+updated_at: '2026-06-22T20:52:07.893143+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -157,5 +157,11 @@ Every operational row carries `org_id` for tenant isolation. This is the only sc
 The big reframe this gives you: **XGD becomes the first customer of every productization package, and 1stcontact becomes the second.** That ordering both justifies the work commercially (you'd build XGD's auth/billing anyway) and forces the abstractions to be honest (a single tenant case must work before multi-tenant complexity is added).
 
 Want me to draft a doc ticket capturing this — scope rename + package roadmap + ordering — so it's recorded as an architecture decision alongside DOC-5 and DOC-12?
+
+<!-- xgd-turn id="0472f9a0-c63f-482c-b1a2-ce258ba8b81e-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:52:01.096Z" -->
+#### You
+can you create a REQ for these actions please
 
 <!-- xgd-chat-end -->
