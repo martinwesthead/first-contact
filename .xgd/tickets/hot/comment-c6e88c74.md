@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T23:38:17.527398+00:00'
+updated_at: '2026-06-22T23:41:26.933904+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -1375,5 +1375,13 @@ The split also reveals an important property: **as the framework matures, the su
 Worth nailing down next: which package owns the "tab" abstraction itself? My instinct: nothing in the framework — each app builds its own tab layout (HTML structure, routing) using framework components inside. Tabs are an app convention, not a framework primitive. Lighter that way.
 
 Does this match what you were sketching?
+
+<!-- xgd-turn id="81005ca6-c3ae-45bb-a154-7ca301f92d08-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T23:40:57.403Z" -->
+#### You
+This argues hard for the **storage adapter pattern** the synthesis surfaced earlier <-- so XGD stays in Python and handles this we write a simple version in JS.
+
+Note that the Python version has Hot and Cold storage for scaling needs - with 1C that too may be overkill
 
 <!-- xgd-chat-end -->
