@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-22
 created_by: xgd
 created_at: '2026-06-22T21:11:24.108700+00:00'
-updated_at: '2026-06-22T21:57:12.711858+00:00'
+updated_at: '2026-06-22T22:03:12.569067+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -516,5 +516,11 @@ A few things that will be true if you try this:
 The honest test: after 6-8 weeks, what do you find yourself reaching for that isn't there? That list — not our current speculation — is the Lead Gen spec.
 
 It also defers the harder question (Lead Gen as a pillar on XGD substrate vs. its own product) until you have actual evidence. Right now we're guessing.
+
+<!-- xgd-turn id="6ef46f3f-0e7d-480e-b69c-11674a59cc1d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T22:00:41.342Z" -->
+#### You
+Well there's another variation on this idea possibly more than one. I could fork xgd. Cut all the content around workflows simplify the UI so that it's about tickets and chats and possibly even modularize it I also want to create a tool for writing documents that I think would reuse a lot of the same features. At some point it might be worth rewriting the whole thing from scratch to do exactly what is needed in a modular way. But the biggest distinction between first contact and XGD is that first contact is entirely JavaScript and built for Web deployment. Oh and that XGD leverages Claude code for its agentic tooling 1st contact is reinventing all of that
 
 <!-- xgd-chat-end -->
