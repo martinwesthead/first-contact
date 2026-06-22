@@ -1,6 +1,11 @@
 import { handleChatRequest, type ChatHandlerEnv } from "./chat.js";
+import {
+  handleChatRoute,
+  matchChatRoute,
+  type ChatRoutesEnv,
+} from "./chat-routes.js";
 
-export interface Env extends ChatHandlerEnv {
+export interface Env extends ChatHandlerEnv, ChatRoutesEnv {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
   FETCH_RATE_KV: KVNamespace;
   BROWSER_BUDGET_KV?: KVNamespace;
@@ -12,6 +17,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/api/chat") {
       return handleChatRequest(request, env);
+    }
+    if (matchChatRoute(url)) {
+      return handleChatRoute(request, env);
     }
     // /builder (and /builder/) renders the SPA shell. Backed by Workers Static
     // Assets — we rewrite to /builder.html so the Asset binding serves it.

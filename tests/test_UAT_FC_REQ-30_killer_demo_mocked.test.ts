@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
@@ -8,6 +8,7 @@ import {
   consumeChatSSE,
   encodeAnthropicSSE,
 } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 const pngBytes = new Uint8Array([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
@@ -31,6 +32,13 @@ const pngBytes = new Uint8Array([
  *  - text content drawn from the fixture
  */
 describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
+  let chatEnv: SeededChatEnv;
+  beforeAll(async () => {
+    chatEnv = await seedChatSession({ sessionId: "sess_req30_killer" });
+  });
+  afterAll(async () => {
+    await chatEnv.cleanup();
+  });
   it("scripted chat loop produces a draft with R2-keyed image, source palette and source text", async () => {
     // Step 1: run transcribe_site to populate ASSETS_BUCKET with the digest.
     const h = makeTranscribeHarness({ accountId: "acct-killer" });
@@ -178,7 +186,8 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
         "x-plan-tier": "trial",
       },
       body: JSON.stringify({
-        history: [{ role: "user", content: "convert https://acme.test/ for me" }],
+        sessionId: chatEnv.sessionId,
+        userMessage: "convert https://acme.test/ for me",
         siteDefinition: baseSite,
         frameworkCatalog: buildFrameworkCatalog(),
       }),
@@ -188,6 +197,7 @@ describe("UAT FC REQ-30: end-to-end killer demo with mocked LLM (AC9)", () => {
       {
         CLAUDE_API_KEY: "test-key",
         ASSETS_BUCKET: h.env.ASSETS_BUCKET,
+        SITES_DB: chatEnv.db,
       },
       { fetch: upstreamFetch as unknown as typeof fetch },
     );

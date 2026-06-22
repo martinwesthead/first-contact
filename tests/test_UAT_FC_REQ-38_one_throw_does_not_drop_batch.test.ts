@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import {
   applyToolCall as realApplyToolCall,
@@ -10,8 +10,16 @@ import {
   consumeChatSSE,
   makeAnthropicStreamingFetch,
 } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 describe("UAT FC REQ-38: a throwing state_edit tool call does not drop the rest of the batch", () => {
+  let env: SeededChatEnv;
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_req38" });
+  });
+  afterAll(async () => {
+    await env.cleanup();
+  });
   it("a 3-call batch with one thrower still produces 3 tool_results — 2 ok and 1 structured error — and the rest of the batch survives", async () => {
     const site = load1stContactSite();
 
@@ -60,16 +68,15 @@ describe("UAT FC REQ-38: a throwing state_edit tool call does not drop the rest 
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [
-          { role: "user", content: "make hero medium and left-aligned" },
-        ],
+        sessionId: env.sessionId,
+        userMessage: "make hero medium and left-aligned",
         siteDefinition: site,
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key" },
+      { CLAUDE_API_KEY: "test-key", SITES_DB: env.db },
       {
         fetch: stubFetch,
         applyToolCall,
