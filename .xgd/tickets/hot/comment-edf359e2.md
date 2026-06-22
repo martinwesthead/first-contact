@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-24
 created_by: xgd
 created_at: '2026-06-22T19:10:23.536706+00:00'
-updated_at: '2026-06-22T19:10:29.786270+00:00'
+updated_at: '2026-06-22T19:30:35.283944+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -42,5 +42,11 @@ DB types (`ChatSessionRecord`, `ChatMessageRecord`, `ReferenceDocRecord`) live i
 **One thing to flag** (not a blocker): REQ-23 is at `free_coded`, not yet `free_and_reconciled`. The matrix doesn't describe the schema yet — but the migrations *are* committed to `xgd-working`, which is what REQ-24's code will run against. The two will reconcile in order (REQ-23 first, then REQ-24) per the temporal-ordering rule. Free-coding REQ-24 now is fine.
 
 Want to proceed? Next step would be to flip REQ-24 from `draft` → `in_progress` (optional) and start implementing the migrations test fixture + the first endpoint.
+
+<!-- xgd-turn id="8fad2c35-ce03-41d9-894f-24f65128fd34-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T19:30:27.217Z" -->
+#### You
+Please go ahead
 
 <!-- xgd-chat-end -->
