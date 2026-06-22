@@ -3,7 +3,7 @@ import type {
   ModuleInstance,
   Page,
   Site,
-} from "@1stcontact/site-schema";
+} from "@gendev/site-schema";
 import { generateThemeCss } from "../tokens/css.js";
 
 const ESC_HTML: Record<string, string> = {

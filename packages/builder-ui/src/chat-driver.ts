@@ -1,5 +1,5 @@
-import type { Site } from "@1stcontact/site-schema";
-import { validateSite } from "@1stcontact/site-schema";
+import type { Site } from "@gendev/site-schema";
+import { validateSite } from "@gendev/site-schema";
 import type { FrameworkCatalog } from "./catalog.js";
 import { ChatsApi } from "./chats-api.js";
 import type {

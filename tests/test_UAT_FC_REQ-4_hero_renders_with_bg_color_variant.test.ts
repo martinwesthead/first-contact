@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Hero } from "@1stcontact/framework";
+import { Hero } from "@gendev/framework";
 
 describe("UAT FC REQ-4: hero renders with bg-color variant", () => {
   it("renders heading and emits no background image element", async () => {

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
-import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
+import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { NOT_DETECTED, type ReferenceDigest } from "../packages/extractor/src/schema.js";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";

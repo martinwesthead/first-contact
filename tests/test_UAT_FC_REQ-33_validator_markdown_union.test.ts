@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { textBlockMeta, validateModuleContent } from "@1stcontact/framework";
+import { textBlockMeta, validateModuleContent } from "@gendev/framework";
 
 describe("UAT FC REQ-33 AC2/AC3: validator accepts string OR AssetRef-text for markdown content fields", () => {
   it("AC2: markdown field set to an inline string validates", () => {

@@ -10,7 +10,7 @@ import {
   renderMarkdownToDom,
   renderToolResult,
   type ChatToolResultRecord,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeMemKv } from "./_helpers_REQ-20_kv.js";

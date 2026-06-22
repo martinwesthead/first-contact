@@ -3,8 +3,8 @@ import {
   bannerMeta,
   getModule,
   listRegisteredModules,
-} from "@1stcontact/framework";
-import { buildFrameworkCatalog, findCatalogEntry } from "@1stcontact/builder-ui/catalog";
+} from "@gendev/framework";
+import { buildFrameworkCatalog, findCatalogEntry } from "@gendev/builder-ui/catalog";
 
 describe("UAT FC REQ-42: banner module registered in catalog", () => {
   it("listRegisteredModules contains (banner, 1)", () => {

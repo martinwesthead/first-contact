@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getModule, listRegisteredModules } from "@1stcontact/framework";
+import { getModule, listRegisteredModules } from "@gendev/framework";
 
 describe("UAT FC REQ-40: testimonials registered in framework catalog", () => {
   it("getModule('testimonials', 1) returns testimonials v1 with meta and Component", () => {

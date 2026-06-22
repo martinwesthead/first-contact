@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AssetRefImage, AssetRefText, AssetRef, MarkdownContent } from "@1stcontact/site-schema";
+import { AssetRefImage, AssetRefText, AssetRef, MarkdownContent } from "@gendev/site-schema";
 
 describe("UAT FC REQ-33 AC1: schema accepts AssetRef { kind: 'text' }", () => {
   it("validates an AssetRef-text with src, id, and optional alt", () => {

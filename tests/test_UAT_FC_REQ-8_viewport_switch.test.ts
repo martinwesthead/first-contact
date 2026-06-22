@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   createPreviewPanel,
   VIEWPORT_PRESETS,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 
 describe("UAT FC REQ-8: viewport switch resizes the preview iframe", () => {
   afterEach(() => {

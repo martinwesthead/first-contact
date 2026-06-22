@@ -1,4 +1,4 @@
-import type { AssetRef, NavTarget } from "@1stcontact/site-schema";
+import type { AssetRef, NavTarget } from "@gendev/site-schema";
 
 export function isAssetRef(value: unknown): value is AssetRef {
   return (

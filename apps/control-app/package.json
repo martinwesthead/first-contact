@@ -1,5 +1,5 @@
 {
-  "name": "@1stcontact/control-app",
+  "name": "@gendev/control-app",
   "version": "0.0.2",
   "private": true,
   "type": "module",
@@ -12,9 +12,9 @@
     "dryrun": "pnpm build:bundle && wrangler deploy --dry-run --outdir=.wrangler/dryrun"
   },
   "dependencies": {
-    "@1stcontact/builder-ui": "workspace:*",
-    "@1stcontact/extractor": "workspace:*",
-    "@1stcontact/web-fetch-safety": "workspace:*",
+    "@gendev/builder-ui": "workspace:*",
+    "@gendev/extractor": "workspace:*",
+    "@gendev/web-fetch-safety": "workspace:*",
     "@cloudflare/puppeteer": "^1.1.0"
   },
   "devDependencies": {

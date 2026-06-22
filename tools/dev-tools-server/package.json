@@ -1,5 +1,5 @@
 {
-  "name": "@1stcontact/dev-tools-server",
+  "name": "@gendev/dev-tools-server",
   "version": "0.0.1",
   "private": true,
   "description": "Dev-only localhost sidecar that exposes a constrained `xgd ticket` proxy to the builder's chat handler. Never deployed.",

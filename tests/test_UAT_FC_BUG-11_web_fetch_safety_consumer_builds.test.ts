@@ -37,7 +37,7 @@ describe("UAT FC BUG-11: web-fetch-safety does not leak KVNamespace global onto 
     ).toBeUndefined();
 
     expect(() => {
-      execSync("pnpm --filter @1stcontact/extractor build", {
+      execSync("pnpm --filter @gendev/extractor build", {
         cwd: repoRoot,
         stdio: "pipe",
       });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitSectionMeta, validateModuleContent } from "@1stcontact/framework";
+import { splitSectionMeta, validateModuleContent } from "@gendev/framework";
 
 const validImage = { id: "i1", src: "/assets/p.jpg", alt: "Photo" };
 

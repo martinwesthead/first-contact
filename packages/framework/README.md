@@ -1,4 +1,4 @@
-# @1stcontact/framework
+# @gendev/framework
 
 Section library, renderer, and theme-token system.
 

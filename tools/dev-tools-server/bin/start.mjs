@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// CLI shim for @1stcontact/dev-tools-server. Spawns the TypeScript entry
+// CLI shim for @gendev/dev-tools-server. Spawns the TypeScript entry
 // point under vite-node so the implementation can stay in .ts files without
-// a separate compile step (matches the @1stcontact/generate pattern).
+// a separate compile step (matches the @gendev/generate pattern).
 import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";

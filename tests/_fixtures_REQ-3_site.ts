@@ -1,4 +1,4 @@
-import type { Site, ThemeTokens } from "@1stcontact/site-schema";
+import type { Site, ThemeTokens } from "@gendev/site-schema";
 
 export function makeThemeTokens(): ThemeTokens {
   return {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// CLI shim for @1stcontact/generate. Spawns the TypeScript entry point under
+// CLI shim for @gendev/generate. Spawns the TypeScript entry point under
 // vite-node so framework .astro imports resolve through Astro's vite plugin.
 import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";

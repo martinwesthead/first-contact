@@ -1,5 +1,5 @@
-import { getRateLimitState } from "@1stcontact/web-fetch-safety";
-import type { RateLimitEnv } from "@1stcontact/web-fetch-safety";
+import { getRateLimitState } from "@gendev/web-fetch-safety";
+import type { RateLimitEnv } from "@gendev/web-fetch-safety";
 import { extractAccountId } from "./account.js";
 
 export interface SafetyHealthEnv extends RateLimitEnv {}

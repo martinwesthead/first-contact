@@ -15,7 +15,7 @@ import {
   type ScreenshotKeys,
   type Signals,
   type StylesheetFetcher,
-} from "@1stcontact/extractor";
+} from "@gendev/extractor";
 import {
   chargeBrowserBudget,
   checkBrowserBudget,
@@ -24,7 +24,7 @@ import {
   RobotsTxtCache,
   safeFetch,
   verifyIntentToken,
-} from "@1stcontact/web-fetch-safety";
+} from "@gendev/web-fetch-safety";
 import { resolveDriverFactory } from "./browser-driver.js";
 import type { ActionContext, ActionHandler, ActionResult } from "./registry.js";
 
@@ -371,7 +371,7 @@ async function runAiCommentary(
   env: AnalyzePageEnv,
   input: {
     sourceUrl: string;
-    signals: import("@1stcontact/extractor").Signals;
+    signals: import("@gendev/extractor").Signals;
     baselineWhatsMissing: string[];
     fallbackSummary: string;
     desktopScreenshotKey: string | null;
@@ -477,7 +477,7 @@ function buildCommentarySystemPrompt(hasImage: boolean): string {
 
 function buildCommentaryPrompt(input: {
   sourceUrl: string;
-  signals: import("@1stcontact/extractor").Signals;
+  signals: import("@gendev/extractor").Signals;
   baselineWhatsMissing: string[];
 }): string {
   const lines: string[] = [];
@@ -521,7 +521,7 @@ function isStringRecord(v: unknown): v is Record<string, string> {
 }
 
 function buildFallbackSummary(
-  signals: import("@1stcontact/extractor").Signals,
+  signals: import("@gendev/extractor").Signals,
   sourceUrl: string,
 ): string {
   const headingCount = signals.content.headings.length;

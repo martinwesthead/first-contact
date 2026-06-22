@@ -13,7 +13,7 @@ import {
   type IdGen,
   type R2Like,
 } from "./chat-db.js";
-import type { ChatMessageToolCall, ChatRole } from "@1stcontact/site-schema";
+import type { ChatMessageToolCall, ChatRole } from "@gendev/site-schema";
 
 export interface ChatRoutesEnv {
   SITES_DB?: D1Database;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateThemeCss } from "@1stcontact/framework";
+import { generateThemeCss } from "@gendev/framework";
 import { makeThemeTokens } from "./_fixtures_REQ-3_site.js";
 
 describe("UAT FC REQ-4: generateThemeCss emits dark-mode block when dark palette provided", () => {

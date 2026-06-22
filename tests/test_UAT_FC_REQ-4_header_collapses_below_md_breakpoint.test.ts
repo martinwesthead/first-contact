@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Header } from "@1stcontact/framework";
+import { Header } from "@gendev/framework";
 
 describe("UAT FC REQ-4: header collapses below md breakpoint", () => {
   it("renders the responsive toggle and nav region linked by aria-controls", async () => {

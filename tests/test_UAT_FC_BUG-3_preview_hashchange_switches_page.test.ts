@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { renderSiteIntoIframe } from "@1stcontact/builder-ui";
+import { renderSiteIntoIframe } from "@gendev/builder-ui";
 import { makeTwoPageSite } from "./_helpers_BUG-3_multipage_site.js";
 
 describe("UAT FC BUG-3: preview iframe handles hash-based page switching", () => {

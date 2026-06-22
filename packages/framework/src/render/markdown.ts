@@ -1,4 +1,4 @@
-import type { AssetRef, ModuleInstance } from "@1stcontact/site-schema";
+import type { AssetRef, ModuleInstance } from "@gendev/site-schema";
 import { meta as bannerMeta } from "../modules/banner/meta.js";
 import { meta as headerMeta } from "../modules/header/meta.js";
 import { meta as heroMeta } from "../modules/hero/meta.js";

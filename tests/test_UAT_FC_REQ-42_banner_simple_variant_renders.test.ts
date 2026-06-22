@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Banner } from "@1stcontact/framework";
+import { Banner } from "@gendev/framework";
 
 describe("UAT FC REQ-42: banner renders with simple variant", () => {
   it("renders heading and emits no CTA anchor when cta absent", async () => {

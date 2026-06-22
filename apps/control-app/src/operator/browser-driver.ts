@@ -10,7 +10,7 @@ import {
   type DriverResult,
   type Viewport,
   type ViewportName,
-} from "@1stcontact/extractor";
+} from "@gendev/extractor";
 
 /**
  * Module-level injection hook for tests. Production callers (the Worker

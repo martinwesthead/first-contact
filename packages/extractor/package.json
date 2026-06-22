@@ -1,5 +1,5 @@
 {
-  "name": "@1stcontact/extractor",
+  "name": "@gendev/extractor",
   "version": "0.0.1",
   "private": true,
   "description": "Reference Digest schema + Layer A signal extractors (palette, typography, layout, imagery, content) + markdown renderer (REQ-21).",
@@ -20,9 +20,9 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@1stcontact/framework": "workspace:*",
-    "@1stcontact/site-schema": "workspace:*",
-    "@1stcontact/web-fetch-safety": "workspace:*",
+    "@gendev/framework": "workspace:*",
+    "@gendev/site-schema": "workspace:*",
+    "@gendev/web-fetch-safety": "workspace:*",
     "linkedom": "^0.18.5",
     "zod": "^3.23.0"
   },

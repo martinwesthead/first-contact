@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderSiteToHtml } from "@1stcontact/framework/render";
+import { renderSiteToHtml } from "@gendev/framework/render";
 import { makeTwoPageSite } from "./_helpers_BUG-3_multipage_site.js";
 
 describe("UAT FC BUG-3: renderer emits hash-based nav hrefs in preview target", () => {

@@ -16,13 +16,13 @@ import {
   type PageCopyResult,
   type ReferenceDigest,
   type ScreenshotKeys,
-} from "@1stcontact/extractor";
-import { buildEmptyScaffold } from "@1stcontact/builder-ui";
+} from "@gendev/extractor";
+import { buildEmptyScaffold } from "@gendev/builder-ui";
 import {
   chargeBrowserBudget,
   checkBrowserBudget,
   safeFetch,
-} from "@1stcontact/web-fetch-safety";
+} from "@gendev/web-fetch-safety";
 import { resolveDriverFactory } from "./browser-driver.js";
 import type { ActionContext, ActionHandler, ActionResult } from "./registry.js";
 

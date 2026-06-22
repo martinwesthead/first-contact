@@ -8,7 +8,7 @@ import {
   renderMarkdownToDom,
   renderToolResult,
   type ChatToolResultRecord,
-} from "@1stcontact/builder-ui";
+} from "@gendev/builder-ui";
 
 describe("UAT FC REQ-28: <TranscribeProgress> chat-card variant (AC3-AC8)", () => {
   beforeEach(() => {

@@ -6,8 +6,8 @@ import {
   heroMeta,
   servicesGridMeta,
   textBlockMeta,
-} from "@1stcontact/framework/meta";
-import type { ModuleMeta } from "@1stcontact/framework/meta";
+} from "@gendev/framework/meta";
+import type { ModuleMeta } from "@gendev/framework/meta";
 
 export interface CatalogEntry {
   readonly id: string;

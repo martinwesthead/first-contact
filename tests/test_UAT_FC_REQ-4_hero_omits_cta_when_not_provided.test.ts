@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
-import { Hero } from "@1stcontact/framework";
+import { Hero } from "@gendev/framework";
 
 describe("UAT FC REQ-4: hero omits CTA when not provided", () => {
   it("renders no CTA anchor when cta prop is absent", async () => {

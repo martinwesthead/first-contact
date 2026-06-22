@@ -5,8 +5,8 @@ import type {
   Page,
   SeoMeta,
   Site,
-} from "@1stcontact/site-schema";
-import { validateSite } from "@1stcontact/site-schema";
+} from "@gendev/site-schema";
+import { validateSite } from "@gendev/site-schema";
 import { findCatalogEntry, type FrameworkCatalog } from "./catalog.js";
 
 export type ToolName =

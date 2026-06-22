@@ -1,6 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
-import { validateSite, type Site } from "@1stcontact/site-schema";
+import { validateSite, type Site } from "@gendev/site-schema";
 
 export interface LoadedAsset {
   relPath: string;

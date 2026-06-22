@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { unstable_dev, type UnstableDevWorker } from "wrangler";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { runGenerate } from "@1stcontact/generate";
+import { runGenerate } from "@gendev/generate";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");

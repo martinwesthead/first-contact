@@ -1,5 +1,5 @@
-import { safeFetch, type SafeFetchOptions } from "@1stcontact/web-fetch-safety";
-import type { SafetyEnv } from "@1stcontact/web-fetch-safety";
+import { safeFetch, type SafeFetchOptions } from "@gendev/web-fetch-safety";
+import type { SafetyEnv } from "@gendev/web-fetch-safety";
 import type { R2BucketLike } from "./upload-screenshots.js";
 
 /**

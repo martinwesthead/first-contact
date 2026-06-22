@@ -4,7 +4,7 @@ import {
   headerMeta,
   heroMeta,
   type ModuleMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 describe("UAT FC REQ-4: every module exports a contract-shaped moduleMeta", () => {
   it("header meta matches the contract", () => {

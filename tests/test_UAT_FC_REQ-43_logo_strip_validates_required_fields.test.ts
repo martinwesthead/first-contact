@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { logoStripMeta, validateModuleContent } from "@1stcontact/framework";
+import { logoStripMeta, validateModuleContent } from "@gendev/framework";
 
 const validImage = { id: "i1", src: "/assets/logo.png", alt: "Acme" };
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { servicesGridMeta, validateModuleContent } from "@1stcontact/framework";
+import { servicesGridMeta, validateModuleContent } from "@gendev/framework";
 
 const validImage = { id: "asset-1", src: "/assets/a.jpg", alt: "Card image" };
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { BuilderStore, createChatPanel } from "@1stcontact/builder-ui";
+import { BuilderStore, createChatPanel } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
 describe("UAT FC REQ-32: send button returns to ready state after onSend resolves", () => {

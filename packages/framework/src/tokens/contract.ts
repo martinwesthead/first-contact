@@ -7,4 +7,4 @@ export type {
   SpacingTokens,
   ThemeTokens,
   TypographyTokens,
-} from "@1stcontact/site-schema";
+} from "@gendev/site-schema";

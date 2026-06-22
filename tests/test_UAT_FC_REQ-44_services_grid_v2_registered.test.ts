@@ -3,7 +3,7 @@ import {
   getModule,
   listRegisteredModules,
   servicesGridMeta,
-} from "@1stcontact/framework";
+} from "@gendev/framework";
 
 describe("UAT FC REQ-44: services-grid v2 is registered in the framework catalog", () => {
   it("meta declares version 2", () => {

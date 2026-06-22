@@ -1,5 +1,5 @@
-import type { AssetRef, Site } from "@1stcontact/site-schema";
-import { renderSiteToHtml } from "@1stcontact/framework/render";
+import type { AssetRef, Site } from "@gendev/site-schema";
+import { renderSiteToHtml } from "@gendev/framework/render";
 
 interface PreviewState {
   site: Site;
