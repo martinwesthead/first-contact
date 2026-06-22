@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-19
 created_by: xgd
 created_at: '2026-06-22T18:22:41.166211+00:00'
-updated_at: '2026-06-22T20:54:50.366559+00:00'
+updated_at: '2026-06-22T20:59:55.381704+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -188,5 +188,11 @@ Created **REQ-50** capturing the architectural roadmap.
 - Whether to fold the tenancy decision into this REQ vs. spin it as a separate DOC ticket as I currently have it.
 
 If those are good as-is, flip to `ready_to_implement` and the rename is ready to execute. Want me to also draft the follow-up REQ for the tenancy decision now, or hold until you've reviewed REQ-50?
+
+<!-- xgd-turn id="fa409118-e1fa-4f95-bca2-493be6c69a73-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-22T20:59:41.201Z" -->
+#### You
+You should NEVER EVER put a ticket into ready to implement state - that triggers automatic implementation it is a user only action
 
 <!-- xgd-chat-end -->
