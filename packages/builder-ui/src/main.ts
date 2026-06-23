@@ -86,6 +86,30 @@ function activeChatStorageKey(siteId: string): string {
 }
 
 /**
+ * REQ-25: surface a chat-backend failure as a system message in the panel,
+ * rather than swallowing it to console.warn. Includes the error text and
+ * the most likely fix for local dev (migration not applied). The system
+ * message is rendered as plain text by the chat panel.
+ */
+function appendBootErrorMessage(
+  store: BuilderStore,
+  siteId: string,
+  err: unknown,
+): void {
+  const detail = err instanceof Error ? err.message : String(err);
+  console.warn("[builder] chat backend unavailable", err);
+  store.appendChatMessage({
+    role: "system",
+    content:
+      `Chat backend unavailable.\n` +
+      `Could not establish a chat session for site '${siteId}'.\n` +
+      `Error: ${detail}\n\n` +
+      `If running locally, apply the chat-table migrations:\n` +
+      `  wrangler d1 migrations apply 1stcontact-sites --local`,
+  });
+}
+
+/**
  * REQ-25 (second pass): pick the right session for this boot. Order:
  *   1. localStorage-stored active id, if it still exists on the server
  *   2. most-recently-used session for the site
@@ -194,10 +218,16 @@ export function bootBuilder(options: BootBuilderOptions): {
       // REQ-25 (second pass): the boot promise always ensures a session
       // exists. If onSend fires before boot finishes (unlikely — the
       // editor is mounted synchronously but the operator can't type
-      // before paint), wait for activation.
+      // before paint), wait for activation. If activation still fails,
+      // surface the error in-panel instead of throwing into the void.
       if (!store.getState().activeSessionId) {
-        const session = await ensureActiveSession(chatsApi, siteId, storage);
-        await loadAndActivate(session.id);
+        try {
+          const session = await ensureActiveSession(chatsApi, siteId, storage);
+          await loadAndActivate(session.id);
+        } catch (err) {
+          appendBootErrorMessage(store, siteId, err);
+          return;
+        }
       }
       abortController = new AbortController();
       await runChatTurn(text, {
@@ -248,12 +278,14 @@ export function bootBuilder(options: BootBuilderOptions): {
 
   // REQ-25 (second pass): ensure the operator boots into a live, persisted
   // chat session every time — no empty state, no UI to manage sessions.
+  // Failures surface as a system message in the chat (operator-visible)
+  // rather than a silent console.warn.
   void (async () => {
     try {
       const session = await ensureActiveSession(chatsApi, siteId, storage);
       await loadAndActivate(session.id);
     } catch (err) {
-      console.warn("[builder] failed to establish chat session", err);
+      appendBootErrorMessage(store, siteId, err);
     }
   })();
 

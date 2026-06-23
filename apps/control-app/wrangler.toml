@@ -41,6 +41,7 @@ bucket_name = "1stcontact-assets"
 binding = "SITES_DB"
 database_name = "1stcontact-sites"
 database_id = "placeholder_sites_db"
+migrations_dir = "../../db/migrations"
 
 # Browser Rendering binding (REQ-22). Drives @cloudflare/puppeteer from the
 # analyze_page rendered-fetch path. Bound only in production — Wrangler dev

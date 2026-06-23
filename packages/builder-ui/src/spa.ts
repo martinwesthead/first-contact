@@ -16,6 +16,11 @@ if (!root) {
   throw new Error("missing #fc-builder-root mount point");
 }
 
+// REQ-25: the DB seed convention is `site_<slug>` (db/migrations/
+// 0005_seed_1stcontact.sql). The URL carries the slug; the chat-session
+// FK needs the DB id, so the wiring layer maps here.
+const siteId = `site_${siteName}`;
+
 void (async () => {
   const resp = await fetch(`/starter-sites/${encodeURIComponent(siteName)}.json`);
   if (!resp.ok) {
@@ -23,5 +28,5 @@ void (async () => {
     return;
   }
   const site = (await resp.json()) as Site;
-  bootBuilder({ root, initialSite: site });
+  bootBuilder({ root, initialSite: site, siteId });
 })();
