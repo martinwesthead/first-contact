@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-25
 created_by: xgd
 created_at: '2026-06-22T18:08:26.910800+00:00'
-updated_at: '2026-06-22T23:55:42.464424+00:00'
+updated_at: '2026-06-23T00:04:08.432776+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -188,5 +188,51 @@ Done. REQ-25 is now `free_coded` at version 0.0.35 with the scope reduction appl
 <!-- xgd-chat role="user" ts="2026-06-22T23:55:30.652Z" -->
 #### You
 Thank you for removbing the unnecesarry buttons. However the new UI does not work
+
+<!-- xgd-turn id="85188dae-16ba-47e9-922d-0da448f7360d-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-23T00:04:08.430Z" -->
+#### Claude
+Let me investigate what's actually broken. First I'll look at how the builder is currently wired up in production.
+
+Found it. The SPA calls `bootBuilder` without a `siteId`, so it defaults to `"default"` — but no row exists in the `sites` table with id `"default"`, so the FK constraint on `chat_sessions.site_id` rejects session creation.
+
+Let me also check how the bundle is rebuilt so the user sees the fix.
+
+Let me start the dev server and reproduce the actual symptom rather than guess.
+
+The user already has the dev server running. Let me probe their actual instance to verify the failure mode.
+
+The chat tables aren't migrated into the user's local D1. Let me check the wrangler config and apply them.
+
+Let me lay out the fix plan, then execute.
+
+Migrations applied; API returns valid data for `site_1stcontact`. Now I need spa.ts to pass that siteId.
+
+Now add the `appendBootErrorMessage` helper.
+
+All REQ-25 tests pass. Now the user's dev server is running our old bundle — let me verify the fix end-to-end by rebuilding and testing through curl.
+
+End-to-end works. Now quality gate, commit, bump.
+
+Done. The chat panel actually works now — and you can verify by refreshing `http://127.0.0.1:8788/builder` (your dev server is already serving the rebuilt bundle).
+
+**Root cause was three problems stacked:**
+
+1. **`spa.ts` passed no `siteId`** → defaulted to `"default"`, which has no row in `sites` → the `chat_sessions.site_id` FK rejected every create.
+2. **Local D1 had no chat tables** → wrangler.toml didn't set `migrations_dir`, so `wrangler dev` never auto-applied migrations 0006/0007/0008 and `wrangler d1 migrations apply --local` couldn't find them either.
+3. **Boot failures were silent** → `ensureActiveSession` errors went to `console.warn` so the panel looked normal but didn't work.
+
+**Fixes shipped:**
+
+- `spa.ts`: maps starter site name → `site_<slug>` matching the DB seed.
+- `wrangler.toml`: adds `migrations_dir = "../../db/migrations"` so wrangler dev auto-applies on next start and `wrangler d1 migrations apply --local` works out of the box.
+- `main.ts`: new `appendBootErrorMessage` posts an in-panel system message naming the site and pointing at the migration fix when boot fails.
+- `tests/test_UAT_FC_REQ-25_boot_error_surface.test.ts`: verifies the failure surface.
+- **Applied the migrations to your live `.wrangler/state`** so this session works immediately.
+
+**Verified end-to-end against your running dev server**: `POST /api/sites/site_1stcontact/chats` returns a fresh session, `GET .../messages?limit=50` returns `{"messages":[]}`.
+
+REQ-25 stays at `free_coded`, now at version 0.0.36. Commits `b2ece20` (fix) + `98413f2` (bump).
 
 <!-- xgd-chat-end -->
