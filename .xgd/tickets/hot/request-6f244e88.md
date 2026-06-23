@@ -5,7 +5,7 @@ type: request
 title: 'Builder UI: persistent chat sessions (session list, new-chat, infinite scroll)'
 created_by: xgd
 created_at: '2026-06-16T23:27:06.916520+00:00'
-updated_at: '2026-06-22T23:16:58.197430+00:00'
+updated_at: '2026-06-23T00:03:51.400570+00:00'
 completed_at: null
 last_field_updated: status
 status: free_coded
@@ -19,7 +19,9 @@ fields:
   - 3772b3d7cac3163a443a1e03cc9eb97bdd7e9066
   - 7e91942a2fb594e6591801f18f3468c33cdbac1b
   - 3a5f59dd725966ad87951fe9a0769261c38ee76f
-  version: 0.0.35
+  - b2ece207805251b9277c7220b78d4d846d5a5fb4
+  - 98413f260ce3da072a8887921e8ce915c398e20a
+  version: 0.0.36
 ---
 
 # Builder UI: persistent chat sessions (session list, new-chat, infinite scroll)
