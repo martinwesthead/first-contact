@@ -7,10 +7,8 @@ import {
   renderDigestMarkdown,
   renderedFetch,
   SCHEMA_VERSION,
-  shouldEscalateToRendered,
   uploadScreenshots,
   type DriverResult,
-  type EscalationDecision,
   type ReferenceDigest,
   type ScreenshotKeys,
   type Signals,
@@ -53,7 +51,6 @@ export const analyzePageHandler: ActionHandler = async (input, ctx) => {
     return fail(`'url' is not a valid URL: ${url}`);
   }
 
-  const forceRendered = input.forceRendered === true;
   const env = ctx.env as AnalyzePageEnv;
 
   const intentCheck = await checkOperatorIntent(input, ctx, env);
@@ -128,35 +125,35 @@ export const analyzePageHandler: ActionHandler = async (input, ctx) => {
   );
   const staticSignals = mergeStylesheetAssets(baseSignals, externalStylesheetAssets);
 
-  const escalation = shouldEscalateToRendered({ html, forceRendered });
-
+  // Render-by-default (REQ-22 Amendment 2026-06-24): the rendered path runs
+  // unconditionally. Static signals above are the baseline; rendered fetch
+  // refines them with computed CSS, computed background-images, and screenshots.
+  // Static-only is the degraded fallback when BROWSER is missing, the session's
+  // Browser Rendering budget is exhausted (REQ-20), or the driver throws.
   let signals: Signals = staticSignals;
   let fetchPath: "static" | "rendered" = "static";
   let screenshotKeys: ScreenshotKeys = {};
   const extraWhatsMissing: string[] = [];
   let desktopScreenshotKey: string | null = null;
 
-  if (escalation.escalate) {
-    const renderedOutcome = await runRenderedPath({
-      env,
-      ctx,
-      url: fetched.finalUrl,
-      escalation,
-    });
-    if (renderedOutcome.ok) {
-      signals = mergeComputedSignals(
-        staticSignals,
-        renderedOutcome.driverResult.computedStyles,
-        renderedOutcome.driverResult.computedBackgroundAssets,
-        fetched.finalUrl,
-      );
-      fetchPath = "rendered";
-      screenshotKeys = renderedOutcome.screenshotKeys;
-      desktopScreenshotKey = renderedOutcome.screenshotKeys.desktop ?? null;
-      extraWhatsMissing.push(...renderedOutcome.notes);
-    } else {
-      extraWhatsMissing.push(renderedOutcome.note);
-    }
+  const renderedOutcome = await runRenderedPath({
+    env,
+    ctx,
+    url: fetched.finalUrl,
+  });
+  if (renderedOutcome.ok) {
+    signals = mergeComputedSignals(
+      staticSignals,
+      renderedOutcome.driverResult.computedStyles,
+      renderedOutcome.driverResult.computedBackgroundAssets,
+      fetched.finalUrl,
+    );
+    fetchPath = "rendered";
+    screenshotKeys = renderedOutcome.screenshotKeys;
+    desktopScreenshotKey = renderedOutcome.screenshotKeys.desktop ?? null;
+    extraWhatsMissing.push(...renderedOutcome.notes);
+  } else {
+    extraWhatsMissing.push(renderedOutcome.note);
   }
 
   const baselineWhatsMissing = [...deriveWhatsMissing(signals), ...extraWhatsMissing];
@@ -209,7 +206,6 @@ async function runRenderedPath(args: {
   env: AnalyzePageEnv;
   ctx: ActionContext;
   url: string;
-  escalation: EscalationDecision;
 }): Promise<RenderedOutcome> {
   const { env, ctx, url } = args;
 
@@ -261,7 +257,7 @@ async function runRenderedPath(args: {
   const notes: string[] = [];
   let keys: ScreenshotKeys = {};
   if (env.ASSETS_BUCKET) {
-    const turnId = await shortHash(`${url}|${args.escalation.reason}`);
+    const turnId = await shortHash(`${url}|rendered`);
     const upload = await uploadScreenshots(
       env.ASSETS_BUCKET,
       driverResult.screenshots,

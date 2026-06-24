@@ -38,12 +38,6 @@ export { parseContent } from "./parse-content.js";
 export { extractSignals, deriveWhatsMissing } from "./extract.js";
 export { renderDigestMarkdown } from "./render-markdown.js";
 export {
-  shouldEscalateToRendered,
-  type EscalationDecision,
-  type EscalationInput,
-  type EscalationReason,
-} from "./escalate.js";
-export {
   renderedFetch,
   DEFAULT_VIEWPORTS,
   COMPUTED_EXTRACTION_SCRIPT,
