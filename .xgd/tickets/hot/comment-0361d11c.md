@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:28:28.177997+00:00'
+updated_at: '2026-06-24T23:28:35.755815+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -337,5 +337,25 @@ Want me to update the `dev` script in `apps/control-app/package.json` to default
 <!-- xgd-chat role="user" ts="2026-06-24T23:28:21.169Z" -->
 #### You
 You can just tell me what I need to run
+
+<!-- xgd-turn id="5f1d2538-cc8d-46e8-9a59-250930038118-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:28:35.754Z" -->
+#### Claude
+From your repo root:
+
+```bash
+cd apps/control-app
+pnpm exec wrangler dev --remote --env production --port 8788
+```
+
+That's it. Same port your builder is already pointing at (`http://127.0.0.1:8788`), so refresh the browser tab and your existing chat session keeps working — only difference is `env.BROWSER` is now a real binding wired to Cloudflare's Browser Rendering service.
+
+Caveats worth knowing before you hit enter:
+- **Wrangler needs to be logged in** to a CF account that has Browser Rendering enabled. If not: `pnpm exec wrangler login` first.
+- **Costs real money / counts toward CF budget** — every analyze_page / preview_generated_page call spins up real Chromium on CF infra (~$0.09 per browser-second per Cloudflare pricing). The per-session REQ-20 budget cap (50 seconds) still applies and will trip if you burn through it testing.
+- **Other bindings (KV, R2, D1) also become real** under `--env production --remote`. Anything you write hits production buckets/namespaces. If you don't want that, you can pass `--remote` selectively (`--remote=BROWSER`) — but easiest is just remember you're talking to prod state in this mode.
+
+No code change needed.
 
 <!-- xgd-chat-end -->
