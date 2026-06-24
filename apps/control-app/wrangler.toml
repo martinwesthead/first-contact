@@ -43,11 +43,21 @@ database_name = "1stcontact-sites"
 database_id = "placeholder_sites_db"
 migrations_dir = "../../db/migrations"
 
-# Browser Rendering binding (REQ-22). Drives @cloudflare/puppeteer from the
-# analyze_page rendered-fetch path. Bound only in production — Wrangler dev
-# does not emulate Browser Rendering locally (requires `--remote`), and the
-# `analyze_page` handler degrades gracefully when env.BROWSER is undefined.
-# Use `wrangler dev --remote` (or full deploy) to exercise the rendered path.
+# Browser Rendering binding (REQ-22 / REQ-51). Drives @cloudflare/puppeteer
+# from the analyze_page and preview_generated_page rendered-fetch paths.
+#
+# Wrangler dev cannot emulate Browser Rendering locally — it's a real
+# Cloudflare-hosted service that spins up Chromium on CF infra. The
+# `remote = true` flag (per Wrangler's "remote bindings" feature) tells the
+# local dev server to proxy ONLY this binding to real Cloudflare while KV /
+# R2 / D1 stay in Miniflare. Without it, plain `pnpm dev` leaves env.BROWSER
+# undefined and both rendered-fetch handlers degrade to a no-screenshot path.
+#
+# Charges against your CF account: each browser-second is billed. The REQ-20
+# per-session budget (default 50s) still applies.
+[browser]
+binding = "BROWSER"
+remote = true
 
 [env.production]
 routes = [
