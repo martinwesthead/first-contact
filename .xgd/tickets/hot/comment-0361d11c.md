@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:02:56.243183+00:00'
+updated_at: '2026-06-24T23:13:33.694929+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -193,5 +193,13 @@ Two ways forward, neither yet scoped:
 - **UX**: make the empty `<PreviewDigestReport>` louder — show the `whatsMissing` note prominently instead of just a `#` header, so the operator sees "BROWSER binding not configured" surfaced in the card body. This would be a new ticket (a follow-up to REQ-51), not in-scope here.
 
 Want me to file a follow-up ticket for the empty-card UX, or are you going to test with `--remote`? I won't code either path until you say.
+
+<!-- xgd-turn id="9fdfe56c-6625-4678-9246-3b9146521922-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:12:15.495Z" -->
+#### You
+1. `analyze_page`** rejected** — that's REQ-20's intent-token gate; it needs a URL pasted in chat. Unrelated to REQ-51 and working as designed. <-- I don't understand why it was designed that way I did not ask for any site budget and I need it removed so that I can test it!
+
+2. `preview_generated_page`** "succeeded" but rendered empty** <— I was looking at the site in my browser, it was NOT empty
 
 <!-- xgd-chat-end -->
