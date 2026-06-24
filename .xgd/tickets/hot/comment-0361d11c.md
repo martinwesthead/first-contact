@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:43:33.053944+00:00'
+updated_at: '2026-06-24T23:49:11.757803+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -532,5 +532,46 @@ pnpm dev
 Then call `preview_generated_page` again from chat. The module-resolution error should be gone and you should finally get real screenshot bytes back. If you hit a budget-exhausted message right away, your earlier failed runs may have charged seconds against the session budget — open a fresh chat session to reset, or wait for the per-session window to roll over.
 
 REQ-51 now records four commits: `9947c69` (initial), `1ece0cc` (degraded-mode signals), `93a59eb` (wrangler.toml BROWSER binding), `61e805e` (static puppeteer import).
+
+<!-- xgd-turn id="ba865377-dfdd-418e-87db-6bd559666baf-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:48:14.799Z" -->
+#### You
+Try now
+
+Getting closer — different error this time! The browser launched but the **session connection failed**. It looks like the browser session isn't ready/available when the connection attempt is made. This is a timing/session-management issue — the Worker is trying to attach to a session that isn't fully initialized yet.
+
+As the author, this might be a case of needing to:
+
+1. **Retry logic** — wait for the session to be ready before connecting, or
+2. **Launch a fresh session** rather than connecting to an existing one — the `4d9e83b4...` session ID suggests it's trying to reuse a stale session handle.
+
+Want me to try again immediately in case it's a transient timing issue?
+
+✗preview_generated_page — rejected
+
+preview render failed: Unable to connect to existing session 4d9e83b4-6c23-456c-aaf0-d5c7b15b312f (it may still be in use or not ready yet) - retry or launch a new browser: TypeError: Cannot read properties of null (reading 'accept')
+
+[system] The previous turn produced 1 failed tool call. Review the errors and retry where appropriate: - preview_generated_page({}) → unknown tool: preview_generated_page
+
+Sure
+
+It's working now! 🎉 However, the screenshot captured a **"localhost is blocked"** error page rather than your actual site. This happens because the preview renderer is trying to load the draft HTML via an internal `localhost` URL, and something in the rendering environment is blocking that loopback request.
+
+The tool itself is fully operational — browser launched, page loaded, screenshots taken, and digest returned. The issue is just that the preview URL (`localhost:8788/assets/previews/...`) is being blocked at the network level inside the renderer.
+
+So the fix is on the infrastructure side: the preview renderer needs to be able to reach the local dev server (or the preview HTML needs to be served from a non-localhost origin). Does that match what you're seeing?
+
+◇Preview — home
+
+mobile
+
+tablet
+
+desktop
+
+# Reference Digest — http://localhost:8788/assets/previews/anonymous/2cb652c41ddc76fa/home/page.html
+
+So there's a start up timing issue and then a localhost issue?
 
 <!-- xgd-chat-end -->
