@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-19T01:00:33.530620+00:00'
+updated_at: '2026-06-24T20:18:30.339772+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -122,5 +122,11 @@ REQ-22 done. Summary:
 
 **Ticket**
 - REQ-22 (`request-c765dd64`) → status `free_coded`, `commits=[6da55852…]`. Body unchanged (per session-reminder guidance).
+
+<!-- xgd-turn id="5c6a8c0d-b3a1-4274-a282-4787ffeed390-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T20:18:21.134Z" -->
+#### You
+How does the AI access this capability?
 
 <!-- xgd-chat-end -->
