@@ -34,8 +34,22 @@ import { uploadScreenshots, type R2BucketLike } from "./upload-screenshots.js";
 
 export interface RenderPreviewDigestArgs {
   readonly driver: BrowserDriver;
-  /** Absolute URL the browser navigates to — the rendered draft page. */
-  readonly previewUrl: string;
+  /**
+   * URL the browser actually navigates to. For previews this is typically a
+   * `data:text/html;base64,...` URL containing the rendered HTML inline so
+   * Cloudflare's Browser Rendering binding (which runs in the CF cloud and
+   * can't reach the operator's localhost during `wrangler dev`) doesn't have
+   * to fetch from an outside origin.
+   */
+  readonly navigationUrl: string;
+  /**
+   * Logical, human-readable identifier for the digest's `sourceUrl` field —
+   * e.g. `preview://{accountId}/{draftId}/{pageId}`. Surfaced in the chat
+   * card header and used as the base URL when resolving relative asset
+   * references in the rendered HTML. Distinct from `navigationUrl` because
+   * a data: URL is unusable as a human-facing identifier.
+   */
+  readonly sourceUrl: string;
   /** Provenance fields that distinguish a preview from a reference digest. */
   readonly previewSource: PreviewSource;
   /** R2 bucket for screenshot uploads. Optional — when absent screenshots are dropped. */
@@ -67,15 +81,15 @@ export async function renderPreviewDigest(
 ): Promise<RenderPreviewDigestResult> {
   const driverResult = await renderedFetch({
     driver: args.driver,
-    url: args.previewUrl,
+    url: args.navigationUrl,
   });
 
-  const baseSignals = extractSignals(driverResult.html, args.previewUrl);
+  const baseSignals = extractSignals(driverResult.html, args.sourceUrl);
   const signals = mergeComputedSignals(
     baseSignals,
     driverResult.computedStyles,
     driverResult.computedBackgroundAssets,
-    args.previewUrl,
+    args.sourceUrl,
     {
       fontAssets: driverResult.computedFontAssets,
       boundingBoxes: driverResult.boundingBoxes,
@@ -103,7 +117,7 @@ export async function renderPreviewDigest(
 
   const digest: PreviewDigest = {
     schemaVersion: SCHEMA_VERSION,
-    sourceUrl: args.previewUrl,
+    sourceUrl: args.sourceUrl,
     fetchedAt: args.previewSource.capturedAt,
     fetchPath: "rendered",
     summary: "",
