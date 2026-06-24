@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-24T20:18:40.457939+00:00'
+updated_at: '2026-06-24T20:21:06.878676+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -162,5 +162,11 @@ The `forceRendered` parameter is documented in the tool description as "use only
 **Multimodal commentary is automatic** — when a desktop screenshot ends up in the digest's `screenshotKeys`, the Haiku 4.5 commentary call inside `analyze_page` adds an image content block before the text prompt. The AI doesn't choose this; it's wired into the tool's internal pipeline.
 
 So from the AI's perspective there is exactly one tool — `analyze_page` — and rendering is an internal escalation, not a separate capability.
+
+<!-- xgd-turn id="1dc3a27d-f161-4f65-b4a3-b73596d0c166-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T20:20:35.749Z" -->
+#### You
+Hmm that sounds a bit broken - in two ways (1) why isn't renedering the page the default it seems like we would always want a render no? (2) the render has to be applicable to the page the AI creates so it can see that too
 
 <!-- xgd-chat-end -->
