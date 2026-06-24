@@ -6,7 +6,7 @@ title: 'Design Brief: per-site canonical memory markdown, propose-and-apply AI u
   builder Brief tab'
 created_by: xgd
 created_at: '2026-06-16T23:27:34.749937+00:00'
-updated_at: '2026-06-16T23:33:07.722568+00:00'
+updated_at: '2026-06-18T22:27:28.574376+00:00'
 completed_at: null
 last_field_updated: body
 status: draft
@@ -178,3 +178,15 @@ The chat panel from [[REQ-13]] gains a renderer for the `BriefProposal` `tool_re
 11. A `propose_brief_update` referencing a digest from the current chat embeds a markdown link of the shape `[label](chat://{chatId}/{turnId})`; the rendered Brief in the tab displays this as a clickable link that focuses the source chat turn.
 12. The Brief Apply flow gracefully handles concurrent edits: if the operator has the Brief tab open with unsaved changes when an Apply lands, the editor surfaces a "Refresh — Brief was updated by the AI" prompt; no silent overwrite.
 13. UAT: operator and AI complete an inspiration discussion (via [[REQ-29]]) and the AI proposes three Brief updates (`References`, `Palette`, `Voice & tone`). Each is applied with one click. Operator reloads the chat next day, the AI's first turn calls `read_brief()`, gets the summary + ToC, and grounds its first message in the prior decisions accurately.
+
+
+
+---
+
+## Demo critical-path status (added 2026-06-18)
+
+**Deferred from the convert-flow demo critical path** per the 2026-06-18 planning chat. The demo (paste URL → reproduce site) does not exercise the Design Brief — [[REQ-28]] originally chained a `propose_brief_update` call after a successful transcription; that hook is dropped for the demo.
+
+When this REQ lands, the post-transcription Brief-update nudge is restored as a small follow-on refactor to [[REQ-28]] (the LLM transcription prompt re-adds the `propose_brief_update` hook). No schema or tool-surface change is required from this REQ to support that restoration.
+
+Implementation ordering: the demo slice (REQ-20 → REQ-13 → REQ-21 → REQ-22 → REQ-28) lands first to validate framework flexibility. This REQ comes after the demo confirms the framework is the right shape and per-site memory is the right next step.

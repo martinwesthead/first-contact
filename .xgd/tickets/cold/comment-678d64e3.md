@@ -1,0 +1,126 @@
+---
+uid: comment-678d64e3
+id: COMMENT-108
+type: comment
+title: Comment on bug BUG-4
+created_by: xgd
+created_at: '2026-06-19T23:44:28.241594+00:00'
+updated_at: '2026-06-20T00:16:19.227893+00:00'
+completed_at: null
+last_field_updated: body
+status: null
+fields:
+  subject_uid: bug-7cf6b389
+  kind: chat_transcript
+---
+
+<!-- xgd-cli-session ts="2026-06-19T23:44:25Z" model="claude-opus-4-7" continued_from="new" -->
+*Captured by CLI Claude — paraphrased reconstruction from session memory, not raw capture.*
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:44:25Z" -->
+#### You
+OK, there are so many things going wrong here I almost don't know where to start.
+
+1. Let's start with the multi pages. When I click on one of the tabs at the top of the panel it takes me to the root page of the site "Hello from app.1stcontact.io".
+2. The consent panel does not trigger a response I had to give an explicit consent message
+3. I'm still not seeing any pictures
+
+Lets look at those three
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:44:25Z" -->
+#### Claude
+Diagnosis for issue 2 (consent panel doesn't trigger response):
+
+**Root cause.** Two missing wires:
+
+1. **No event listener exists.** The Confirm button dispatches `CustomEvent("fc:convert-confirmed", { detail: { url, ownsSite }, bubbles: true })` on the document (`packages/builder-ui/src/components/convert-confirmation.ts:89-94`). Grep across the entire builder-ui source returns zero `addEventListener` calls for `fc:convert-confirmed` or `fc:convert-cancelled`. The event fires into the void.
+
+2. **`registerConvertConfirmation()` is never called.** Renderer is exported from `convert-confirmation.ts:117-122`. `bootBuilder` (`packages/builder-ui/src/main.ts:43`) calls `registerDigestReport()` but not `registerConvertConfirmation()`.
+
+REQ-28's implementation landed the component but the boot-time wiring and the listener bridge were never built. The chat-card itself works; the click handler dispatches; nothing on the other side.
+
+Fix shape: register the renderer in `bootBuilder`; add a listener that synthesizes a chat turn (e.g. "I confirm. Proceed.") which the AI sees and reacts to by calling `transcribe_site` again. Same shape for `fc:convert-cancelled`. Preserves a single chat-loop entry point. ~2 SP.
+
+<!-- xgd-turn id="5f7bf826-fc17-491c-9d81-2512de477b70-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-19T23:44:09.490Z" -->
+#### You
+Please free code a fix for this
+
+<!-- xgd-turn id="5f7bf826-fc17-491c-9d81-2512de477b70-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-19T23:50:00.373Z" -->
+#### Claude
+Now I have enough context. Let me bump the version and implement the fix.
+
+Now I'll implement the fix.
+
+Now let me write the UAT tests.
+
+Let me run the new tests and the REQ-28 regression scope.
+
+All 13 tests pass. Let me also do a quick TypeScript check.
+
+Now let me bump the version and commit.
+
+There are unrelated changes in the working tree (BUG-3 work and other in-flight edits). I'll stage only the BUG-4 files.
+
+Now I'll update the ticket body to reflect the converged state, then promote to `free_coded`.
+
+BUG-4 is at `free_coded` with the commit recorded. Summary:
+
+**What changed** (`packages/builder-ui/src/main.ts`, commit `5242e88`):
+- `bootBuilder` now calls `registerConvertConfirmation()` so the dispatcher routes `kind: 'convert_confirmation'` tool_results to the warning-toned card.
+- Document-level listeners for `fc:convert-confirmed` and `fc:convert-cancelled` drive synthetic user turns through `runChatTurn`: `"I confirm. Proceed with converting <url>."` (with `" I own this site."` when ownsSite) and `"Cancel the conversion of <url>."`.
+- Both listeners removed in `destroy()`.
+
+**Tests** (`tests/test_UAT_FC_BUG-4_convert_confirmation_listener.test.ts`): 5 UATs covering renderer registration, both event paths, ownsSite clause, and listener cleanup. Regression scope (REQ-28 confirmation-card tests + REQ-31 boot tests) all pass — 13/13 green.
+
+**Next**: ticket parked at `free_coded`; promote to `ready_to_reconcile` when you're ready for reconcile.
+
+<!-- xgd-turn id="92d60f76-bccb-4ba1-829e-66382d97c696-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-20T00:11:44.723Z" -->
+#### You
+I just reloaded this and still do not see this working. Before I even got to the button I saw: ✗transcribe_site — rejected
+
+session_id required to track convert confirmation
+
+<!-- xgd-turn id="92d60f76-bccb-4ba1-829e-66382d97c696-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-20T00:16:19.196Z" -->
+#### Claude
+Let me investigate where this validation error comes from.
+
+Let me check how the chat driver POSTs and how we should source a session ID.
+
+The chat-driver never sends `x-session-id`, so `transcribe_site` rejects every call. I need to thread a session ID through `bootBuilder` → `runChatTurn`. Let me check existing tests and the chat driver shape, then extend.
+
+Let me extend BUG-4 scope (still the same convert-flow bug, deeper root cause) and update the ticket first, then code.
+
+Now thread sessionId through `bootBuilder`. I'll source it from `sessionStorage` (per-tab), generate one if absent.
+
+Re-export `SESSION_ID_STORAGE_KEY` for tests, then write the new UAT.
+
+Now extend the BUG-4 test file with session-id UATs.
+
+Let me run a broader test sweep to confirm nothing else broke.
+
+All 327 tests pass. Now let me commit and update the ticket.
+
+Now I'll update the ticket body to reflect the expanded scope, then re-promote with both commits.
+
+BUG-4 is back at `free_coded` with both commits recorded.
+
+**What I added on top of the first fix** (commit `502d741`):
+
+You uncovered a deeper wire missing. The `transcribe_site` handler requires `ctx.session.session_id` to track convert consent — it rejects with `session_id required to track convert confirmation` before any card even renders. The builder's chat driver was never sending `x-session-id`, so the rejection happened on the *first* transcribe attempt and the confirmation card never appeared.
+
+- `runChatTurn` now accepts an optional `sessionId` and sends it as the `x-session-id` header on every POST.
+- `bootBuilder` resolves a per-tab session ID (explicit option → `sessionStorage[SESSION_ID_STORAGE_KEY]` → `crypto.randomUUID()`), persists it for the tab lifetime, and threads it into the editor `onSend` and both convert-event listener turns.
+
+**Tests**: extended the BUG-4 UAT file to 8 tests covering the explicit option, auto-mint + persist, reuse across boots, and that the header is on the POST. Full suite passes (327/327).
+
+Try a reload now — convert should reach the confirmation card, and clicking Confirm should drive a follow-up turn that re-invokes `transcribe_site`.
+
+<!-- xgd-chat-end -->

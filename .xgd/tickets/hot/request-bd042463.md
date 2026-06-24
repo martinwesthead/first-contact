@@ -5,15 +5,19 @@ type: request
 title: Chat session API + AI memory tools (tail-prime + search/read tools)
 created_by: xgd
 created_at: '2026-06-16T23:27:02.331402+00:00'
-updated_at: '2026-06-16T23:27:02.331402+00:00'
+updated_at: '2026-06-22T19:55:43.986435+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: medium
   story_points: 5
   auto_merge_back: true
   needs_review: false
+  commits:
+  - 85705dd25c15e6d79b3d50cc09ebdadc9ab56dcc
+  - 58b96e902e11bb62c0ee077afade67e2ce2f4d48
+  version: 0.0.32
 ---
 
 # Chat session API + AI memory tools (tail-prime + search/read tools)
@@ -176,3 +180,15 @@ Tests under `tests/`, named `test_UAT_FC_<TICKET-ID>_*.ts`. Stack: vitest + Mini
 > the AI can then access the bits of the document(s) that it needs when it needs them. This doesn't exist yet but it will be available for our system before it goes live I expect in the meantime we can just stuff the whole document into the context.
 
 → Today, `read_reference_doc` without a `section` arg returns the full body — "stuff the whole document" path. With `section` arg it returns one section — KMS-ready path. Tool signature is unchanged when KMS lands; only the implementation behind it gets smarter.
+
+
+
+---
+
+## Demo critical-path status (added 2026-06-18)
+
+**Deferred from the convert-flow demo critical path** per the 2026-06-18 planning chat. The demo (paste URL → reproduce site) runs against [[REQ-8]]'s in-memory chat handler with no persistence. This REQ lands the durable foundation; the integration-back into the convert tools ([[REQ-21]] / [[REQ-22]] / [[REQ-28]]) is a follow-on refactor.
+
+Those three REQs each carry a "Future alignment: persistent chat infrastructure" section describing the eventual wire-up — those notes describe the post-this-REQ runtime path, not the demo's flow. When this REQ lands, the refactor is mechanical (the structured `tool_result` payloads already produced by the convert tools reach the `chat_messages` row through this REQ's dispatcher without schema changes).
+
+Implementation ordering: the demo slice (REQ-20 → REQ-13 → REQ-21 → REQ-22 → REQ-28) lands first to validate framework flexibility against a real reproduction target. This REQ comes after the demo confirms the framework is the right shape.

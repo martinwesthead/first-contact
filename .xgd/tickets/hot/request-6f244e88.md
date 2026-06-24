@@ -5,15 +5,23 @@ type: request
 title: 'Builder UI: persistent chat sessions (session list, new-chat, infinite scroll)'
 created_by: xgd
 created_at: '2026-06-16T23:27:06.916520+00:00'
-updated_at: '2026-06-16T23:27:06.916520+00:00'
+updated_at: '2026-06-23T00:03:51.400570+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   priority: medium
   story_points: 4
   auto_merge_back: true
   needs_review: false
+  commits:
+  - 46109cd455e597586b620b3bb02dad9e76cbade8
+  - 3772b3d7cac3163a443a1e03cc9eb97bdd7e9066
+  - 7e91942a2fb594e6591801f18f3468c33cdbac1b
+  - 3a5f59dd725966ad87951fe9a0769261c38ee76f
+  - b2ece207805251b9277c7220b78d4d846d5a5fb4
+  - 98413f260ce3da072a8887921e8ce915c398e20a
+  version: 0.0.36
 ---
 
 # Builder UI: persistent chat sessions (session list, new-chat, infinite scroll)
@@ -132,3 +140,37 @@ Tests under `tests/`, named `test_UAT_FC_<TICKET-ID>_*.ts`. Stack: vitest + Mini
 ### Implication of "multiple sessions per site" (CHAT-13 + this conversation)
 
 The "new chat" affordance is necessary because sessions don't grow without bound at the operator's expense — they can choose to scope a fresh topic in a fresh thread, while old threads remain accessible.
+
+
+---
+
+## Implementer addendum (REQ-25 free-coding session)
+
+**Side effects on existing behaviour:**
+
+- `chat-driver.ts` previously sent `{history, siteDefinition, frameworkCatalog}`. The new contract from REQ-24 requires `{sessionId, userMessage, siteDefinition, frameworkCatalog}` (no `history`). The driver now sends only the new turn; the server reads stored session messages.
+- **REQ-37 pending-tool-failure reinjection** previously prepended a synthetic `system` message to outbound `history`. Under the new contract, that synthetic note is persisted via `POST /api/chats/:id/messages` (role=`system`) before the chat call so the server's tail-load picks it up naturally. The associated REQ-37 driver test is updated to verify the new wire shape; the user-facing behaviour (panel surfaces the failure, dismiss clears it, AI sees the note next turn) is preserved.
+
+**Tail load returns oldest → newest.** The client appends optimistic messages at the end and pages older messages via `?before=:loadedFromOrd`.
+
+**Optimistic UX, no inline refresh.** The driver appends a user message + empty assistant bubble locally, streams tokens into the bubble, and trusts the server to persist on `done`. We do not refresh the tail per turn; reload pulls from the canonical store.
+
+
+---
+
+## Scope reduction (REQ-25 second pass)
+
+Operator feedback: session-management UI not wanted for v1.
+
+**Dropped from scope:**
+
+- Session-list dropdown
+- "New chat" affordance
+- Inline title editor
+- Delete-session affordance
+
+**Replaced with:** a single auto-managed chat session per (site, browser) pair. On boot the wiring layer ensures a session exists — picks the localStorage-stored active id, falls back to the most recently used, or creates a fresh one if none exist. The session persists across reloads exactly as before; only the UI surface for switching/creating/renaming/deleting goes away.
+
+**Still in scope (and shipped):** server-resident history (no client-side `history` field), tail load on boot, infinite scroll upward through the active session, per-site isolation, scroll-position anchoring on prepend.
+
+**Implication on acceptance criteria:** AC1 (New chat button), AC3 (session list), AC4 (switch sessions), AC8 (title edit), AC9 (delete), AC10 (multiple sessions per site) are dropped as user-visible behaviour. Their backing API/store machinery stays in place — re-exposing them later is a UI-only change.

@@ -5,15 +5,18 @@ type: request
 title: 'D1 schema: chat sessions + messages (FTS5) + reference docs (FTS5)'
 created_by: xgd
 created_at: '2026-06-16T23:26:59.484714+00:00'
-updated_at: '2026-06-16T23:26:59.484714+00:00'
+updated_at: '2026-06-22T18:20:33.451554+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: body
+status: free_coded
 fields:
   priority: medium
   story_points: 3
   auto_merge_back: true
   needs_review: false
+  commits:
+  - b6dd188fc00e06758368f49f564681a8de57a700
+  version: 0.0.31
 ---
 
 # D1 schema: chat sessions + messages (FTS5) + reference docs (FTS5)
@@ -197,3 +200,59 @@ For resuming this work in an intent-specific session.
 ### From current conversation (assistant, proposed shape)
 
 > D1 with FTS5 for sessions and messages, R2 for blobs … `sessions(id, site_id, title, created_at, updated_at, last_message_at)` … `messages(id, session_id, ord, role, content, tool_calls_json, ts)` + FTS5 over `content`.
+
+
+
+---
+
+## Demo critical-path status (added 2026-06-18)
+
+**Deferred from the convert-flow demo critical path** per the 2026-06-18 planning chat. The demo (paste URL → reproduce site) runs against [[REQ-8]]'s in-memory chat handler with no persistence. This REQ lands the durable foundation; the integration-back into the convert tools ([[REQ-21]] / [[REQ-22]] / [[REQ-28]]) is a follow-on refactor.
+
+Those three REQs each carry a "Future alignment: persistent chat infrastructure" section describing the eventual wire-up — those notes describe the post-this-REQ runtime path, not the demo's flow. When this REQ lands, the refactor is mechanical (the structured `tool_result` payloads already produced by the convert tools reach the `chat_messages` row through this REQ's dispatcher without schema changes).
+
+Implementation ordering: the demo slice (REQ-20 → REQ-13 → REQ-21 → REQ-22 → REQ-28) lands first to validate framework flexibility against a real reproduction target. This REQ comes after the demo confirms the framework is the right shape.
+
+
+---
+
+## Implementation as landed (2026-06-22)
+
+Schema and tests landed in commit `b6dd188f` as a single free-coded change. Deltas from the original draft above:
+
+- **Migration numbering**: the draft proposed `005_*` / `006_*` / `007_*` but the repo already uses 4-digit prefixes (`0001_create_leads.sql` … `0005_seed_1stcontact.sql`). New migrations slot in at `0006_create_chat_sessions.sql`, `0007_create_chat_messages.sql`, `0008_create_reference_docs.sql` with matching `*.down.sql` siblings under `db/migrations-down/`.
+- **TypeScript types**: added to the existing `packages/site-schema/src/db-types.ts` (alongside `AccountRecord`/`SiteRecord`/`RevisionRecord`) rather than a new package. Field names use `snake_case` to match the existing convention (e.g. `site_id`, `created_at`, `last_message_at`) so result rows from D1 round-trip without re-keying. Exported: `ChatRole`, `ChatSessionRecord`, `ChatMessageRecord`, `ChatMessageRecordParsed`, `ChatMessageToolCall`, `ReferenceDocRecord`, `ReferenceDocRecordParsed`, `ReferenceDocTocEntry`.
+- **SQL splitter for trigger bodies**: the existing `_helpers_REQ-10_db.ts` splits on `;\s*\n`, which would tear the multi-statement trigger bodies (each contains an inner `INSERT … VALUES (…);` before `END;`). A new helper `tests/_helpers_REQ-23_db.ts` provides `splitSqlRespectingBeginEnd` which tracks `BEGIN`/`END` depth and only treats top-level semicolons as terminators. The helper exposes `createReq23TestDb` (which composes onto the REQ-10 helper's `createTestDb`) plus `insertSite`/`insertSession`/`insertMessage`/`insertReferenceDoc` factories.
+- **UAT files use `.test.ts` extension** (matches `vitest.config.mts`'s `tests/**/*.test.ts` include) — the draft showed `.ts`.
+- **FTS5 token escaping**: a few cascade UATs originally used hyphenated tokens like `cascade-token-alpha`, which FTS5 parses as `cascade NOT token NOT alpha`. Tokens were collapsed to single words (`cascadealpha`/`cascadebeta`/`cascadegamma`) so the MATCH expressions parse cleanly. The schema is unaffected; only test fixture strings changed.
+
+### UATs delivered (21 across 6 files)
+
+- `test_UAT_FC_REQ-23_session_crud.test.ts` (3) — table + index exist; insert round-trip; `EXPLAIN QUERY PLAN` uses `idx_chat_sessions_site_last`.
+- `test_UAT_FC_REQ-23_message_append_and_fts.test.ts` (5) — insert + MATCH on same connection; UPDATE keeps FTS in sync; DELETE keeps FTS in sync; `UNIQUE(session_id, ord)` enforced; `EXPLAIN QUERY PLAN` uses `idx_chat_messages_session_ord`.
+- `test_UAT_FC_REQ-23_per_site_scope_query.test.ts` (3) — canonical join-through-`chat_sessions` SQL returns only the matching site's messages; isolates correctly across two sites; returns zero for a third site with no matches.
+- `test_UAT_FC_REQ-23_reference_docs_fts.test.ts` (5) — MATCH against title, summary, and body fields independently; DELETE syncs FTS; UPDATE syncs FTS.
+- `test_UAT_FC_REQ-23_cascade_site_delete.test.ts` (3) — baseline counts; site delete cascades sites → chat_sessions → chat_messages → FTS; session delete cascades sessions → chat_messages → FTS.
+- `test_UAT_FC_REQ-23_migrations_reversible.test.ts` (2) — forward apply creates all 5 tables, 3 indexes, 6 triggers; down sweep removes them all while leaving the REQ-10 accounts/sites/revisions tables intact.
+
+Full regression sweep (REQ-3, REQ-7, REQ-10, REQ-13, REQ-32) passes — 171 tests across 66 files, no regressions.
+
+### Files touched
+
+```
+package.json                                                            (0.0.30 → 0.0.31)
+packages/site-schema/src/db-types.ts                                    (types added)
+db/migrations/0006_create_chat_sessions.sql                             (new)
+db/migrations/0007_create_chat_messages.sql                             (new)
+db/migrations/0008_create_reference_docs.sql                            (new)
+db/migrations-down/0006_create_chat_sessions.down.sql                   (new)
+db/migrations-down/0007_create_chat_messages.down.sql                   (new)
+db/migrations-down/0008_create_reference_docs.down.sql                  (new)
+tests/_helpers_REQ-23_db.ts                                             (new)
+tests/test_UAT_FC_REQ-23_session_crud.test.ts                           (new)
+tests/test_UAT_FC_REQ-23_message_append_and_fts.test.ts                 (new)
+tests/test_UAT_FC_REQ-23_per_site_scope_query.test.ts                   (new)
+tests/test_UAT_FC_REQ-23_reference_docs_fts.test.ts                     (new)
+tests/test_UAT_FC_REQ-23_cascade_site_delete.test.ts                    (new)
+tests/test_UAT_FC_REQ-23_migrations_reversible.test.ts                  (new)
+```

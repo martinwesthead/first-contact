@@ -6,15 +6,18 @@ title: 'D1 schema: accounts, sites (draft + published), revisions, slug validati
   1stcontact seed'
 created_by: xgd
 created_at: '2026-06-15T22:42:21.300689+00:00'
-updated_at: '2026-06-15T22:42:21.300689+00:00'
+updated_at: '2026-06-20T21:22:46.710344+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   priority: medium
   story_points: 3
   auto_merge_back: true
   needs_review: false
+  commits:
+  - 8ea7a829a93a5fa1918e5f692f873dbcde0be90d
+  version: 0.0.15
 ---
 
 ## Scope
@@ -146,3 +149,27 @@ A one-time seed migration `005_seed_1stcontact.sql` that inserts the platform-ow
 - **JSON column size** — D1 SQLite TEXT columns hold large JSON fine; site definitions are typically well under 1MB. Add a guard in API REQs that rejects definitions exceeding 5MB pre-persist.
 - **Slug-uniqueness race** — `INSERT` race on slug uniqueness is handled by the UNIQUE constraint at the DB level. API REQs catch the constraint violation and return a 409 with suggestions.
 - **Bootstrap path** — the 1st Contact site is currently file-backed (`sites/1stcontact/site.json` per REQ-6). Post-this-REQ it's also in D1 via seed. Both paths coexist briefly; `tools/generate` should be updated by a later REQ to read from D1 when available.
+
+
+## Coordination note from REQ-20 (added 2026-06-18)
+
+REQ-20 (web fetch safety + R2 assets) is landing **before** this REQ and needs an `account_id` for its per-account rate-limit and Browser Rendering budget counters. Because the `accounts` table does not yet exist, REQ-20 extracts `account_id` from the `x-account-id` request header with a `"default"` fallback, behind a single function (`extractAccountId(request, env)`) in `apps/control-app/src/safety/account.ts`.
+
+**Action for REQ-10:** when implementing the accounts schema and the auth path that issues `account_id`, update `extractAccountId` (or replace the call site) to resolve `account_id` from the authenticated session / magic-link cookie instead of the header. The function signature is the only contract REQ-20 depends on — replacing the body is sufficient; no shape change in the KV counter keys is required.
+
+KV counters in `FETCH_RATE_KV` and `BROWSER_BUDGET_KV` are keyed by `account_id`. Switching from `"default"` to real account IDs migrates cleanly (existing default-keyed counters become orphaned and age out via TTL).
+
+
+
+## Implementation note (2026-06-20, commit 8ea7a82)
+
+Landed as specified above. Notes for downstream REQs:
+
+- **Migration numbering follows the existing 4-digit convention** (`0002_*`–`0005_*`) rather than the 3-digit numbering shown in the original ticket, to match `0001_create_leads.sql`. Lexicographic ordering is preserved.
+- **Down migrations live in `db/migrations-down/`** (sibling directory), one `.down.sql` per forward migration. They are NOT in `db/migrations/` because `wrangler d1 migrations` scans that directory and would treat down files as forward migrations. The `migrations_reversible` UAT applies them via the test helper.
+- **Seed IDs are deterministic, not UUIDs**: `acct_1stcontact_platform`, `site_1stcontact`, `rev_1stcontact_seed`. Recognisable as platform-owned and stable across rebuilds. Customer accounts will use UUIDs.
+- **Seed JSON embedded inline** in `0005_seed_1stcontact.sql` as a SQL string literal (single quotes doubled per SQLite). The seed is a frozen snapshot of `sites/1stcontact/site.json` at commit time; future drift is expected (a later REQ should update `tools/generate` to read from D1).
+- **`extractAccountId` left header-driven**: per the coordination note, the swap to session-cookie resolution belongs to the auth REQ. This REQ is schema-only.
+- **`SITES_DB` binding name** used in the test helper; wrangler.toml currently binds `LEADS_DB`. The API REQ (REQ-11) will add the new D1 binding to wrangler.toml — this REQ does not modify wrangler config.
+
+UATs (8 files, 53 tests) all pass. The two failing tests in the broader suite (REQ-30 and BUG-5 doc-drift guards) are pre-existing on `main` and unrelated.

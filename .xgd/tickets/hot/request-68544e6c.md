@@ -1,0 +1,88 @@
+---
+uid: request-68544e6c
+id: REQ-41
+type: request
+title: 'Module: image-gallery@v1'
+created_by: xgd
+created_at: '2026-06-20T21:12:40.973991+00:00'
+updated_at: '2026-06-20T23:14:08.954511+00:00'
+completed_at: null
+last_field_updated: commits
+status: ready_to_reconcile
+fields:
+  auto_merge_back: true
+  needs_review: false
+  priority: medium
+  commits:
+  - 6f3fa5a8bf752c6f358d6bef58ef641fa7f78b01
+  - ff2c55d58257914ccbbe7202831029018835456c
+  - 0dcaa39a6d7c90dfc03606a80d8df290a4c07816
+  version: 0.0.19
+---
+
+A grid of photos. Used for food photography, portfolio, before/after etc.
+
+- **Variants:** `grid`, `masonry`
+
+- **Dials:**
+
+- `columns`: `2`, `3`, `4`
+
+- `gap`: `tight`, `normal`, `loose`
+
+- `spacingTop`: `0, 1, 2, 3, 4, 6, 8, 12, 16, 24`
+
+- `spacingBottom`: `0, 1, 2, 3, 4, 6, 8, 12, 16, 24`
+
+- `surface`: `default, subtle, inverse, accent`
+
+- **Content fields:**
+
+- `heading` — string (optional)
+
+- `items[]` — array of:
+
+- `image` — asset-ref
+
+- `caption` — string (optional)
+
+## Converged scope (2026-06-20)
+
+Decisions made before implementation:
+
+- **Surface dial:** widened to `default, subtle, inverse, accent` to match the existing 4-value pattern used by other modules (services-grid, text-block).
+- **Masonry implementation:** pure CSS via `column-count` — SSR-friendly, no JS hydration.
+- **Item count bounds:** `items[]` enforces `min: 2, max: 24`.
+- **Responsive columns:** `columns` is the desktop count; mobile collapses (`2`→`1`, `3`→`2`, `4`→`2`) at the `md` breakpoint (768px).
+- **Caption rendering:** below the image, small muted text. Optional.
+- **No lightbox:** plain `<img>` tags with `loading="lazy"` and `decoding="async"`. Click-to-zoom is out of scope for v1.
+- **Aspect ratio:**
+  - `grid` variant locks tiles to `1:1` (square) for visual consistency.
+  - `masonry` variant lets natural image aspect ratios flow.
+
+## Implementation plan
+
+1. `packages/framework/src/modules/image-gallery/meta.ts` — exports `meta` with `id: "image-gallery"`, `version: 1`, the variants/dials/contentSchema above.
+2. `packages/framework/src/modules/image-gallery/index.astro` — Astro component that renders the section with proper class hooks, supports both variants, optional heading, and per-item optional caption.
+3. Register in `packages/framework/src/modules/registry.ts`.
+4. Export from `packages/framework/src/modules/index.ts` (named `ImageGallery` + `imageGalleryMeta`).
+5. UAT tests (named `test_UAT_FC_REQ-41_*`):
+   - `grid` variant emits one tile per item and tags `data-variant="grid"`.
+   - `masonry` variant uses CSS columns layout (asserts `--variant-masonry` class).
+   - Optional `heading` renders when present, omitted when absent.
+   - `caption` renders only when provided.
+   - `columns` dial maps to the corresponding modifier class.
+   - Validates rejection when `items[]` length is outside `2..24`.
+
+
+
+## Follow-up (2026-06-20): LLM context doc
+
+Updated the AI's convert-flow how-to (`docs/llm-context/reproducing-a-website.md` and its byte-for-byte mirror `apps/control-app/src/llm-context.ts`) to:
+
+- Name `image-gallery` explicitly as the catalog target for "sequential images" during visual-proximity matching.
+- Note that image-gallery's `items[]` is populated one entry per asset, each with `image` (asset-ref) and optional `caption`.
+
+UAT added: `test_UAT_FC_REQ-41_llm_context_doc_mentions_image_gallery` asserts the doc names the module so future drift removes the hint deliberately rather than silently.
+
+Pre-existing drift on the doc/mirror pair (sections 1a / section 6 fallback paragraph) is out of scope for this ticket.
