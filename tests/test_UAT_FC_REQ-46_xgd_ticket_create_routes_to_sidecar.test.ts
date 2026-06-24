@@ -12,6 +12,7 @@ function makeCtx(env: {
     emit: vi.fn(),
     siteDefinition: null,
     operatorLastMessage: null,
+    requestOrigin: null,
   };
 }
 

@@ -1,0 +1,528 @@
+/**
+ * REQ-51 — `preview_generated_page` operator action.
+ *
+ * Closes the AI's perception loop: renders the operator's current draft page
+ * server-side, navigates the Browser Rendering binding to it, captures
+ * screenshots + computed styles, and (when a `compareToDigestId` is supplied)
+ * runs a multimodal Haiku call that compares the preview against a cached
+ * reference digest and produces a textual delta.
+ *
+ * Reuses REQ-22's rendered pipeline end-to-end (renderedFetch + the
+ * mergeComputedSignals path), with a distinct R2 prefix (`previews/...`) so
+ * chat-deletion sweeps can scope cleanly. No new Browser Rendering wiring.
+ */
+
+import {
+  buildPreviewPrefix,
+  parseReferenceDigest,
+  renderDigestMarkdown,
+  renderPreviewDigest,
+  SCHEMA_VERSION,
+  type PreviewDigest,
+  type ReferenceDigest,
+} from "@gendev/extractor";
+import { renderSiteToHtml } from "@gendev/framework/render";
+import type { Site } from "@gendev/site-schema";
+import {
+  chargeBrowserBudget,
+  checkBrowserBudget,
+} from "@gendev/web-fetch-safety";
+import { resolveDriverFactory } from "./browser-driver.js";
+import type { ActionContext, ActionHandler, ActionResult } from "./registry.js";
+
+const HAIKU_MODEL = "claude-haiku-4-5-20251001";
+
+interface PreviewEnv {
+  readonly ASSETS_BUCKET?: R2Bucket;
+  readonly BROWSER?: unknown;
+  readonly BROWSER_BUDGET_KV?: KVNamespace;
+  readonly FETCH_CACHE_KV?: KVNamespace;
+  readonly CLAUDE_API_KEY?: string;
+  readonly ANTHROPIC_API_URL?: string;
+}
+
+export const previewGeneratedPageHandler: ActionHandler = async (input, ctx) => {
+  const env = ctx.env as PreviewEnv;
+
+  if (!ctx.siteDefinition || typeof ctx.siteDefinition !== "object") {
+    return fail(
+      "preview_generated_page requires the chat-handler-provided siteDefinition; the direct /api/operator route is not supported for this action",
+    );
+  }
+  const site = ctx.siteDefinition as Site;
+  if (!Array.isArray(site.pages) || site.pages.length === 0) {
+    return fail("draft has no pages to preview");
+  }
+
+  const pageId = resolvePageId(input.pageId, site);
+  if (!pageId.ok) return fail(pageId.error);
+
+  if (!env.ASSETS_BUCKET) {
+    return fail(
+      "preview_generated_page requires ASSETS_BUCKET binding (the rendered draft HTML must be hosted before the browser can navigate to it)",
+    );
+  }
+
+  const html = renderSiteToHtml(site, { target: "preview", pageId: pageId.value });
+  const draftId = await shortHash(html);
+
+  const htmlKey = `previews/${ctx.session.account_id}/${draftId}/${pageId.value}/page.html`;
+  await env.ASSETS_BUCKET.put(htmlKey, new TextEncoder().encode(html), {
+    httpMetadata: { contentType: "text/html; charset=utf-8" },
+  });
+
+  const previewUrl = buildPreviewUrl(ctx, htmlKey);
+  if (!previewUrl) {
+    return fail(
+      "could not resolve preview URL: requestOrigin is not available on this ActionContext",
+    );
+  }
+
+  const capturedAt = new Date().toISOString();
+  const previewSource = {
+    accountId: ctx.session.account_id,
+    draftId,
+    pageId: pageId.value,
+    capturedAt,
+  } as const;
+
+  const budgetGate = await gateBrowserBudget(env, ctx);
+  if (!budgetGate.ok) {
+    return ok(
+      buildBudgetExhaustedPayload({
+        previewUrl,
+        previewSource,
+        note: budgetGate.note,
+      }),
+    );
+  }
+
+  let renderResult;
+  try {
+    const driver = resolveDriverFactory()(env.BROWSER);
+    renderResult = await renderPreviewDigest({
+      driver,
+      previewUrl,
+      previewSource,
+      bucket: env.ASSETS_BUCKET,
+    });
+  } catch (err) {
+    return fail(
+      `preview render failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  if (env.BROWSER_BUDGET_KV && renderResult.driverResult.durationSeconds > 0) {
+    await chargeBrowserBudget(
+      { BROWSER_BUDGET_KV: env.BROWSER_BUDGET_KV },
+      {
+        accountId: ctx.session.account_id,
+        sessionId: ctx.session.session_id ?? ctx.session.account_id,
+        costSeconds: renderResult.driverResult.durationSeconds,
+      },
+    );
+  }
+
+  const compareToDigestId =
+    typeof input.compareToDigestId === "string" ? input.compareToDigestId : null;
+
+  let reference: ReferenceDigest | null = null;
+  if (compareToDigestId) {
+    reference = await loadReferenceDigest(env, compareToDigestId);
+  }
+
+  let inspirationDelta: string | undefined;
+  let commentary: CommentaryResult;
+  try {
+    commentary = await runPreviewCommentary(env, {
+      previewDigest: renderResult.digest,
+      previewScreenshotBytes: await loadScreenshotBytes(
+        env.ASSETS_BUCKET,
+        renderResult.digest.screenshotKeys.desktop,
+      ),
+      reference,
+      referenceScreenshotBytes: reference
+        ? await loadScreenshotBytes(
+            env.ASSETS_BUCKET,
+            reference.screenshotKeys.desktop,
+          )
+        : null,
+    });
+  } catch {
+    commentary = fallbackCommentary(renderResult.digest);
+  }
+
+  inspirationDelta = commentary.inspirationDelta;
+
+  const finalWhatsMissing = [...renderResult.digest.commentary.whatsMissing];
+  if (compareToDigestId && !reference) {
+    finalWhatsMissing.push(
+      `Could not resolve compareToDigestId='${compareToDigestId}' — no cached reference digest found; inspirationDelta omitted.`,
+    );
+  }
+
+  const digest: PreviewDigest = {
+    ...renderResult.digest,
+    summary: commentary.summary,
+    commentary: {
+      perSection: commentary.perSection,
+      whatsMissing: finalWhatsMissing,
+    },
+  };
+
+  const payload: Record<string, unknown> = {
+    kind: "preview_digest",
+    digest,
+    digestMarkdown: renderDigestMarkdown(digest),
+  };
+  if (inspirationDelta !== undefined) {
+    payload.inspirationDelta = inspirationDelta;
+  }
+  return ok(payload);
+};
+
+interface PageIdOk {
+  readonly ok: true;
+  readonly value: string;
+}
+interface PageIdErr {
+  readonly ok: false;
+  readonly error: string;
+}
+
+function resolvePageId(raw: unknown, site: Site): PageIdOk | PageIdErr {
+  if (raw === undefined || raw === null || raw === "") {
+    return { ok: true, value: site.pages[0]!.id };
+  }
+  if (typeof raw !== "string") {
+    return { ok: false, error: "pageId must be a string" };
+  }
+  const match = site.pages.find((p) => p.id === raw);
+  if (!match) {
+    const known = site.pages.map((p) => p.id).join(", ");
+    return {
+      ok: false,
+      error: `pageId '${raw}' not found in draft pages [${known}]`,
+    };
+  }
+  return { ok: true, value: match.id };
+}
+
+function buildPreviewUrl(ctx: ActionContext, htmlKey: string): string | null {
+  if (!ctx.requestOrigin) return null;
+  return `${ctx.requestOrigin}/assets/${htmlKey}`;
+}
+
+type BudgetGate =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly note: string };
+
+async function gateBrowserBudget(
+  env: PreviewEnv,
+  ctx: ActionContext,
+): Promise<BudgetGate> {
+  if (!env.BROWSER) {
+    return {
+      ok: false,
+      note: "Visual signals unavailable — BROWSER binding not configured for this environment.",
+    };
+  }
+  if (!env.BROWSER_BUDGET_KV) return { ok: true };
+  const probe = await checkBrowserBudget(
+    { BROWSER_BUDGET_KV: env.BROWSER_BUDGET_KV },
+    {
+      accountId: ctx.session.account_id,
+      sessionId: ctx.session.session_id ?? ctx.session.account_id,
+    },
+  );
+  if (probe.ok) return { ok: true };
+  return {
+    ok: false,
+    note: `Visual signals unavailable — Browser Rendering budget exhausted (${probe.exhausted}) for this session.`,
+  };
+}
+
+function buildBudgetExhaustedPayload(args: {
+  previewUrl: string;
+  previewSource: { accountId: string; draftId: string; pageId: string; capturedAt: string };
+  note: string;
+}): Record<string, unknown> {
+  const digest: PreviewDigest = {
+    schemaVersion: SCHEMA_VERSION,
+    sourceUrl: args.previewUrl,
+    fetchedAt: args.previewSource.capturedAt,
+    fetchPath: "rendered",
+    summary: "Preview unavailable — Browser Rendering budget exhausted.",
+    signals: {
+      palette: {
+        background: "not_detected",
+        body: "not_detected",
+        accent: "not_detected",
+        cta: "not_detected",
+        supporting: [],
+      },
+      typography: {
+        body: { family: "not_detected", size: "not_detected", weight: "not_detected" },
+        h1: { family: "not_detected", size: "not_detected", weight: "not_detected" },
+        h2: { family: "not_detected", size: "not_detected", weight: "not_detected" },
+        h3: { family: "not_detected", size: "not_detected", weight: "not_detected" },
+        primaryPair: "not_detected",
+      },
+      layout: { maxContentWidth: "not_detected", bias: "not_detected", density: "not_detected" },
+      imagery: { imgCount: 0, backgroundCount: 0, videoCount: 0, heroDetected: false },
+      content: { headings: [], navLinks: [], formFields: [], listGroupCount: 0, sectionCount: 0 },
+      assetInventory: [],
+    },
+    commentary: { perSection: {}, whatsMissing: [args.note] },
+    screenshotKeys: {},
+    previewSource: args.previewSource,
+  };
+  return {
+    kind: "preview_digest",
+    digest,
+    digestMarkdown: renderDigestMarkdown(digest),
+  };
+}
+
+async function loadReferenceDigest(
+  env: PreviewEnv,
+  digestId: string,
+): Promise<ReferenceDigest | null> {
+  if (!env.FETCH_CACHE_KV) return null;
+  const cacheKey = await referenceCacheKey(digestId);
+  const cached = await env.FETCH_CACHE_KV.get(cacheKey, "json");
+  if (!cached) return null;
+  try {
+    return parseReferenceDigest(cached);
+  } catch {
+    return null;
+  }
+}
+
+async function loadScreenshotBytes(
+  bucket: R2Bucket | undefined,
+  key: string | undefined,
+): Promise<Uint8Array | null> {
+  if (!bucket || !key) return null;
+  try {
+    const obj = await bucket.get(key);
+    if (!obj) return null;
+    const ab = await obj.arrayBuffer();
+    return new Uint8Array(ab);
+  } catch {
+    return null;
+  }
+}
+
+interface CommentaryResult {
+  readonly summary: string;
+  readonly perSection: Record<string, string>;
+  readonly inspirationDelta?: string;
+}
+
+function fallbackCommentary(digest: PreviewDigest): CommentaryResult {
+  return {
+    summary: `Preview of draft page '${digest.previewSource.pageId}' (account ${digest.previewSource.accountId}) — ${digest.signals.content.headings.length} headings, ${digest.signals.imagery.imgCount} images, ${digest.signals.imagery.backgroundCount} backgrounds.`,
+    perSection: {},
+  };
+}
+
+async function runPreviewCommentary(
+  env: PreviewEnv,
+  args: {
+    previewDigest: PreviewDigest;
+    previewScreenshotBytes: Uint8Array | null;
+    reference: ReferenceDigest | null;
+    referenceScreenshotBytes: Uint8Array | null;
+  },
+): Promise<CommentaryResult> {
+  if (!env.CLAUDE_API_KEY) return fallbackCommentary(args.previewDigest);
+  const url = env.ANTHROPIC_API_URL ?? "https://api.anthropic.com/v1/messages";
+
+  const userContent: unknown[] = [];
+  if (args.previewScreenshotBytes) {
+    userContent.push(imageBlock(args.previewScreenshotBytes));
+  }
+  if (args.referenceScreenshotBytes) {
+    userContent.push(imageBlock(args.referenceScreenshotBytes));
+  }
+  userContent.push({
+    type: "text",
+    text: buildPreviewCommentaryPrompt({
+      previewDigest: args.previewDigest,
+      reference: args.reference,
+      hasPreviewImage: args.previewScreenshotBytes !== null,
+      hasReferenceImage: args.referenceScreenshotBytes !== null,
+    }),
+  });
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "x-api-key": env.CLAUDE_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: HAIKU_MODEL,
+      max_tokens: 1024,
+      system: buildPreviewCommentarySystemPrompt({
+        hasReference: args.reference !== null,
+        hasPreviewImage: args.previewScreenshotBytes !== null,
+        hasReferenceImage: args.referenceScreenshotBytes !== null,
+      }),
+      messages: [{ role: "user", content: userContent }],
+    }),
+  });
+  if (!resp.ok) return fallbackCommentary(args.previewDigest);
+  const json = (await resp.json()) as {
+    content?: Array<{ type: string; text?: string }>;
+  };
+  const text = json.content?.find((b) => b.type === "text")?.text ?? "";
+  const parsed = tryParseJson(text);
+  if (!parsed) return fallbackCommentary(args.previewDigest);
+
+  const summary =
+    typeof parsed.summary === "string" && parsed.summary.length > 0
+      ? parsed.summary
+      : fallbackCommentary(args.previewDigest).summary;
+  const perSection = isStringRecord(parsed.perSection) ? parsed.perSection : {};
+  const inspirationDelta =
+    args.reference !== null && typeof parsed.inspirationDelta === "string" &&
+    parsed.inspirationDelta.length > 0
+      ? parsed.inspirationDelta
+      : undefined;
+  return { summary, perSection, inspirationDelta };
+}
+
+function buildPreviewCommentarySystemPrompt(args: {
+  hasReference: boolean;
+  hasPreviewImage: boolean;
+  hasReferenceImage: boolean;
+}): string {
+  const base =
+    'You are the 1st Contact AI self-inspection commentator. Reply with a SINGLE JSON object only — no preamble, no markdown fences. Schema: { "summary": string, "perSection": { [section: string]: string }, "inspirationDelta"?: string }. Sections are: palette, typography, layout, imagery, content, assetInventory. Keep each perSection commentary under 200 characters. summary is one sentence (≤ 240 chars).';
+  if (args.hasReference) {
+    return (
+      base +
+      ' The first image is the AI\'s OWN generated page (preview). The second image is the inspiration source (reference). Set inspirationDelta to 2–4 sentences enumerating concrete visual deltas between the two — alignment (left vs centered), density (denser, sparser), hero treatment, typography weight, palette warmth. You MUST include at least one of these comparison words verbatim: aligned, centered, left, denser, sparser, lighter, heavier, warmer, cooler, tighter, looser.'
+    );
+  }
+  if (args.hasPreviewImage) {
+    return (
+      base +
+      ' You are given a desktop screenshot of the AI\'s own generated page. Use it: comment on visual properties (alignment, density, hero treatment, layout rhythm). summary MUST describe what the rendered page looks like.'
+    );
+  }
+  return (
+    base +
+    ' No screenshots were available. Base your summary and per-section commentary on the structured signals alone.'
+  );
+}
+
+function buildPreviewCommentaryPrompt(args: {
+  previewDigest: PreviewDigest;
+  reference: ReferenceDigest | null;
+  hasPreviewImage: boolean;
+  hasReferenceImage: boolean;
+}): string {
+  const lines: string[] = [];
+  lines.push("Preview signals (the AI's own generated draft page):");
+  lines.push("```json");
+  lines.push(JSON.stringify(args.previewDigest.signals, null, 2));
+  lines.push("```");
+  if (args.reference) {
+    lines.push("");
+    lines.push("Reference signals (the inspiration source being compared against):");
+    lines.push("```json");
+    lines.push(JSON.stringify(args.reference.signals, null, 2));
+    lines.push("```");
+  }
+  lines.push("");
+  if (args.reference) {
+    lines.push(
+      "Compare the preview to the reference. Produce the JSON commentary object. summary describes what the preview looks like in one sentence. perSection gives 1–2 sentence commentary per signal category. inspirationDelta is 2–4 sentences listing concrete visual deltas; include at least one explicit comparison word.",
+    );
+  } else {
+    lines.push(
+      "Produce the JSON commentary object. summary describes what the preview looks like in one sentence. perSection gives 1–2 sentence commentary per signal category. inspirationDelta should be omitted (no reference loaded).",
+    );
+  }
+  return lines.join("\n");
+}
+
+function imageBlock(bytes: Uint8Array): unknown {
+  return {
+    type: "image",
+    source: {
+      type: "base64",
+      media_type: "image/png",
+      data: base64FromBytes(bytes),
+    },
+  };
+}
+
+async function referenceCacheKey(digestId: string): Promise<string> {
+  // Mirrors analyze-page.ts:digestCacheKey shape (`digest:{sha256(url|schemaVersion)}`).
+  const data = new TextEncoder().encode(`${digestId}|${SCHEMA_VERSION}`);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return `digest:${hexOf(hash)}`;
+}
+
+async function shortHash(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return hexOf(hash).slice(0, 16);
+}
+
+function hexOf(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, "0");
+  }
+  return hex;
+}
+
+function tryParseJson(text: string): Record<string, unknown> | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1));
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function isStringRecord(v: unknown): v is Record<string, string> {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+  for (const value of Object.values(v as Record<string, unknown>)) {
+    if (typeof value !== "string") return false;
+  }
+  return true;
+}
+
+function base64FromBytes(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function fail(error: string): ActionResult {
+  return { status: "failed", error };
+}
+
+function ok(payload: Record<string, unknown>): ActionResult {
+  return { status: "ok", payload };
+}
+
+/**
+ * Re-export so the renderer in builder-ui (and the handler's tests) can use
+ * the same buildPreviewPrefix helper without re-importing from extractor.
+ */
+export { buildPreviewPrefix };

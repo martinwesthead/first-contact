@@ -453,6 +453,7 @@ export async function handleChatRequest(
                     emit: sessionEmitter(opSession),
                     siteDefinition: workingSite,
                     operatorLastMessage: body.userMessage,
+                    requestOrigin: requestOriginOf(request),
                   });
                 } catch (err) {
                   actionResult = {
@@ -998,6 +999,19 @@ function jsonError(message: string, status: number): Response {
     status,
     headers: { "content-type": "application/json; charset=utf-8" },
   });
+}
+
+/**
+ * REQ-51 — derive the request's origin so `ActionContext.requestOrigin` can
+ * be populated. Used by `preview_generated_page` to build the absolute
+ * `/assets/...` URL the Browser Rendering binding navigates to.
+ */
+function requestOriginOf(request: Request): string | null {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return null;
+  }
 }
 
 async function safeReadText(resp: Response): Promise<string> {
