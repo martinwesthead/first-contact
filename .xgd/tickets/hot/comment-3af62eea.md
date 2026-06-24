@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-24T20:18:30.339772+00:00'
+updated_at: '2026-06-24T20:18:40.457939+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -128,5 +128,39 @@ REQ-22 done. Summary:
 <!-- xgd-chat role="user" ts="2026-06-24T20:18:21.134Z" -->
 #### You
 How does the AI access this capability?
+
+<!-- xgd-turn id="5c6a8c0d-b3a1-4274-a282-4787ffeed390-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T20:18:40.424Z" -->
+#### Claude
+The AI doesn't call rendering directly — it calls the same `analyze_page` tool from REQ-21, and escalation is automatic.
+
+**Implicit path (default):**
+```
+AI calls: analyze_page(url)
+  → static fetch runs
+  → shouldEscalateToRendered(staticResult) decides:
+      - thin_body  (<200 chars visible text)
+      - js_dominant  (<script> > 80% of body bytes)
+      - operator_request  (forceRendered=true)
+  → if escalate: renderedFetch runs, screenshots captured,
+                 computed CSS extracted, signals merged
+  → digest returned (same shape either way; fetchPath: 'static' | 'rendered')
+```
+
+**Explicit path (operator override):**
+```
+AI calls: analyze_page(url, forceRendered: true)
+  → static fetch still runs first (cheap baseline)
+  → escalation fires unconditionally
+```
+
+The `forceRendered` parameter is documented in the tool description as "use only when the operator explicitly asks for a rendered analysis" — so the AI reaches for it when the user says something like "render this page properly" or "I think you're missing the visuals on this one."
+
+**Budget exhaustion is invisible to the AI** — when REQ-20's middleware reports budget_exhausted, `analyze_page` falls back to static, sets `fetchPath: 'static'`, and appends a `whatsMissing` note ("Visual signals unavailable — Browser Rendering budget exhausted for this session"). The call still succeeds; the AI sees the note in the digest and can mention it in chat.
+
+**Multimodal commentary is automatic** — when a desktop screenshot ends up in the digest's `screenshotKeys`, the Haiku 4.5 commentary call inside `analyze_page` adds an image content block before the text prompt. The AI doesn't choose this; it's wired into the tool's internal pipeline.
+
+So from the AI's perspective there is exactly one tool — `analyze_page` — and rendering is an internal escalation, not a separate capability.
 
 <!-- xgd-chat-end -->
