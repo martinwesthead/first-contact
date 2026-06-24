@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-24T20:21:06.878676+00:00'
+updated_at: '2026-06-24T20:21:23.202040+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -168,5 +168,40 @@ So from the AI's perspective there is exactly one tool — `analyze_page` — an
 <!-- xgd-chat role="user" ts="2026-06-24T20:20:35.749Z" -->
 #### You
 Hmm that sounds a bit broken - in two ways (1) why isn't renedering the page the default it seems like we would always want a render no? (2) the render has to be applicable to the page the AI creates so it can see that too
+
+<!-- xgd-turn id="1dc3a27d-f161-4f65-b4a3-b73596d0c166-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T20:21:23.200Z" -->
+#### Claude
+Both points land. Quick read on each:
+
+**(1) Render-by-default — yes, you're right.**
+
+The current "static-first with escalation heuristics" design is borrowed from generic web-scraping patterns where cost dominates. But this product's whole purpose is extracting **visual** brand signal — typography, color, spacing, hero imagery, layout rhythm. Static HTML for a 2026-era marketing site gives us a React shell and `<script>` tags. We're throwing away the actual signal we came for on every fetch and then scrambling back via heuristics.
+
+The honest defaults should be flipped:
+- **Default**: rendered fetch (screenshots + computed CSS + DOM after JS)
+- **Skip rendering only when**: static returns rich, complete content AND the page is detectably non-JS (server-rendered blog post, plain HTML doc) — the inverse of the current `shouldEscalateToRendered` heuristic
+- **Budget exhaustion fallback** stays as-is (static digest + `whatsMissing` note)
+
+Cost concern is real but already capped by REQ-20's budget gate. Better to spend the budget on signal that matters than to default-cheap and miss the brand.
+
+**(2) AI rendering its own output — this is the bigger gap.**
+
+You've identified the missing closed loop. Right now:
+```
+external page → rendered → AI sees screenshots → AI generates page → ???
+```
+The AI is designing blind. It extracts inspiration with full visual fidelity, then ships HTML/CSS into the void without ever seeing the result through the same lens. Any "does the generated page actually match the brand DNA we extracted?" check is impossible.
+
+What's needed is a sibling tool — call it `preview_generated_page(draftId | html)` — that runs the **same rendering pipeline** against the builder's output, returning the same digest shape (screenshot keys, computed CSS, layout signals). Then the AI can do visual diff / comparison reasoning: "extracted hero is centered serif, generated hero is left-aligned sans — adjust."
+
+That's a distinct capability from REQ-22 (which is about ingesting external pages). It needs its own ticket — probably depends on whatever the builder's draft storage is (REQ-?? for the renderer output store).
+
+**Recommended path:**
+- **Amend REQ-22** to flip the rendering default (in scope — it's about the rendered fetch path)
+- **Propose a new REQ ticket** for the closed-loop preview capability — but I'll wait for your "create a new ticket" before filing it, per session rules
+
+Want me to amend REQ-22 with the flipped default now, and draft a proposal for the preview-render ticket for you to greenlight?
 
 <!-- xgd-chat-end -->
