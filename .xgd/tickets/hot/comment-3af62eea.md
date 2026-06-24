@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-24T20:29:38.565384+00:00'
+updated_at: '2026-06-24T20:35:15.028283+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -320,5 +320,49 @@ Or hold the code change for a separate session?
 <!-- xgd-chat role="user" ts="2026-06-24T20:29:29.222Z" -->
 #### You
 make the code change3
+
+<!-- xgd-turn id="a5545521-0f82-496f-abc0-9912ff06fcbc-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T20:35:14.994Z" -->
+#### Claude
+Starting the code change. Let me track progress and read the relevant files in parallel.
+
+Editing `analyze-page.ts` to drop the heuristic gate and always attempt rendering.
+
+analyze-page.ts done. Now deleting `escalate.ts` and pulling its exports.
+
+Now removing `forceRendered` from the registry tool schema.
+
+Deleting the three obsolete escalation UATs and updating the budget-exhausted test to drop `forceRendered`.
+
+Now adding AC 13 + AC 14 UATs. AC 14's intent already overlaps with the existing SPA test; I'll add AC 14 to that test's tags and add a fresh test for AC 13 (the static-rich case that previously would NOT have escalated).
+
+Now running typecheck + tests.
+
+Clean — only historical ticket records reference the removed symbols. Now running the test suite.
+
+All 14 REQ-22 tests pass including the new render-by-default UAT. Now full suite + typecheck.
+
+All 684 tests pass. Build errors are all in `packages/builder-ui` files I never touched (DOM types missing — pre-existing). Let me verify by checking these are not introduced by my changes.
+
+Pre-existing — same errors with my changes stashed. Restoring my changes and proceeding to commit.
+
+Done. Summary:
+
+**Commit:** `72effe6` (`[FREE-CODED]`, REQ-22, +84/-194 lines).
+
+**Files:**
+- `apps/control-app/src/operator/analyze-page.ts` — dropped escalation gate; `runRenderedPath` runs on every call.
+- `apps/control-app/src/operator/registry.ts` — removed `forceRendered` from `analyze_page` schema; rewrote description to reflect render-by-default + budget-exhausted fallback.
+- `packages/extractor/src/escalate.ts` — deleted.
+- `packages/extractor/src/index.ts` — stripped `shouldEscalateToRendered` exports.
+- `tests/` — deleted 3 escalation UATs; dropped `forceRendered` from budget-exhausted UAT; added AC 13 UAT (static-rich → rendered); tagged existing SPA UAT with AC 14.
+
+**Verification:** All 684 tests pass, including all 14 REQ-22 tests. Pre-existing build error in `packages/builder-ui` DOM types is unrelated (verified on a clean stash).
+
+**Ticket state:**
+- REQ-22 body: amended with the Render-by-default block (2026-06-24).
+- REQ-22 `fields.commits`: extended to `[6da55852…, 72effe61…]`.
+- REQ-51: filed as `draft` (closed-loop preview capability).
 
 <!-- xgd-chat-end -->
