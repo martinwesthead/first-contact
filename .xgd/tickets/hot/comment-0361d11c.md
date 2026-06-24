@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:40:40.677646+00:00'
+updated_at: '2026-06-24T23:43:33.053944+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -501,5 +501,36 @@ npm error A complete log of this run can be found in: /Users/martin/.npm/_logs/2
 ((.venv-working) ) martin@nyx first-contact %
 
 ```
+
+<!-- xgd-turn id="8afd3026-4cdd-4aab-878c-2ed558def4b3-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:43:33.052Z" -->
+#### Claude
+Let me check what's actually installed.
+
+The package IS installed. The "No such module" error is a Wrangler bundler issue: my code uses a string-indirect dynamic import (`await import(modSpecifier)`) specifically to fool Vite/esbuild — but that also hides the import from Wrangler, so it never bundles the package, and the Workers runtime can't resolve it at request time.
+
+The standard CF pattern is a plain static `import puppeteer from "@cloudflare/puppeteer"`. Let me check whether that import is safe to evaluate in our test environment (jsdom):
+
+Static import is safe (no side effects). Let me convert browser-driver.ts to use a static import so Wrangler bundles the package:
+
+Now drop the local `PuppeteerModule` interface and update `makePuppeteerDriver` to use the static import:
+
+Now run the tests to make sure jsdom can load puppeteer without errors:
+
+Tests pass. Run the full suite to confirm no regressions:
+
+699/699 still green. Commit:
+
+Done. Restart `pnpm dev` (Wrangler needs a fresh worker bundle to pick up the static import — Ctrl-C and re-run from `apps/control-app`):
+
+```bash
+cd apps/control-app
+pnpm dev
+```
+
+Then call `preview_generated_page` again from chat. The module-resolution error should be gone and you should finally get real screenshot bytes back. If you hit a budget-exhausted message right away, your earlier failed runs may have charged seconds against the session budget — open a fresh chat session to reset, or wait for the per-session window to roll over.
+
+REQ-51 now records four commits: `9947c69` (initial), `1ece0cc` (degraded-mode signals), `93a59eb` (wrangler.toml BROWSER binding), `61e805e` (static puppeteer import).
 
 <!-- xgd-chat-end -->
