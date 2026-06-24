@@ -6,9 +6,9 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-24T23:52:41.196517+00:00'
+updated_at: '2026-06-24T23:52:59.835179+00:00'
 completed_at: null
-last_field_updated: commits
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -272,3 +272,51 @@ module has no module-load side effects (verified by jsdom suite passing
 all 699 tests after the change).
 
 The local `PuppeteerModule` ambient shim is no longer needed and was deleted.
+
+
+
+## Amendment 2026-06-24 — data: URL navigation + session-attach retry (commit 3dcf349)
+
+**Two failures surfaced once the rendered path could finally launch:**
+
+### 1. Localhost-unreachable
+
+Cloudflare's Browser Rendering binding runs in the CF cloud, not on the
+operator's machine. The handler was uploading rendered HTML to R2 and
+pointing the browser at `{requestOrigin}/assets/{key}` — CF couldn't
+resolve the localhost origin and screenshotted a "localhost is blocked"
+interstitial. Even in production this added a network round-trip when we
+already had the bytes in memory.
+
+**Fix**: skip the R2 HTML upload, pass the rendered HTML to puppeteer via
+a `data:text/html;base64,...` URL. `sourceUrl` becomes a synthetic
+`preview://{accountId}/{draftId}/{pageId}` identifier so the chat card has
+a stable, human-readable handle (a data: URL is unusable for display).
+
+`renderPreviewDigest` signature changed: instead of a single `previewUrl`,
+it now takes `navigationUrl` (what puppeteer goes to) and `sourceUrl`
+(what the digest records). Internal-only change — the only caller is the
+handler, which now passes a data URL + a `preview://` URL respectively.
+
+### 2. Session-attach race
+
+CF's puppeteer wrapper reuses browser sessions for efficiency. Attaching
+to a session that's still warming up surfaces as
+`"Unable to connect to existing session <id> ... TypeError: Cannot read
+properties of null (reading 'accept')"`. Their own error message says
+"retry or launch a new browser".
+
+**Fix**: new `launchWithRetry()` in `browser-driver.ts` pattern-matches on
+the specific error class (`Unable to connect to existing session` or
+`reading 'accept'`) and retries `puppeteer.launch()` exactly once. A
+second consecutive failure bubbles to the handler.
+
+### Coverage
+
+- New UAT asserts `digest.sourceUrl` uses the `preview://` scheme (never
+  http/https/data — those would be confusing in the chat card).
+- New UAT asserts the URL the driver actually navigates to is a
+  `data:text/html;charset=utf-8;base64,...` URL whose decoded content
+  includes the draft's headings (proves the rendered HTML reaches the
+  browser without a network hop).
+- Full vitest suite: 701/701.
