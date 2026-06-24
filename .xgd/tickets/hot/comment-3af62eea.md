@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-24T20:26:23.615510+00:00'
+updated_at: '2026-06-24T20:27:24.067840+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -291,5 +291,28 @@ preview_generated_page({ pageId?: string, compareToDigestId?: string })
 <!-- xgd-chat role="user" ts="2026-06-24T20:26:18.406Z" -->
 #### You
 Go ahead and create the new ticket
+
+<!-- xgd-turn id="abfa8914-bb0c-4b1d-a489-769fc9aa298a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T20:27:24.066Z" -->
+#### Claude
+Creating the new ticket now with `status: draft` (per memory note — never `ready_to_implement` from my side).
+
+Ticket created: **REQ-51** (`request-67e3e495`), status `draft`, priority `high`, 5 story points.
+
+REQ-22 amendment is also in (appended via `xgd ticket append` — original body preserved).
+
+**Status:**
+- REQ-22 body: amended with the render-by-default decision, REQ-49 cited as evidence, AC 1-3 retired, AC 13-14 added, three obsolete tests listed for cleanup.
+- REQ-51: filed as `draft` — needs your review and flip to whichever status you use for queue-up before headless implementation picks it up.
+
+**Open question** (carried from my last message): want me to make the REQ-22 code change now? Concretely:
+- `apps/control-app/src/operator/analyze-page.ts` — render-first; static is the fallback when `BROWSER` missing / budget exhausted / driver throws
+- `packages/extractor/src/escalate.ts` — delete; remove the `shouldEscalateToRendered` export from `index.ts`
+- `apps/control-app/src/operator/registry.ts` — remove `forceRendered` from `analyze_page` input schema + description
+- Delete the three escalation UATs; add two new ones for AC 13-14
+- Land as one `[FREE-CODED]` commit referencing REQ-22
+
+Or hold the code change for a separate session?
 
 <!-- xgd-chat-end -->
