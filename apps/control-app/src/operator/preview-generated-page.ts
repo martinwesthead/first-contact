@@ -62,24 +62,22 @@ export const previewGeneratedPageHandler: ActionHandler = async (input, ctx) => 
 
   if (!env.ASSETS_BUCKET) {
     return fail(
-      "preview_generated_page requires ASSETS_BUCKET binding (the rendered draft HTML must be hosted before the browser can navigate to it)",
+      "preview_generated_page requires ASSETS_BUCKET binding (used for screenshot persistence)",
     );
   }
 
   const html = renderSiteToHtml(site, { target: "preview", pageId: pageId.value });
   const draftId = await shortHash(html);
 
-  const htmlKey = `previews/${ctx.session.account_id}/${draftId}/${pageId.value}/page.html`;
-  await env.ASSETS_BUCKET.put(htmlKey, new TextEncoder().encode(html), {
-    httpMetadata: { contentType: "text/html; charset=utf-8" },
-  });
-
-  const previewUrl = buildPreviewUrl(ctx, htmlKey);
-  if (!previewUrl) {
-    return fail(
-      "could not resolve preview URL: requestOrigin is not available on this ActionContext",
-    );
-  }
+  // Pass the rendered HTML to puppeteer via a data: URL rather than asking it
+  // to fetch from `{requestOrigin}/assets/...`. Cloudflare's Browser Rendering
+  // runs in the CF cloud and CANNOT reach the operator's localhost during
+  // `wrangler dev`; in production it could, but routing through R2 + the
+  // assets route would add a network round-trip when we already have the
+  // bytes in memory. `sourceUrl` becomes a synthetic identifier so the chat
+  // card and any downstream consumer have a stable, human-readable handle.
+  const previewUrl = `preview://${ctx.session.account_id}/${draftId}/${pageId.value}`;
+  const navigationUrl = htmlToDataUrl(html);
 
   const capturedAt = new Date().toISOString();
   const previewSource = {
@@ -110,7 +108,8 @@ export const previewGeneratedPageHandler: ActionHandler = async (input, ctx) => 
     const driver = resolveDriverFactory()(env.BROWSER);
     renderResult = await renderPreviewDigest({
       driver,
-      previewUrl,
+      navigationUrl,
+      sourceUrl: previewUrl,
       previewSource,
       bucket: env.ASSETS_BUCKET,
     });
@@ -216,9 +215,16 @@ function resolvePageId(raw: unknown, site: Site): PageIdOk | PageIdErr {
   return { ok: true, value: match.id };
 }
 
-function buildPreviewUrl(ctx: ActionContext, htmlKey: string): string | null {
-  if (!ctx.requestOrigin) return null;
-  return `${ctx.requestOrigin}/assets/${htmlKey}`;
+/**
+ * Build a `data:text/html;base64,...` URL that Cloudflare's Browser Rendering
+ * binding can navigate to without making any outbound network request. This
+ * sidesteps the local-dev problem where the CF browser (running in the cloud)
+ * cannot resolve the operator's localhost, and the production case where
+ * routing through R2 + the assets route would add an unnecessary round-trip
+ * when we already have the bytes in memory.
+ */
+function htmlToDataUrl(html: string): string {
+  return `data:text/html;charset=utf-8;base64,${base64FromBytes(new TextEncoder().encode(html))}`;
 }
 
 type BudgetGate =

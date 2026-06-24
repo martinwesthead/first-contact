@@ -225,6 +225,39 @@ describe("UAT FC REQ-51: preview_generated_page closes the AI's perception loop"
     }
   });
 
+  it("sourceUrl uses preview:// scheme (synthetic identifier, never a fetchable URL) so chat-card never advertises localhost-or-data routes", async () => {
+    const h = makePreviewHarness({ accountId: "acct-scheme" });
+    h.installDriver(makeFakeDriver());
+
+    const result = await h.invoke({});
+    const digest = expectOkPayload(result).digest as { sourceUrl: string; previewSource: { draftId: string } };
+    expect(digest.sourceUrl.startsWith("preview://acct-scheme/")).toBe(true);
+    expect(digest.sourceUrl).toContain(`/${digest.previewSource.draftId}/home`);
+    expect(digest.sourceUrl).not.toMatch(/^https?:|^data:/);
+  });
+
+  it("the URL the fake driver receives is a data:text/html URL (puppeteer navigates inline; no R2/origin round-trip) and decodes to HTML containing the draft's headings", async () => {
+    const h = makePreviewHarness({ site: siteWithContent() });
+    let observed: string | null = null;
+    h.installDriver({
+      async renderForViewports(url, viewports) {
+        observed = url;
+        const fake = makeFakeDriver();
+        return fake.renderForViewports(url, viewports);
+      },
+    });
+    const result = await h.invoke({});
+    expectOkPayload(result);
+    expect(observed).not.toBeNull();
+    expect(observed!.startsWith("data:text/html;charset=utf-8;base64,")).toBe(true);
+    const b64 = observed!.slice("data:text/html;charset=utf-8;base64,".length);
+    const decoded =
+      typeof Buffer !== "undefined"
+        ? Buffer.from(b64, "base64").toString("utf-8")
+        : atob(b64);
+    expect(decoded).toContain("Welcome to Closed-Loop Co");
+  });
+
   it("draftId is content-addressed: same draft produces the same draftId; changed draft produces a different one", async () => {
     const h = makePreviewHarness({ accountId: "acct-draft" });
 

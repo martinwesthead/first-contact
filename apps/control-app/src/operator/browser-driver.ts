@@ -73,6 +73,40 @@ interface PuppeteerBrowser {
 }
 
 /**
+ * Cloudflare's puppeteer wrapper reuses browser sessions for efficiency, and
+ * attaching to a session that's still warming up surfaces as
+ * `"Unable to connect to existing session <id> (it may still be in use or not
+ * ready yet) - retry or launch a new browser: TypeError: Cannot read
+ * properties of null (reading 'accept')"`. Their own error message says
+ * retry or launch fresh — so we do exactly that, once. A second consecutive
+ * failure bubbles up to the handler.
+ */
+async function launchWithRetry(binding: unknown): Promise<unknown> {
+  try {
+    return await puppeteer.launch(binding as Parameters<typeof puppeteer.launch>[0]);
+  } catch (err) {
+    if (!isSessionAttachError(err)) throw err;
+    // Stale session — let puppeteer pick a fresh one. CF's launch() does
+    // session selection internally; we don't have a "force new" flag, so the
+    // retry is just a plain re-launch and trusts the next attempt to pick a
+    // healthy slot.
+    return await puppeteer.launch(binding as Parameters<typeof puppeteer.launch>[0]);
+  }
+}
+
+function isSessionAttachError(err: unknown): boolean {
+  const msg =
+    err instanceof Error
+      ? err.message
+      : typeof err === "string"
+        ? err
+        : "";
+  if (!msg) return false;
+  return /Unable to connect to existing session/.test(msg) ||
+    /reading 'accept'/.test(msg);
+}
+
+/**
  * Real @cloudflare/puppeteer driver. Wrangler bundles `@cloudflare/puppeteer`
  * from the top-of-file static import so the worker can resolve it at runtime
  * — the earlier string-indirect dynamic-import dodge hid the dep from the
@@ -89,9 +123,7 @@ export function makePuppeteerDriver(binding: unknown): BrowserDriver {
       viewports: readonly Viewport[],
     ): Promise<DriverResult> {
       const start = Date.now();
-      const browser = (await puppeteer.launch(
-        binding as Parameters<typeof puppeteer.launch>[0],
-      )) as unknown as PuppeteerBrowser;
+      const browser = (await launchWithRetry(binding)) as unknown as PuppeteerBrowser;
       try {
         const screenshots: Partial<Record<ViewportName, Uint8Array>> = {};
         let lastHtml = "";
