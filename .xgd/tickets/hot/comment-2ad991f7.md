@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-8
 created_by: xgd
 created_at: '2026-06-24T19:58:54.220925+00:00'
-updated_at: '2026-06-24T20:06:39.776147+00:00'
+updated_at: '2026-06-24T20:12:09.862082+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -90,5 +90,33 @@ Going ahead with: scope BUG-8 body → write UAT → fix three sites → commit 
 <!-- xgd-chat role="user" ts="2026-06-24T20:06:33.263Z" -->
 #### You
 go ahead
+
+<!-- xgd-turn id="5df9c007-4055-420a-951a-0f466ee27348-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T20:12:09.860Z" -->
+#### Claude
+Starting with the ticket scope and test pattern recon.
+
+Now the UAT.
+
+Now run the test to confirm it fails BEFORE the fix.
+
+All 3 ACs fail as expected — the test correctly captures the bug. Now apply the fix.
+
+The fix works; test #3 has a routing bug in my mock — both list and create hit the same URL, my regex ordering returns `{ sessions: [] }` for both. Use the method to disambiguate.
+
+All 3 ACs pass. Now run typecheck and the broader test suite to be sure nothing regressed.
+
+Done. Summary:
+
+**BUG-8 (free_coded, v0.0.37, SHAs `efc642c` + `3e4c64d`)**
+
+Root cause: `packages/builder-ui/src/{main,chat-driver,chats-api}.ts` defaulted to `globalThis.fetch` without rebinding `this`. Browsers' Window-bound `fetch` rejects calls whose receiver is not `Window` → `TypeError: 'fetch' called on an object that does not implement interface Window`. Boot surfaced it as the "Chat backend unavailable" system message you saw.
+
+Fix: default to `globalThis.fetch.bind(globalThis)` at each of the three sites. Test paths that passed a `fetch` mock had been masking the bug.
+
+UAT (`tests/test_UAT_FC_BUG-8_default_fetch_is_callable_without_this_binding.test.ts`) installs a strict `fetch` that throws when `this !== globalThis` (jsdom doesn't enforce this on its own), covers each of the three sites, fails 3/3 pre-fix and passes 3/3 post-fix. Adjacent chat/builder tests still green (17 files, 43 tests).
+
+Reload the builder to confirm — the system message should be gone and you should see a real chat session bind.
 
 <!-- xgd-chat-end -->
