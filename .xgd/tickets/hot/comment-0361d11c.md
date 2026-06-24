@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:21:07.134792+00:00'
+updated_at: '2026-06-24T23:22:04.108356+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -268,5 +268,24 @@ binding = "BROWSER"
 Once that's in place, the screenshots should flow through. Want me to focus on the site content itself in the meantime, or is fixing the binding your next step?
 
 ◇Preview — home
+
+<!-- xgd-turn id="4440f51b-1fef-4fe4-991d-2bf8fbbca8d6-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:22:04.107Z" -->
+#### Claude
+To answer the immediate question: **no, I can't see your browser** — I'm a separate process from the AI running in your builder. I only see what you paste into our chat. The good news: my degraded-mode fix worked. Where the old card showed only "# Preview", the new one is reporting "H1 heading and 2 assets" — that's `extractSignals` running over the in-memory rendered HTML.
+
+For the BROWSER binding: confirmed it's only bound under `[env.production.browser]` in `wrangler.toml:86-87`. Local `wrangler dev` doesn't get it. To capture real screenshots you'd need `wrangler dev --remote` or a deploy.
+
+Now let me scope the new ticket for the `analyze_page` intent-gate issue.
+
+Ticket **REQ-52** filed at `status=draft`. It outlines three concrete options (A: turn-scoped relaxed gate, B: session-scoped opt-in toggle, C: full removal) with the original REQ-20 safety motivation included so the design conversation is grounded.
+
+It's intentionally left at `draft` (not `ready_to_implement`) so you can pick the option that fits before headless implementation kicks in. When you decide which option, just say the word and I'll sharpen the acceptance criteria and either free-code it or you can promote the ticket.
+
+**Quick recap:**
+- REQ-51 amendment (degraded-mode signals) shipped — your second test showed the fix landed (you saw the H1 and asset count).
+- BROWSER binding is a config issue, not a code issue (`wrangler.toml:86-87` binds it only in `[env.production.browser]`). Use `wrangler dev --remote` or deploy to exercise the real screenshot path.
+- REQ-52 filed for the analyze_page intent-gate friction.
 
 <!-- xgd-chat-end -->
