@@ -19,8 +19,8 @@ const HYDRATED_HTML = `
   </main>
 </body></html>`;
 
-describe("UAT FC REQ-22: renderedFetch hydrates a SPA (AC 4 + AC 5)", () => {
-  it("AC4+AC5: the js-spa fixture escalates, the fake driver returns hydrated HTML with >1000 chars of visible text, and the digest's body typography reflects computed values (not 'not_detected')", async () => {
+describe("UAT FC REQ-22: renderedFetch hydrates a SPA (AC 4 + AC 5 + AC 14)", () => {
+  it("AC4+AC5+AC14: render-by-default — the js-spa fixture runs the rendered path, the fake driver returns hydrated HTML with >1000 chars of visible text, and the digest's body typography reflects computed values (not 'not_detected')", async () => {
     const h = makeHarness();
     h.setHtmlBody(loadFixture("js-spa"));
     h.setAnthropicCommentary({
