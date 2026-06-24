@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:16:56.008880+00:00'
+updated_at: '2026-06-24T23:21:07.134792+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -244,5 +244,29 @@ Done with the REQ-51 amendment. Refresh your builder and call `preview_generated
 2. **Workaround now**: paste the URL directly in your chat message (e.g. "analyze https://example.com") — `operatorMessageImpliesIntent()` will accept it and the next `analyze_page` call goes through.
 
 Want me to file a separate ticket for the analyze_page intent-gate change? If so, what's the intended behavior — fully open (no gate), opt-in flag, or smarter keyword detection?
+
+<!-- xgd-turn id="4440f51b-1fef-4fe4-991d-2bf8fbbca8d6-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:20:45.360Z" -->
+#### You
+Please create a new ticket. Then look at this:
+
+Are you seeing the renedered site screenshot? Can you share it?
+
+Let me try the preview tool right now to check!Unfortunately the answer is still **no** — the preview tool ran but returned **"Visual signals unavailable — BROWSER binding not configured for this environment."** No screenshot was captured.
+
+The structural signals confirm the site has some content (the H1 heading and 2 assets), but the Browser rendering worker (`BROWSER` binding) still isn't wired up — so no visual screenshot is being produced.
+
+Since you're the author, this is likely a Cloudflare Worker configuration issue — the `BROWSER` binding needs to be set up in `wrangler.toml` (or the Workers dashboard) for the worker that handles `preview_generated_page`. Something like:
+
+```toml
+[[browser]]
+binding = "BROWSER"
+
+```
+
+Once that's in place, the screenshots should flow through. Want me to focus on the site content itself in the meantime, or is fixing the binding your next step?
+
+◇Preview — home
 
 <!-- xgd-chat-end -->
