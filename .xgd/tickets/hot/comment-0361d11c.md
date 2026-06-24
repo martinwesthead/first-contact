@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:49:11.757803+00:00'
+updated_at: '2026-06-24T23:53:12.040942+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -573,5 +573,52 @@ desktop
 # Reference Digest — http://localhost:8788/assets/previews/anonymous/2cb652c41ddc76fa/home/page.html
 
 So there's a start up timing issue and then a localhost issue?
+
+<!-- xgd-turn id="ba865377-dfdd-418e-87db-6bd559666baf-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:53:11.037Z" -->
+#### Claude
+Yes — two distinct issues, both real, both need fixing:
+
+1. **Localhost is unreachable**: Cloudflare's Browser Rendering service runs in CF's cloud. It can't see `localhost:8788`. My handler builds the preview URL as `{requestOrigin}/assets/{key}` — that points at the operator's localhost, which CF's headless Chrome (running in a datacenter) can't reach. So the browser shows the "site blocked" interstitial. This is a fundamental issue, not local-dev-only — even in production, routing the rendered HTML through a public URL adds a round-trip with no benefit when we already have the HTML in memory.
+
+2. **Session reconnection race**: Cloudflare's puppeteer wrapper reuses browser sessions; when a stale handle is attached you get the `null.accept` error. Their own error message says "retry or launch a new browser". A single retry on that specific error class makes it disappear.
+
+Let me scope and fix both:
+
+**Step 1: Switch preview-generated-page.ts from R2-served URL to data: URL** (and drop the redundant R2 HTML upload):
+
+Now update the `renderPreviewDigest` call to use the data URL, and tell `renderPreviewDigest` what the logical `sourceUrl` should be:
+
+Now add the `htmlToDataUrl` helper and remove the now-unused `buildPreviewUrl` helper:
+
+Now also remove the import of `ActionContext` if no longer used, and check the unused requestOrigin reference. Actually `ActionContext` is still used for the `gateBrowserBudget` and other helpers, so we leave it. Let me check if there's an unused field — actually I removed the `requestOrigin` requirement. But the registry still has the field. We can leave it; other tools might use it later.
+
+Now update the `renderPreviewDigest` signature in extractor to accept the new args shape:
+
+**Step 2: Add retry-once on session-attach race in browser-driver.ts**
+
+Now add the `launchWithRetry` helper just above `makePuppeteerDriver`:
+
+Now let me update the tests. The `previewUrl` parameter is renamed to `navigationUrl`/`sourceUrl` so the helpers test the new shape:
+
+Good — tests don't reference those fields directly. Let me run the test suite:
+
+Now let me add UATs for the new behaviors. First a test that verifies sourceUrl uses the `preview://` scheme, and one for the retry logic via direct call to `launchWithRetry`:
+
+Run again to confirm:
+
+Now run the full suite:
+
+701/701 pass (added 2 new UATs). Commit:
+
+Both real, now both fixed. Restart `pnpm dev` and try `preview_generated_page` again:
+
+- **Localhost fix**: puppeteer now navigates to a `data:text/html;base64,…` URL containing your rendered HTML inline — no localhost reach-back, no R2 round-trip. The screenshot should show your actual draft, not the "blocked" interstitial.
+- **Session-attach retry**: if the first launch hits the "session not ready / `null.accept`" race, the driver retries once silently. Two consecutive failures still bubble up.
+
+The chat-card header will now read `Preview — home` with `sourceUrl: preview://anonymous/<draftId>/home` (a synthetic identifier — that's intentional; data: URLs are awful to display).
+
+REQ-51 ticket now records five commits: initial → degraded-mode signals → wrangler.toml BROWSER binding → static puppeteer import → data: URL + retry.
 
 <!-- xgd-chat-end -->
