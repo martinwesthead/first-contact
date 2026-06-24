@@ -6,9 +6,9 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-24T23:37:26.073304+00:00'
+updated_at: '2026-06-24T23:37:39.611162+00:00'
 completed_at: null
-last_field_updated: commits
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -220,3 +220,29 @@ asserts that a draft with content modules produces a digest whose
 `fetchPath: 'static'`, no screenshots, and the BROWSER-binding note at the
 top of `whatsMissing`. Existing AC5 (budget-exhausted) still passes — it
 only required undefined screenshot keys + a budget-related note, both still true.
+
+
+
+## Amendment 2026-06-24 — wrangler.toml top-level BROWSER binding (commit 93a59eb)
+
+**Problem found in dogfooding (continued)**: even after the degraded-mode
+fix, the BROWSER binding was unreachable from local `pnpm dev`. The previous
+`wrangler.toml` only declared BROWSER under `[env.production.browser]`, so
+plain `wrangler dev --port 8788` left `env.BROWSER` undefined and both
+analyze_page and preview_generated_page degraded forever during local dev.
+
+Falling back to `wrangler dev --remote --env production` failed because the
+production-env KV/D1 IDs are still literal `"placeholder_*"` strings (the
+worker has never been fully deployed). Cloudflare's edge-preview rejects
+the deploy with `KV namespace 'placeholder_browser_budget_kv' is not valid`.
+
+**Fix**: use Wrangler's per-binding remote feature. Add a top-level
+`[browser]` block with `binding = "BROWSER"` and `remote = true`. This
+proxies ONLY BROWSER calls to real Cloudflare while KV / R2 / D1 stay in
+Miniflare. No need to provision real CF KV/D1 IDs just to test Browser
+Rendering locally.
+
+After this change: `cd apps/control-app && pnpm dev` exercises the rendered
+fetch path for both analyze_page and preview_generated_page. Browser-second
+charges hit the configured CF account; the REQ-20 per-session budget cap
+(50s) still applies.
