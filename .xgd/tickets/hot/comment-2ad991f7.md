@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-8
 created_by: xgd
 created_at: '2026-06-24T19:58:54.220925+00:00'
-updated_at: '2026-06-24T20:00:48.200013+00:00'
+updated_at: '2026-06-24T20:02:36.542675+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -52,5 +52,11 @@ If the boot promise resolves *after* the user has sent their first message, its 
 - **Test**: `test_UAT_FC_BUG-8_first_send_during_boot_is_not_swallowed` — boot with a slow `ensureActiveSession` (deferred promise), call `onSend` before boot resolves, assert the user message survives and the assistant bubble grows on streamed tokens.
 
 Want me to proceed with this scope — write it into BUG-8 (preserving the `(new ticket)` placeholder context) and then implement the fix and UAT? Or does the symptom you saw differ from what I described (e.g. it happens every time, not just on first load)?
+
+<!-- xgd-turn id="ab4ea277-ebf6-4241-a0d5-a1da787acdb7-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T20:02:26.042Z" -->
+#### You
+I see this message after restart: Chat backend unavailable. Could not establish a chat session for site 'site_1stcontact'. Error: 'fetch' called on an object that does not implement interface Window. If running locally, apply the chat-table migrations: wrangler d1 migrations apply 1stcontact-sites --local
 
 <!-- xgd-chat-end -->
