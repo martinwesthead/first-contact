@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:37:52.249834+00:00'
+updated_at: '2026-06-24T23:40:40.677646+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -469,5 +469,37 @@ pnpm dev
 You should see `env.BROWSER` listed as `Browser Run` in the binding table again, but this time the worker boots successfully (no placeholder-KV error) because KV/R2/D1 stay local in Miniflare. Call `preview_generated_page` from chat — it should now return real screenshots in the chat card.
 
 REQ-51 ticket now records all three commits (`9947c69`, `1ece0cc`, `93a59eb`).
+
+<!-- xgd-turn id="8afd3026-4cdd-4aab-878c-2ed558def4b3-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:40:23.070Z" -->
+#### You
+Still not working — now the error is:
+
+> *"No such module *`@cloudflare/puppeteer`*"*
+
+So the binding is there now (progress! 🎉) but the `@cloudflare/puppeteer`** package isn't installed/available** in the Worker bundle. As the author, you'd need to add it as a dependency:
+
+```bash
+npm install @cloudflare/puppeteer
+
+```
+
+And make sure it's bundled with the Worker. Once that's in place, the screenshot pipeline should be fully operational. Getting closer!
+
+✗preview_generated_page — rejected
+
+preview render failed: No such module "@cloudflare/puppeteer".
+
+I tried the install but :
+
+```
+((.venv-working) ) martin@nyx first-contact % npm install @cloudflare/puppeteer
+npm error code EUNSUPPORTEDPROTOCOL
+npm error Unsupported URL Type "workspace:": workspace:*
+npm error A complete log of this run can be found in: /Users/martin/.npm/_logs/2026-06-24T23_39_36_089Z-debug-0.log
+((.venv-working) ) martin@nyx first-contact %
+
+```
 
 <!-- xgd-chat-end -->
