@@ -6,14 +6,18 @@ title: 'Builder chat boot fails: ''fetch'' called on object that does not implem
   Window'
 created_by: xgd
 created_at: '2026-06-20T18:13:46.097961+00:00'
-updated_at: '2026-06-24T20:08:09.978964+00:00'
+updated_at: '2026-06-24T20:11:47.454656+00:00'
 completed_at: null
-last_field_updated: title
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - efc642cc6cb83b8dbc2e37a320643727c4e0fbb6
+  - 3e4c64d23a2e8cfcff5cf5230d11944db802fafa
+  version: 0.0.37
 ---
 
 ## Symptom
