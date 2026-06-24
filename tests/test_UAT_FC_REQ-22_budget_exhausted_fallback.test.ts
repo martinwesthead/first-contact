@@ -24,8 +24,10 @@ describe("UAT FC REQ-22: budget-exhausted falls back to static (AC 10)", () => {
     }
     expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBe(50);
 
-    // Force escalation — the static signals would have been sufficient
-    // otherwise. We want to exercise the budget gate, not the heuristic.
+    // Render-by-default (REQ-22 Amendment 2026-06-24): every analyze_page
+    // call attempts the rendered path. The budget gate fires inside
+    // runRenderedPath and the call falls back to the static digest with a
+    // whatsMissing note — that's what this test verifies.
     h.setHtmlBody(loadFixture("plain-html-site"));
     h.installDriver(
       makeFakeDriver({
@@ -42,7 +44,7 @@ describe("UAT FC REQ-22: budget-exhausted falls back to static (AC 10)", () => {
       }),
     );
 
-    const result = await h.invoke({ url: "https://example.test/", forceRendered: true });
+    const result = await h.invoke({ url: "https://example.test/" });
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
 

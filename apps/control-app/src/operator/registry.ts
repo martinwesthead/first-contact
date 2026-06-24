@@ -478,11 +478,11 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
     plan_tier: "trial",
     ui_route: null,
     side_effects:
-      "Fetches the given URL via the REQ-20 safety layer, runs Layer A signal extractors (palette/typography/layout/imagery/content), runs an AI commentary pass, and returns a Reference Digest record. Result is cached in KV for 24h. The digest is attached to the chat history as a structured tool_result of kind 'reference_digest' so the builder UI can render it via the REQ-13 dispatcher.",
+      "Fetches the given URL via the REQ-20 safety layer, runs Browser Rendering by default (screenshots + computed CSS + computed background-images), folds those into the Layer A signal extractors (palette/typography/layout/imagery/content), runs an AI commentary pass, and returns a Reference Digest record. Result is cached in KV for 24h. The digest is attached to the chat history as a structured tool_result of kind 'reference_digest' so the builder UI can render it via the REQ-13 dispatcher.",
     tool_spec: {
       name: "analyze_page",
       description:
-        "Analyze an external reference URL the operator wants to draw inspiration from (or reproduce). Returns a Reference Digest: palette, typography, layout, imagery, content tree, asset inventory, and AI commentary. Call this when the operator pastes a URL and asks for analysis or wants to base their site on a reference. Requires operator intent (URL in chat or intentToken).",
+        "Analyze an external reference URL the operator wants to draw inspiration from (or reproduce). Returns a Reference Digest with rendered screenshots (mobile/tablet/desktop), computed typography and palette, layout signals, imagery, content tree, asset inventory, and AI commentary. Browser Rendering runs by default for every call; only falls back to a static-only digest when the per-session Browser Rendering budget is exhausted, in which case the digest carries a whatsMissing entry explaining why visuals are unavailable. Call this when the operator pastes a URL and asks for analysis or wants to base their site on a reference. Requires operator intent (URL in chat or intentToken).",
       input_schema: {
         type: "object",
         properties: {
@@ -495,11 +495,6 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
             type: "string",
             description:
               "Optional. A token minted by /api/chat when the operator's message implied fetch intent. Pass this through verbatim when re-invoking via the direct /api/operator endpoint.",
-          },
-          forceRendered: {
-            type: "boolean",
-            description:
-              "Optional. Use only when the operator explicitly asks for a rendered analysis (e.g. 'render this page'). Forces Browser Rendering escalation even when the static-fetch signals would have been sufficient. Costs against the per-session browser budget.",
           },
         },
         required: ["url"],
