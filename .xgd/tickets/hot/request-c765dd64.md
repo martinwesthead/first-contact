@@ -6,9 +6,9 @@ title: 'Browser Rendering integration: JS-rendered fetch path with screenshots a
   computed-CSS signals'
 created_by: xgd
 created_at: '2026-06-16T23:26:13.165904+00:00'
-updated_at: '2026-06-24T20:25:43.041869+00:00'
+updated_at: '2026-06-24T20:35:04.813249+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: commits
 status: ready_to_reconcile
 fields:
   priority: high
@@ -17,6 +17,7 @@ fields:
   needs_review: false
   commits:
   - 6da55852beb31922b3ac8dc94f98df57c744fba1
+  - 72effe61b59d4bbb4b360f13d4d59d08a8398c7d
 ---
 
 ## Problem
