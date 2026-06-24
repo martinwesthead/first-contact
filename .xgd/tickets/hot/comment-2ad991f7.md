@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-8
 created_by: xgd
 created_at: '2026-06-24T19:58:54.220925+00:00'
-updated_at: '2026-06-24T20:02:36.542675+00:00'
+updated_at: '2026-06-24T20:03:00.844842+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -58,5 +58,31 @@ Want me to proceed with this scope — write it into BUG-8 (preserving the `(new
 <!-- xgd-chat role="user" ts="2026-06-24T20:02:26.042Z" -->
 #### You
 I see this message after restart: Chat backend unavailable. Could not establish a chat session for site 'site_1stcontact'. Error: 'fetch' called on an object that does not implement interface Window. If running locally, apply the chat-table migrations: wrangler d1 migrations apply 1stcontact-sites --local
+
+<!-- xgd-turn id="ab4ea277-ebf6-4241-a0d5-a1da787acdb7-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T20:02:59.834Z" -->
+#### Claude
+That's a clearer signal — the error tells us exactly what's broken. `'fetch' called on an object that does not implement interface Window` is the classic **unbound fetch** error: you reference `globalThis.fetch` and call it later, but the browser's `fetch` requires `this === window`.
+
+Let me confirm the source.
+
+Confirmed — three sites all do `options.fetch ?? globalThis.fetch`, capturing an unbound reference. In Chromium/Firefox the spec requires `fetch` to be called with `Window` as `this`; the captured reference is naked, so `fetchImpl(...)` throws exactly the error you pasted.
+
+- `packages/builder-ui/src/chats-api.ts:39`
+- `packages/builder-ui/src/chat-driver.ts:95`
+- `packages/builder-ui/src/main.ts:157`
+
+The fix in all three: `options.fetch ?? globalThis.fetch.bind(globalThis)`.
+
+**Revised BUG-8 scope** (replaces my earlier race-condition theory — that's a real but latent issue masked by this one; not for this ticket):
+
+- **Title**: Builder chat boot fails with "fetch called on object that does not implement interface Window"
+- **Symptom**: On builder load, chat panel shows the "Chat backend unavailable" system message with that error. No requests reach the backend.
+- **Root cause**: Three sites destructure `globalThis.fetch` without binding `this`. The browser's `fetch` rejects calls whose `this` is not `Window`.
+- **Fix**: Default to `globalThis.fetch.bind(globalThis)` at each site.
+- **UAT**: `test_UAT_FC_BUG-8_default_fetch_is_callable_without_this_binding` — invoke `bootBuilder` / `new ChatsApi()` / `runChatTurn` with `options.fetch` omitted in a jsdom env where `globalThis.fetch` is a `Window`-bound function that throws on bad `this`; assert no `TypeError` is raised.
+
+Going ahead with: scope BUG-8 body → write UAT → fix three sites → commit `[FREE-CODED]` → set `status=free_coded` + `fields.commits=[sha]`. Confirm and I'll start.
 
 <!-- xgd-chat-end -->
