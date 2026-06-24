@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:35:54.287703+00:00'
+updated_at: '2026-06-24T23:36:02.192859+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -414,5 +414,37 @@ Uploaded 4 of 4 assets
 ((.venv-working) ) martin@nyx control-app %
 
 ```
+
+<!-- xgd-turn id="dd4dbc08-f720-4da2-8c66-0a2657375924-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:36:02.191Z" -->
+#### Claude
+The `--remote --env production` path failed because Wrangler tries to push your worker to Cloudflare's edge-preview environment, and the production-env KV/D1 IDs in your `wrangler.toml` are literal `"placeholder_*"` strings — never replaced with real CF resource IDs. You'd have to create real KV namespaces + a real D1 database just to test BROWSER, which is overkill.
+
+The cleaner fix (and what the deprecation banner at the top of your output is pointing at): mark **just** the BROWSER binding as remote on the *local* config, leave everything else local in Miniflare.
+
+**Edit `apps/control-app/wrangler.toml`** — add this block under the existing top-level bindings (e.g. right before the `[env.production]` line):
+
+```toml
+[browser]
+binding = "BROWSER"
+remote = true
+```
+
+**Then run plain**:
+
+```bash
+pnpm --filter @gendev/control-app dev
+```
+
+(or `cd apps/control-app && pnpm dev`)
+
+That gives you: local Miniflare KV/R2/D1 (no infra setup), real Cloudflare Browser Rendering only for the BROWSER binding. Every other binding stays in placeholder-land where you've been all along.
+
+This IS a config change. Want me to:
+- **(a)** make the edit myself under REQ-51 scope (config tweak that completes the dogfooding loop for the ticket), or
+- **(b)** leave it to you so the change has your fingerprints on the wrangler.toml?
+
+If (a), I'll do it, add a one-line `[FREE-CODED]` commit, and append the SHA to the ticket. Just say "do it".
 
 <!-- xgd-chat-end -->
