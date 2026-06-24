@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:37:12.875645+00:00'
+updated_at: '2026-06-24T23:37:52.249834+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -452,5 +452,22 @@ If (a), I'll do it, add a one-line `[FREE-CODED]` commit, and append the SHA to 
 <!-- xgd-chat role="user" ts="2026-06-24T23:36:41.151Z" -->
 #### You
 Please make these changes
+
+<!-- xgd-turn id="f0767364-62ab-476e-b3cc-3f67a359fef0-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:37:52.248Z" -->
+#### Claude
+Now commit and update the ticket:
+
+Done. Now stop your current `wrangler dev` (if it's still running from the failed `--remote --env production` attempt) and run:
+
+```bash
+cd apps/control-app
+pnpm dev
+```
+
+You should see `env.BROWSER` listed as `Browser Run` in the binding table again, but this time the worker boots successfully (no placeholder-KV error) because KV/R2/D1 stay local in Miniflare. Call `preview_generated_page` from chat — it should now return real screenshots in the chat card.
+
+REQ-51 ticket now records all three commits (`9947c69`, `1ece0cc`, `93a59eb`).
 
 <!-- xgd-chat-end -->
