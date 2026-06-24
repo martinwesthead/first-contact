@@ -92,7 +92,9 @@ export async function runChatTurn(
   options: ChatDriverOptions,
 ): Promise<ChatTurnResult> {
   const endpoint = options.endpoint ?? "/api/chat";
-  const fetchImpl = options.fetch ?? globalThis.fetch;
+  // BUG-8: bind the default fetch to globalThis — the browser rejects
+  // calls whose receiver is not Window.
+  const fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis);
   const chatSessionId =
     options.chatSessionId ?? options.store.getState().activeSessionId;
   if (!chatSessionId) {

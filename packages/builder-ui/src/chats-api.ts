@@ -36,7 +36,10 @@ export class ChatsApi {
   private readonly baseUrl: string;
 
   constructor(options: ChatsApiOptions = {}) {
-    this.fetchImpl = options.fetch ?? globalThis.fetch;
+    // BUG-8: bind the default to globalThis. Calling `this.fetchImpl(...)`
+    // would otherwise pass the ChatsApi instance as the receiver, which the
+    // browser's Window-bound `fetch` rejects with a TypeError.
+    this.fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.baseUrl = options.baseUrl ?? "";
   }
 
