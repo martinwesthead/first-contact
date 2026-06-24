@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:28:35.755815+00:00'
+updated_at: '2026-06-24T23:35:54.287703+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -357,5 +357,62 @@ Caveats worth knowing before you hit enter:
 - **Other bindings (KV, R2, D1) also become real** under `--env production --remote`. Anything you write hits production buckets/namespaces. If you don't want that, you can pass `--remote` selectively (`--remote=BROWSER`) — but easiest is just remember you're talking to prod state in this mode.
 
 No code change needed.
+
+<!-- xgd-turn id="dd4dbc08-f720-4da2-8c66-0a2657375924-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:35:13.679Z" -->
+#### You
+```
+((.venv-working) ) martin@nyx control-app % pnpm exec wrangler dev --remote --env production --port 8788
+
+ ⛅️ wrangler 4.103.0 (update available 4.104.0)
+───────────────────────────────────────────────
+Support for remote bindings in `wrangler dev` is now available as a replacement for `wrangler dev --remote`. Try it out now by running `wrangler dev` with the `remote` option enabled on your resources and let us know how it goes!
+This gives you access to remote resources in development while retaining all the usual benefits of local dev: fast iteration speed, breakpoint debugging, and more.
+
+Refer to https://developers.cloudflare.com/workers/development-testing/#remote-bindings for more information.
+Using secrets defined in .dev.vars
+Your Worker has access to the following bindings:
+Binding                                                    Resource                  
+env.FETCH_RATE_KV (placeholder_fetch_rate_kv)              KV Namespace              
+env.FETCH_CACHE_KV (placeholder_fetch_cache_kv)            KV Namespace              
+env.FETCH_ROBOTS_KV (placeholder_fetch_robots_kv)          KV Namespace              
+env.BROWSER_BUDGET_KV (placeholder_browser_budget_kv)      KV Namespace              
+env.SITES_DB (1stcontact-sites)                            D1 Database               
+env.ASSETS_BUCKET (1stcontact-assets)                      R2 Bucket                 
+env.BROWSER                                                Browser Run               
+env.ASSETS                                                 Assets                    
+env.CLAUDE_API_KEY ("(hidden)")                            Environment Variable      
+env.DEV_TOOLS_ENABLED ("(hidden)")                         Environment Variable      
+
+╭────────────────────────────────────────────────────────────────────────────╮
+│  [b] open a browser [e] open local explorer [c] clear console [x] to exit  │
+╰────────────────────────────────────────────────────────────────────────────╯
+⎔ Starting remote preview...
+🌀 Building list of assets...
+Total Upload: 1685.09 KiB / gzip: 372.76 KiB
+✨ Read 6 files from the assets directory /Users/martin/Projects/first-contact/apps/control-app/public
+🌀 Starting asset upload...
+🌀 Found 4 new or modified static assets to upload. Proceeding with upload...
++ /starter-sites/1stcontact.json
++ /_assets/builder.js.map
++ /builder.html
++ /_assets/builder.js
+Uploaded 1 of 4 assets
+Uploaded 3 of 4 assets
+Uploaded 4 of 4 assets
+✨ Success! Uploaded 4 files (3.36 sec)
+
+✘ [ERROR] A request to the Cloudflare API (/accounts/8feaadfce95919ab2d2b93aa8df6f6ce/workers/scripts/1stcontact-control-app-production/edge-preview) failed.
+
+  KV namespace 'placeholder_browser_budget_kv' is not valid. Please verify the namespace_id in your
+  configuration. [code: 10042]
+
+✘ [ERROR] A request to the Cloudflare API (/accounts/8feaadfce95919ab2d2b93aa8df6f6ce/workers/scripts/1stcontact-control-app-production/edge-preview) failed.
+
+🪵  Logs were written to "/Users/martin/Library/Preferences/.wrangler/logs/wrangler-2026-06-24_23-34-29_217.log"
+((.venv-working) ) martin@nyx control-app %
+
+```
 
 <!-- xgd-chat-end -->
