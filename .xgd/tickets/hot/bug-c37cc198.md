@@ -6,10 +6,10 @@ title: 'Dev workflow: pnpm dev:control does not rebuild builder SPA bundle on so
   change'
 created_by: xgd
 created_at: '2026-06-20T00:23:20.860987+00:00'
-updated_at: '2026-06-20T00:29:07.081871+00:00'
+updated_at: '2026-06-24T17:59:13.803673+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   priority: high
   severity: medium
