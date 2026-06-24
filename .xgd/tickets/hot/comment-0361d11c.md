@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:26:10.828932+00:00'
+updated_at: '2026-06-24T23:28:28.177997+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -331,5 +331,11 @@ There is no path that produces real screenshots from `wrangler dev` without `--r
 **No new ticket scoped** — this is configuration / infra explanation, not a code change. The chat-card already says "BROWSER binding not configured for this environment" exactly because we expect this every time you run plain `wrangler dev`.
 
 Want me to update the `dev` script in `apps/control-app/package.json` to default to `wrangler dev --remote --env production` so you stop hitting this? (Trade-off: every `pnpm dev` would burn against your real CF account and budget.) Or leave the local default as-is and you switch flags when you want to test the rendered path?
+
+<!-- xgd-turn id="5f1d2538-cc8d-46e8-9a59-250930038118-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:28:21.169Z" -->
+#### You
+You can just tell me what I need to run
 
 <!-- xgd-chat-end -->
