@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:22:04.108356+00:00'
+updated_at: '2026-06-24T23:25:40.953140+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -287,5 +287,11 @@ It's intentionally left at `draft` (not `ready_to_implement`) so you can pick th
 - REQ-51 amendment (degraded-mode signals) shipped — your second test showed the fix landed (you saw the H1 and asset count).
 - BROWSER binding is a config issue, not a code issue (`wrangler.toml:86-87` binds it only in `[env.production.browser]`). Use `wrangler dev --remote` or deploy to exercise the real screenshot path.
 - REQ-52 filed for the analyze_page intent-gate friction.
+
+<!-- xgd-turn id="8a034303-a8b6-4e6f-8206-f06b0ce36978-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:25:15.502Z" -->
+#### You
+I don't understand. The chat AI is saying that neither the preview nor the asset acquisition are creating a screen shot. Can you explain why?
 
 <!-- xgd-chat-end -->
