@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:25:40.953140+00:00'
+updated_at: '2026-06-24T23:26:10.828932+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -293,5 +293,43 @@ It's intentionally left at `draft` (not `ready_to_implement`) so you can pick th
 <!-- xgd-chat role="user" ts="2026-06-24T23:25:15.502Z" -->
 #### You
 I don't understand. The chat AI is saying that neither the preview nor the asset acquisition are creating a screen shot. Can you explain why?
+
+<!-- xgd-turn id="8a034303-a8b6-4e6f-8206-f06b0ce36978-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:26:10.826Z" -->
+#### Claude
+Let me look at exactly how local dev is wired up, then I'll explain.
+
+I understand the frustration — you're hitting the same wall both ways. Here's the full picture in one place:
+
+## Why neither tool produces a screenshot
+
+Both `analyze_page` (REQ-22) and `preview_generated_page` (REQ-51) use the **same** mechanism for screenshots: Cloudflare's Browser Rendering service, accessed via the binding called `BROWSER` (`@cloudflare/puppeteer`).
+
+When `env.BROWSER` is undefined, both tools skip the rendered path and return a degraded digest with no screenshot. The chat-card message you saw — *"Visual signals unavailable — BROWSER binding not configured for this environment"* — is from that degraded path.
+
+## Why `env.BROWSER` is undefined in your session
+
+Two independent things are conspiring:
+
+1. **`wrangler.toml` only binds BROWSER under `[env.production.browser]` (lines 86-87).** It is NOT declared at the top level. The `pnpm dev` script runs plain `wrangler dev --port 8788` (no `--env production`), so Wrangler uses the top-level config — which has no BROWSER binding.
+
+2. **Even if it were at the top level, Wrangler dev doesn't emulate Browser Rendering locally.** Browser Rendering is a Cloudflare-hosted service (it actually spins up Chromium on Cloudflare infra). Miniflare can fake KV / R2 / D1 locally, but it cannot fake Browser Rendering. The Cloudflare docs require `--remote` for any binding that calls out to a real CF service.
+
+## What you'd need to actually see screenshots
+
+Three options, in order of effort:
+
+1. **`wrangler dev --remote --env production`** — runs your local code against real Cloudflare infrastructure including BROWSER. Needs Wrangler logged in to your CF account and the `puppeteer` binding enabled there. Fastest path to seeing real screenshots from your laptop.
+
+2. **`pnpm --filter @gendev/control-app deploy`** then test against `app.1stcontact.io` — full production path. Same code, same wiring.
+
+3. **Tests** — the UATs (`tests/test_UAT_FC_REQ-51_*.test.ts`) inject a fake driver that returns a 1×1 PNG, so the *code path* is exercised; just no real Chromium output. Useful for regression but doesn't answer "does my hero look centered?".
+
+There is no path that produces real screenshots from `wrangler dev` without `--remote`. This is a Cloudflare platform constraint, not something fixable in our code.
+
+**No new ticket scoped** — this is configuration / infra explanation, not a code change. The chat-card already says "BROWSER binding not configured for this environment" exactly because we expect this every time you run plain `wrangler dev`.
+
+Want me to update the `dev` script in `apps/control-app/package.json` to default to `wrangler dev --remote --env production` so you stop hitting this? (Trade-off: every `pnpm dev` would burn against your real CF account and budget.) Or leave the local default as-is and you switch flags when you want to test the rendered path?
 
 <!-- xgd-chat-end -->
