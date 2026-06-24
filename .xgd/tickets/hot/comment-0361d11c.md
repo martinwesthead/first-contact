@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:13:33.694929+00:00'
+updated_at: '2026-06-24T23:16:56.008880+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -201,5 +201,48 @@ Want me to file a follow-up ticket for the empty-card UX, or are you going to te
 1. `analyze_page`** rejected** — that's REQ-20's intent-token gate; it needs a URL pasted in chat. Unrelated to REQ-51 and working as designed. <-- I don't understand why it was designed that way I did not ask for any site budget and I need it removed so that I can test it!
 
 2. `preview_generated_page`** "succeeded" but rendered empty** <— I was looking at the site in my browser, it was NOT empty
+
+<!-- xgd-turn id="9fdfe56c-6625-4678-9246-3b9146521922-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:16:55.003Z" -->
+#### Claude
+Both issues are real. Let me dig into the empty-card claim first since it's in REQ-51 scope.
+
+Found it. When BROWSER is missing my handler returns an all-`not_detected` digest — but the rendered HTML I already have in memory contains real content (headings, modules, asset refs). I should extract signals from that HTML instead of giving you nothing.
+
+Per the system reminder I'm staying in REQ-51 — this is a usability fix to the tool I just shipped, not a new feature. Let me amend the implementation:
+
+Now I'll refactor the degraded path to extract signals from the in-memory HTML:
+
+Now replace the budget-gated empty-payload branch and rewrite `buildBudgetExhaustedPayload` to use the rendered HTML:
+
+Now replace `buildBudgetExhaustedPayload` with `buildDegradedPayload`:
+
+Now update the existing AC5 test to assert the new behavior, then add a new test specifically for the BROWSER-missing case:
+
+Now let me add the new test:
+
+Now insert the new test for BROWSER-missing degraded mode:
+
+Now run all REQ-51 tests to verify:
+
+All 8 handler tests pass (the new degraded-mode test included). Let me make sure the full suite still passes:
+
+699 tests pass (added one new UAT). Build the bundle:
+
+Now commit and append to the ticket:
+
+Now record this commit on the ticket and append a body section so reconcile sees the amendment:
+
+Ticket now records both commits and the amendment is in the body.
+
+Done with the REQ-51 amendment. Refresh your builder and call `preview_generated_page` again — instead of `# Preview` you should now see the actual headings and sections from your draft, with a `whatsMissing` note explaining the screenshots are absent because BROWSER isn't bound locally. (For real screenshots, you'd need `wrangler dev --remote` or a deploy.)
+
+**On the second issue (`analyze_page` intent gate):** that's REQ-20 territory, not REQ-51. The gate exists to prevent the AI from autonomously fetching arbitrary URLs without the operator having explicitly asked — it's a safety contract. Two options:
+
+1. **File a new ticket** to relax/remove it (your call on whether it should be removed entirely, made opt-in via a per-account flag, or just made trip-free when the operator's recent message contains certain keywords).
+2. **Workaround now**: paste the URL directly in your chat message (e.g. "analyze https://example.com") — `operatorMessageImpliesIntent()` will accept it and the next `analyze_page` call goes through.
+
+Want me to file a separate ticket for the analyze_page intent-gate change? If so, what's the intended behavior — fully open (no gate), opt-in flag, or smarter keyword detection?
 
 <!-- xgd-chat-end -->
