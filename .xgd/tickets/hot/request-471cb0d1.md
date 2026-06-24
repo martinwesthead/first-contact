@@ -5,10 +5,10 @@ type: request
 title: 'Chat loop: per-call results survive when one handler throws'
 created_by: xgd
 created_at: '2026-06-20T21:09:44.034527+00:00'
-updated_at: '2026-06-20T21:57:46.249808+00:00'
+updated_at: '2026-06-24T17:59:17.933019+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   auto_merge_back: true
   needs_review: false
