@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T23:02:32.559635+00:00'
+updated_at: '2026-06-24T23:02:56.243183+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -172,5 +172,26 @@ operator intent required: paste a URL in chat (or pass a fresh intentToken) befo
 This is what the AI reports
 
 #
+
+<!-- xgd-turn id="11245b2e-751e-4a6d-b80c-1d48e591ff1a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:02:56.240Z" -->
+#### Claude
+Let me check the wrangler config to see if BROWSER is bound there:
+
+The behavior you're seeing is correct, but the UX is poor. Here's what happened:
+
+1. **`analyze_page` rejected** — that's REQ-20's intent-token gate; it needs a URL pasted in chat. Unrelated to REQ-51 and working as designed.
+
+2. **`preview_generated_page` "succeeded" but rendered empty** — exactly the degraded-BROWSER path that AC5 asserts. `apps/control-app/wrangler.toml:46-50` says BROWSER is bound only under `[env.production.browser]`, so local `wrangler dev` (without `--remote`) has no Browser Rendering binding. The handler returns a digest with `screenshotKeys: {}` and `whatsMissing: ["Visual signals unavailable — BROWSER binding not configured for this environment."]`, and the chat card hides the screenshot strip when no keys are present.
+
+The card body is mostly empty because there are no signals to render either — `renderDigestMarkdown` on an empty `Signals` shape is sparse.
+
+Two ways forward, neither yet scoped:
+
+- **Operationally**: run `pnpm --filter @gendev/control-app dev` with `wrangler dev --remote` to exercise the real BROWSER binding locally. No code change needed.
+- **UX**: make the empty `<PreviewDigestReport>` louder — show the `whatsMissing` note prominently instead of just a `#` header, so the operator sees "BROWSER binding not configured" surfaced in the card body. This would be a new ticket (a follow-up to REQ-51), not in-scope here.
+
+Want me to file a follow-up ticket for the empty-card UX, or are you going to test with `--remote`? I won't code either path until you say.
 
 <!-- xgd-chat-end -->
