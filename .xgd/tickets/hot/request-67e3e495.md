@@ -6,9 +6,9 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-24T23:43:07.213420+00:00'
+updated_at: '2026-06-24T23:43:22.563059+00:00'
 completed_at: null
-last_field_updated: commits
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -247,3 +247,27 @@ After this change: `cd apps/control-app && pnpm dev` exercises the rendered
 fetch path for both analyze_page and preview_generated_page. Browser-second
 charges hit the configured CF account; the REQ-20 per-session budget cap
 (50s) still applies.
+
+
+
+## Amendment 2026-06-24 — static-import @cloudflare/puppeteer (commit 61e805e)
+
+**Problem found in dogfooding (continued, third pass)**: with the BROWSER
+binding now reachable (previous amendment), preview_generated_page got
+further but failed with `No such module "@cloudflare/puppeteer"` at request
+time. The package WAS installed in node_modules — but the
+`apps/control-app/src/operator/browser-driver.ts` `makePuppeteerDriver`
+helper used a deliberately-opaque `await import(modSpecifier)` pattern to
+keep Vite/esbuild from pre-resolving puppeteer at test build time. That
+same opacity also kept Wrangler's bundler from including puppeteer in the
+worker bundle, so the runtime had nothing to resolve.
+
+**Fix**: replace the dynamic indirection with a plain top-of-file
+`import puppeteer from "@cloudflare/puppeteer"`. Wrangler picks up the
+static import and bundles the package. Tests stay green because
+`setDriverFactoryForTest` is called before any handler invocation, so
+`makePuppeteerDriver` never runs in test paths, and puppeteer's entry
+module has no module-load side effects (verified by jsdom suite passing
+all 699 tests after the change).
+
+The local `PuppeteerModule` ambient shim is no longer needed and was deleted.
