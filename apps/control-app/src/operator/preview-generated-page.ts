@@ -14,12 +14,15 @@
 
 import {
   buildPreviewPrefix,
+  deriveWhatsMissing,
+  extractSignals,
   parseReferenceDigest,
   renderDigestMarkdown,
   renderPreviewDigest,
   SCHEMA_VERSION,
   type PreviewDigest,
   type ReferenceDigest,
+  type Signals,
 } from "@gendev/extractor";
 import { renderSiteToHtml } from "@gendev/framework/render";
 import type { Site } from "@gendev/site-schema";
@@ -88,8 +91,13 @@ export const previewGeneratedPageHandler: ActionHandler = async (input, ctx) => 
 
   const budgetGate = await gateBrowserBudget(env, ctx);
   if (!budgetGate.ok) {
+    // Degraded path — BROWSER missing OR budget exhausted. We still have the
+    // rendered HTML in memory, so extract structural signals (headings,
+    // content tree, asset inventory) from it directly. This gives the
+    // operator a useful preview card even when visual capture is unavailable.
     return ok(
-      buildBudgetExhaustedPayload({
+      buildDegradedPayload({
+        html,
         previewUrl,
         previewSource,
         note: budgetGate.note,
@@ -242,38 +250,38 @@ async function gateBrowserBudget(
   };
 }
 
-function buildBudgetExhaustedPayload(args: {
+/**
+ * Build a `preview_digest` payload for the BROWSER-unavailable / budget-exhausted
+ * path. Visual signals (screenshots + computed typography weights + palette
+ * background colours) are missing, but `extractSignals(html, url)` runs over
+ * the in-memory rendered HTML and gives the operator the structural picture
+ * the static-layer extractors can produce — headings, nav links, asset
+ * inventory, content/section counts.
+ *
+ * `fetchPath` is `'static'` so consumers can tell at a glance this is a
+ * degraded digest. The supplied `note` (e.g. "BROWSER binding not configured…")
+ * lands at the top of `whatsMissing` so the operator sees WHY they aren't
+ * looking at screenshots.
+ */
+function buildDegradedPayload(args: {
+  html: string;
   previewUrl: string;
   previewSource: { accountId: string; draftId: string; pageId: string; capturedAt: string };
   note: string;
 }): Record<string, unknown> {
+  const signals: Signals = extractSignals(args.html, args.previewUrl);
+  const summary = buildDegradedSummary(signals, args.previewSource.pageId);
   const digest: PreviewDigest = {
     schemaVersion: SCHEMA_VERSION,
     sourceUrl: args.previewUrl,
     fetchedAt: args.previewSource.capturedAt,
-    fetchPath: "rendered",
-    summary: "Preview unavailable — Browser Rendering budget exhausted.",
-    signals: {
-      palette: {
-        background: "not_detected",
-        body: "not_detected",
-        accent: "not_detected",
-        cta: "not_detected",
-        supporting: [],
-      },
-      typography: {
-        body: { family: "not_detected", size: "not_detected", weight: "not_detected" },
-        h1: { family: "not_detected", size: "not_detected", weight: "not_detected" },
-        h2: { family: "not_detected", size: "not_detected", weight: "not_detected" },
-        h3: { family: "not_detected", size: "not_detected", weight: "not_detected" },
-        primaryPair: "not_detected",
-      },
-      layout: { maxContentWidth: "not_detected", bias: "not_detected", density: "not_detected" },
-      imagery: { imgCount: 0, backgroundCount: 0, videoCount: 0, heroDetected: false },
-      content: { headings: [], navLinks: [], formFields: [], listGroupCount: 0, sectionCount: 0 },
-      assetInventory: [],
+    fetchPath: "static",
+    summary,
+    signals,
+    commentary: {
+      perSection: {},
+      whatsMissing: [args.note, ...deriveWhatsMissing(signals)],
     },
-    commentary: { perSection: {}, whatsMissing: [args.note] },
     screenshotKeys: {},
     previewSource: args.previewSource,
   };
@@ -282,6 +290,15 @@ function buildBudgetExhaustedPayload(args: {
     digest,
     digestMarkdown: renderDigestMarkdown(digest),
   };
+}
+
+function buildDegradedSummary(signals: Signals, pageId: string): string {
+  return (
+    `Preview of draft page '${pageId}' (visual capture unavailable; structural signals only): ` +
+    `${signals.content.headings.length} headings, ` +
+    `${signals.content.sectionCount} sections, ` +
+    `${signals.assetInventory.length} assets.`
+  );
 }
 
 async function loadReferenceDigest(
