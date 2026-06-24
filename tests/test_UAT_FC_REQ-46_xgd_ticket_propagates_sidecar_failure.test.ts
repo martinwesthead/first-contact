@@ -9,6 +9,7 @@ function makeCtx(): ActionContext {
     emit: vi.fn(),
     siteDefinition: null,
     operatorLastMessage: null,
+    requestOrigin: null,
   };
 }
 

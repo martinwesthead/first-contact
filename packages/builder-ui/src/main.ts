@@ -10,6 +10,7 @@ import { createBuilderLayout } from "./components/builder-layout.js";
 import { createChatPanel } from "./components/chat-panel.js";
 import { createPreviewPanel } from "./components/preview-panel.js";
 import { registerDigestReport } from "./components/digest-report.js";
+import { registerPreviewDigestReport } from "./components/preview-digest-report.js";
 import { registerTranscribeProgress } from "./components/transcribe-progress.js";
 import { runChatTurn } from "./chat-driver.js";
 
@@ -161,6 +162,7 @@ export function bootBuilder(options: BootBuilderOptions): {
   const fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis);
   const siteId = options.siteId ?? "default";
   registerDigestReport();
+  registerPreviewDigestReport();
   registerTranscribeProgress();
   const catalog = buildFrameworkCatalog();
   const store = new BuilderStore(

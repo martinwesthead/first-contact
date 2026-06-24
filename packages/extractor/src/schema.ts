@@ -172,3 +172,22 @@ export const ReferenceDigest = z.object({
   screenshotKeys: ScreenshotKeys,
 });
 export type ReferenceDigest = z.infer<typeof ReferenceDigest>;
+
+/**
+ * REQ-51 — provenance for a `PreviewDigest` produced from the AI's own draft.
+ * Distinct from external `ReferenceDigest`s so the chat-card renderer and any
+ * downstream consumers can tell at a glance whether a digest reflects the
+ * operator's site or an inspiration source.
+ */
+export const PreviewSource = z.object({
+  accountId: z.string(),
+  draftId: z.string(),
+  pageId: z.string(),
+  capturedAt: z.string(),
+});
+export type PreviewSource = z.infer<typeof PreviewSource>;
+
+export const PreviewDigest = ReferenceDigest.extend({
+  previewSource: PreviewSource,
+});
+export type PreviewDigest = z.infer<typeof PreviewDigest>;

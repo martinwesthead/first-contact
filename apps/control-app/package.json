@@ -14,6 +14,8 @@
   "dependencies": {
     "@gendev/builder-ui": "workspace:*",
     "@gendev/extractor": "workspace:*",
+    "@gendev/framework": "workspace:*",
+    "@gendev/site-schema": "workspace:*",
     "@gendev/web-fetch-safety": "workspace:*",
     "@cloudflare/puppeteer": "^1.1.0"
   },
