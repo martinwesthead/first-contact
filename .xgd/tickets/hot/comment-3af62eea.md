@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-24T20:22:35.370545+00:00'
+updated_at: '2026-06-24T20:26:14.667606+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -209,5 +209,81 @@ Want me to amend REQ-22 with the flipped default now, and draft a proposal for t
 <!-- xgd-chat role="user" ts="2026-06-24T20:22:09.165Z" -->
 #### You
 Agreed please proceed with both
+
+<!-- xgd-turn id="0c40f11c-4a21-4487-a94d-8549e17cda99-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T20:26:14.666Z" -->
+#### Claude
+Reading the existing body and checking ticket CLI usage before making any changes.
+
+Let me check the current code — there are newer tickets (REQ-30, REQ-49) that may have already changed the pipeline, so I want to know what the code actually does before amending.
+
+Let me read the current code to see what REQ-22's escalation actually looks like today, and check if REQ-49 already addressed any of this.
+
+Now I have the picture. Important finding: **REQ-49 already worked around this at the transcribe layer** (`maybeUpgradeStaticDigest` in `transcribe-site.ts:519`) — it force-upgrades cached static digests to rendered before transcription. So your instinct is confirmed: the static-first default was already known to be wrong, but the workaround only fires at transcribe-time. `analyze_page` itself still defaults to static. This makes the amendment cleaner — REQ-49 is evidence the original design was wrong; REQ-22 should fix it at the source.
+
+Here's my plan:
+1. Append an **Amendment 2026-06-24** block to REQ-22's body capturing the flipped default, with REQ-49 cited as the evidence
+2. Draft the new ticket inline for your greenlight (not filing yet — session rules say only with explicit "create a new ticket")
+3. Defer the code change pending your sign-off on the design
+
+Appending the amendment now.
+
+REQ-22 amended. Here's the proposed new ticket for your review — **not filed yet** (per session rules I need an explicit "create the ticket" first):
+
+---
+
+**Proposed: REQ-?? — AI closed-loop preview: render generated draft pages so the AI can see its own work**
+
+**Type**: request  •  **Priority**: high  •  **Story points**: 5 (est.)
+
+**Problem**
+
+The AI generates HTML/CSS for the customer's site via the builder tool surface (REQ-8 / REQ-14 / REQ-30 / module set REQ-39…REQ-44) but cannot *see* the rendered result. REQ-21/REQ-22 give it full visual fidelity on competitor pages — screenshots, computed CSS, layout signals — then it ships its own output into the void. Any reasoning of the form "does my hero match the inspiration?", "is the alignment off?", "did the theme tokens land the way I expected?" is impossible. The AI designs blind, then routes verification through the human operator ("does this look right to you?") even when it could answer itself.
+
+This is the missing closed loop. Without it, REQ-28 (Layer B transcription) and REQ-30 (convert flow rework) produce output the AI cannot self-verify.
+
+**Scope**
+
+Add `preview_generated_page` — a sibling to `analyze_page` that runs the SAME `renderedFetch` + `mergeComputedSignals` + screenshot-upload pipeline (REQ-22) against the builder's current draft preview URL.
+
+**Tool surface**:
+```
+preview_generated_page({ pageId?: string, compareToDigestId?: string })
+  → { kind: 'preview_digest', digest, digestMarkdown, inspirationDelta? }
+```
+- `pageId` — defaults to the current active page in the draft.
+- `compareToDigestId` — if a reference digest is in chat context, request a delta-commentary pass.
+- Same shape as `ReferenceDigest`; new field `previewSource: { accountId, draftId, pageId }`.
+
+**IN**
+- Extractor: `renderPreviewDigest(env, { previewUrl })` — wraps the existing rendered pipeline. Screenshots uploaded to `previews/{accountId}/{draftId}/{pageId}/{viewport}.png`.
+- `apps/control-app`: register `preview_generated_page` in the operator action registry. Same budget gate (REQ-20) as `analyze_page`. Resolves the draft preview URL from the existing in-browser preview infra (REQ-8 / REQ-12 / REQ-31).
+- Builder UI: `<PreviewDigestReport>` ChatCard variant mirroring `<DigestReport>`.
+- Multimodal commentary: same Haiku 4.5 image-input pattern. When `compareToDigestId` resolves, the prompt feeds **two** images (preview + reference) and asks for explicit deltas: "hero is left-aligned in your generated page, centered in inspiration — adjust X by Y."
+
+**OUT** (explicitly deferred)
+- Side-by-side visual diff rendering — text deltas are sufficient v1.
+- Automatic correction loop ("if delta > threshold, fix and re-render") — operator initiates fixes; no auto-loop.
+- Publish gating on visual divergence — operator judgment, not a hard gate.
+- Per-element pixel diffing — semantic deltas only.
+
+**Dependencies**
+- REQ-22 — rendered fetch pipeline, screenshot upload, multimodal commentary.
+- REQ-20 — budget gate, ASSETS_BUCKET.
+- REQ-8 / REQ-31 — builder preview surface (the URL we render).
+
+**Acceptance criteria**
+1. `preview_generated_page` with no `pageId` returns a `PreviewDigest` for the active page with all three viewports populated.
+2. With a `compareToDigestId` pointing at a cached reference digest, the commentary `summary` contains at least one explicit delta phrase ("aligned…", "centred…", "denser…").
+3. Screenshots land in R2 at the `previews/{accountId}/...` prefix and survive the same chat-deletion sweep.
+4. UAT: operator clicks "show me what you made" → AI calls `preview_generated_page` → ChatCard renders with screenshots and a delta paragraph against the most recent `analyze_page` digest in chat context.
+
+---
+
+**Two things to confirm before I proceed:**
+
+1. **File the new ticket?** I won't create it without you explicitly saying "create the ticket" (or "file it"). Reply with one of those phrases and I'll create it with `status: draft`.
+2. **Implement the REQ-22 code change now?** The amendment is design-only so far. The code change (flip `analyze-page.ts` default, delete `escalate.ts`, drop the three escalation UAT tests, add the two new ones) is moderate — ~6 file edits — and would land as a `[FREE-CODED]` commit under REQ-22. Want me to proceed, or hold?
 
 <!-- xgd-chat-end -->
