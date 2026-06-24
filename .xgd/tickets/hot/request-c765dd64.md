@@ -6,9 +6,9 @@ title: 'Browser Rendering integration: JS-rendered fetch path with screenshots a
   computed-CSS signals'
 created_by: xgd
 created_at: '2026-06-16T23:26:13.165904+00:00'
-updated_at: '2026-06-19T01:17:34.328530+00:00'
+updated_at: '2026-06-24T20:25:43.041869+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: ready_to_reconcile
 fields:
   priority: high
@@ -168,3 +168,58 @@ Browser Rendering invocation in tests uses Cloudflare's local emulator surface i
 ## Story points
 
 6. Browser Rendering binding + `renderedFetch` + escalation heuristic + computed-CSS extractor (typography + palette + background-image) + `mergeComputedSignals` (inventory merge included) + screenshot R2 upload + multimodal commentary upgrade + `<DigestReport>` screenshot-strip update + 2 fixtures. Unchanged from 6 — the background-image extraction is incremental on the existing selector script and inventory merge.
+
+
+
+---
+
+## Amendment 2026-06-24 — Render-by-default
+
+Per design conversation with the operator on 2026-06-24, the escalation heuristic captured above is **inverted**: the rendered path is the default, static is the fallback.
+
+### Why the flip
+
+This product extracts brand DNA — typography, palette, layout, hero imagery — to reconstruct a customer site that matches the inspiration. Static HTML from a 2026-era marketing site is structurally devoid of that signal: React shells, externalised stylesheets, JS-composed hero sections. Defaulting to static and "escalating when needed" inverts cost and value — we routinely pay a cheap fetch to throw away the signal we came for, then scramble back to the rendered path via heuristics.
+
+[[REQ-49]] is corroborating evidence: it added `maybeUpgradeStaticDigest` to `transcribe_site` precisely because cached static-only digests carried no screenshots, no computed styles, and no background-image assets — and the resulting transcription had nothing for the AI to visually anchor on. That workaround force-renders at transcribe time. The honest fix is to render at analyze time so every cached digest is already rendered.
+
+### What changes
+
+**Replaces** the "Escalation heuristic" decision in `Decisions already made`. New control flow:
+
+1. The rendered fetch runs **first** in `analyze_page`. Same `BROWSER` binding, same screenshots, same computed-CSS extraction, same R2 upload — unchanged from this REQ's original implementation.
+2. The static fetch becomes the **degraded fallback**, invoked only when:
+   - The `BROWSER` binding is unavailable in this environment (test / local without binding), OR
+   - The Browser Rendering budget from [[REQ-20]] is exhausted for the session, OR
+   - The rendered driver throws.
+   In each case, the digest's `fetchPath` is `'static'` and a `whatsMissing` note explains why visual signals are absent.
+3. The function `shouldEscalateToRendered` is **removed** along with its heuristic constants (`THIN_BODY_TEXT_LIMIT`, `JS_DOMINANT_RATIO`). It was predicting "is rendering worth it?" — the answer is now unconditionally yes.
+4. The `analyze_page` AI tool parameter `forceRendered` is **removed**. It is no longer meaningful when rendering is the default. The tool description is updated to: "Returns a rendered digest (screenshots + computed CSS) by default. Falls back to static-only when the Browser Rendering budget is exhausted; the digest then carries a whatsMissing entry explaining why visuals are unavailable."
+5. [[REQ-49]]'s `maybeUpgradeStaticDigest` becomes a recovery path only — it still upgrades digests cached during a budget-exhausted window if the budget later refills, but is no longer the primary mechanism for getting visual signal into transcription.
+
+### Acceptance criteria — replacements
+
+**Removed** (the function and parameter they tested are gone):
+- Original criterion 1 — `shouldEscalateToRendered → thin_body`.
+- Original criterion 2 — `shouldEscalateToRendered → js_dominant`.
+- Original criterion 3 — `forceRendered: true` always escalates.
+
+**Added**:
+- 13. `analyze_page` against the `plain-html-site/` fixture (a static-rich page that would previously have returned `fetchPath: 'static'`) now returns `fetchPath: 'rendered'` with all three screenshots populated.
+- 14. `analyze_page` against the `js-spa/` fixture (unchanged) returns `fetchPath: 'rendered'` — the behaviour is the same as before, just no longer routed via a heuristic.
+
+**Carried unchanged**:
+- Criterion 10 (budget-exhaustion fallback) — still the only path that produces a static digest. Its `whatsMissing` note is now the user's primary signal that the rendered default did not run for this call.
+- Criteria 4–9, 11, 12 — unchanged in intent; the rendered behaviour they test is now the default code path rather than the escalated one.
+
+### Story points
+
+Unchanged at 6. The amendment is a simplification — deleting the heuristic, the `forceRendered` parameter, and three tests — not an expansion.
+
+### Tests to delete (drift cleanup)
+
+- `tests/test_UAT_FC_REQ-22_escalation_thin_body.test.ts`
+- `tests/test_UAT_FC_REQ-22_escalation_js_dominant.test.ts`
+- `tests/test_UAT_FC_REQ-22_escalation_force_rendered.test.ts`
+
+These test the removed function. New UATs added for criteria 13–14 cover the replacement behaviour.
