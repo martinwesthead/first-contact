@@ -1,4 +1,5 @@
 import { analyzePageHandler } from "./analyze-page.js";
+import { previewGeneratedPageHandler } from "./preview-generated-page.js";
 import { readTranscriptionDigestHandler } from "./read-transcription-digest.js";
 import { transcribeSiteHandler } from "./transcribe-site.js";
 import { writeTextAssetHandler } from "./write-text-asset.js";
@@ -40,6 +41,13 @@ export interface ActionContext {
    * proof when the URL was pasted in the same turn (REQ-20 §intent token).
    */
   readonly operatorLastMessage: string | null;
+  /**
+   * REQ-51 — origin of the inbound request (e.g. `https://app.1stcontact.io`).
+   * Used by `preview_generated_page` to construct an absolute URL the
+   * Browser Rendering binding can navigate to when the handler uploads
+   * draft HTML to `/assets/...`. `null` when no Host header was available.
+   */
+  readonly requestOrigin: string | null;
 }
 
 export type ActionHandler = (
@@ -501,6 +509,35 @@ const SYSTEM_ACTIONS: ReadonlyArray<OperatorActionSpec> = [
       },
     },
     handler: analyzePageHandler,
+  },
+  {
+    name: "preview_generated_page",
+    category: "system_action",
+    plan_tier: "trial",
+    ui_route: null,
+    side_effects:
+      "Renders the AI's current draft page server-side, uploads it to ASSETS_BUCKET under previews/{accountId}/{draftId}/{pageId}/page.html, drives Browser Rendering against that URL to capture mobile/tablet/desktop screenshots and computed styles, runs the same merge pipeline as analyze_page, and returns a PreviewDigest. When compareToDigestId is supplied and resolves to a cached ReferenceDigest, a multimodal Haiku call produces a textual inspirationDelta enumerating concrete visual deltas between the AI's preview and the inspiration source. Charges the same per-session Browser Rendering budget as analyze_page.",
+    tool_spec: {
+      name: "preview_generated_page",
+      description:
+        "Render the current draft page and return what it looks like — use this to check your own work against an inspiration digest, to verify a module change landed visually, or to answer 'what does this page look like right now?'. Pass compareToDigestId (the sourceUrl of a previously-analyzed reference) to get an inspirationDelta narrating concrete visual differences. Cost: one browser-rendering pass per call against the per-session budget.",
+      input_schema: {
+        type: "object",
+        properties: {
+          pageId: {
+            type: "string",
+            description:
+              "Optional. The page.id to preview. Defaults to the first page in the draft (the home page). Must match an existing page in the site definition.",
+          },
+          compareToDigestId: {
+            type: "string",
+            description:
+              "Optional. The sourceUrl of a cached ReferenceDigest to diff against. When this resolves, the response includes an inspirationDelta describing concrete visual differences between the AI's preview and the inspiration. When this does not resolve, the digest is returned with no inspirationDelta and a whatsMissing entry noting the missing reference.",
+          },
+        },
+      },
+    },
+    handler: previewGeneratedPageHandler,
   },
   {
     name: "transcribe_site",

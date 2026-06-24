@@ -15,6 +15,8 @@ export {
   NavLink,
   NOT_DETECTED,
   PaletteSignals,
+  PreviewDigest,
+  PreviewSource,
   PrimaryPair,
   ReferenceDigest,
   SCHEMA_VERSION,
@@ -69,6 +71,14 @@ export {
   type UploadScreenshotsArgs,
   SCREENSHOT_BYTES_CAP,
 } from "./upload-screenshots.js";
+export {
+  buildPreviewPrefix,
+  parsePreviewDigest,
+  parseReferenceDigest,
+  renderPreviewDigest,
+  type RenderPreviewDigestArgs,
+  type RenderPreviewDigestResult,
+} from "./preview-digest.js";
 export {
   mirrorAssetToR2,
   mirrorAssetBatchToR2,

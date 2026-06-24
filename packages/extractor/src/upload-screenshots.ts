@@ -21,10 +21,18 @@ export interface R2BucketLike {
   ): Promise<unknown>;
 }
 
-export interface UploadScreenshotsArgs {
-  readonly chatId: string;
-  readonly turnId: string;
-}
+/**
+ * Args shape — either the legacy `references/{chatId}/{turnId}` prefix for
+ * external `analyze_page` digests, OR an explicit `pathPrefix` for callers
+ * that need a different prefix shape (REQ-51's `previews/{accountId}/{draftId}/{pageId}`).
+ *
+ * The explicit-prefix form is required so the chat-deletion sweep can scope
+ * cleanly per prefix family (`references/*` vs `previews/*`) without sharing
+ * a parent directory.
+ */
+export type UploadScreenshotsArgs =
+  | { readonly chatId: string; readonly turnId: string }
+  | { readonly pathPrefix: string };
 
 export interface ScreenshotDrop {
   readonly viewport: ViewportName;
@@ -38,10 +46,11 @@ export interface UploadResult {
 }
 
 /**
- * Upload PNG screenshots for each viewport to R2 at
- * `references/{chatId}/{turnId}/{viewport}.png`. Returns the keys (so the
- * digest record can reference them) plus a list of any viewports dropped due
- * to the 8 MB cap.
+ * Upload PNG screenshots for each viewport to R2. Default prefix is
+ * `references/{chatId}/{turnId}`; pass `{ pathPrefix }` to override
+ * (REQ-51 uses `previews/{accountId}/{draftId}/{pageId}`). Returns the keys
+ * (so the digest record can reference them) plus a list of any viewports
+ * dropped due to the 8 MB cap.
  *
  * Skips viewports that the driver didn't produce (e.g. one timed out and
  * came back missing).
@@ -54,6 +63,7 @@ export async function uploadScreenshots(
   const keys: Partial<Record<ViewportName, string>> = {};
   const dropped: ScreenshotDrop[] = [];
   const viewports: ViewportName[] = ["mobile", "tablet", "desktop"];
+  const prefix = resolvePrefix(args);
 
   for (const vp of viewports) {
     const bytes = screenshots[vp];
@@ -62,10 +72,17 @@ export async function uploadScreenshots(
       dropped.push({ viewport: vp, reason: "screenshot_too_large", bytes: bytes.byteLength });
       continue;
     }
-    const key = `references/${args.chatId}/${args.turnId}/${vp}.png`;
+    const key = `${prefix}/${vp}.png`;
     await bucket.put(key, bytes, { httpMetadata: { contentType: "image/png" } });
     keys[vp] = key;
   }
 
   return { keys, dropped };
+}
+
+function resolvePrefix(args: UploadScreenshotsArgs): string {
+  if ("pathPrefix" in args) {
+    return args.pathPrefix.replace(/\/+$/, "");
+  }
+  return `references/${args.chatId}/${args.turnId}`;
 }

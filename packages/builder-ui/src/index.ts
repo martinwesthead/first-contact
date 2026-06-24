@@ -73,6 +73,10 @@ export {
   registerDigestReport,
 } from "./components/digest-report.js";
 export {
+  createPreviewDigestReportRenderer,
+  registerPreviewDigestReport,
+} from "./components/preview-digest-report.js";
+export {
   createTranscribeProgressCard,
   createTranscribeProgressRenderer,
   applyTranscribeEvent,
