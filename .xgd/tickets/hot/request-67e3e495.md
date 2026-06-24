@@ -6,9 +6,9 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-24T23:16:19.332113+00:00'
+updated_at: '2026-06-24T23:16:37.740376+00:00'
 completed_at: null
-last_field_updated: commits
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -186,3 +186,36 @@ Implementation matches the scope above. The notable choices the reconciler shoul
 ## Test results
 
 `pnpm exec vitest run`: 698 tests, all passing. 14 new tests in 3 files cover ACs 1–8.
+
+
+
+## Amendment 2026-06-24 — degraded-mode signals (commit 1ece0cc)
+
+**Problem found in dogfooding**: the first pass returned a digest with all
+signals as `not_detected` whenever BROWSER was missing or budget exhausted,
+so the chat card rendered as essentially empty ("Preview — home" + a single
+`#` from `renderDigestMarkdown` on an all-empty `Signals` shape). Locally
+(without `wrangler dev --remote`) BROWSER is never bound, so the tool was
+useless during local development even on drafts with real content.
+
+**Fix**: the handler already has the in-memory rendered HTML it just uploaded
+to R2 for the browser to navigate to. On the degraded path, run
+`extractSignals(html, previewUrl)` over that HTML so the digest surfaces the
+structural picture the static extractors can produce — headings, nav links,
+asset inventory, section counts — even when visual capture is unavailable.
+
+Concrete behaviour:
+- `fetchPath` is now `'static'` on the degraded path (was `'rendered'` with
+  empty signals). Consumers can tell at a glance this is a degraded digest.
+- `whatsMissing[0]` is the degradation reason (`"BROWSER binding not
+  configured for this environment."` or `"Browser Rendering budget exhausted
+  …"`). Remaining entries are the usual `deriveWhatsMissing(signals)` output.
+- `summary` reads `"Preview of draft page '{pageId}' (visual capture
+  unavailable; structural signals only): N headings, N sections, N assets."`
+
+**Coverage**: new UAT in `test_UAT_FC_REQ-51_preview_generated_page.test.ts`
+asserts that a draft with content modules produces a digest whose
+`signals.content.headings` contains the draft's actual headings, with
+`fetchPath: 'static'`, no screenshots, and the BROWSER-binding note at the
+top of `whatsMissing`. Existing AC5 (budget-exhausted) still passes — it
+only required undefined screenshot keys + a budget-related note, both still true.
