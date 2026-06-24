@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-8
 created_by: xgd
 created_at: '2026-06-24T19:58:54.220925+00:00'
-updated_at: '2026-06-24T20:03:00.844842+00:00'
+updated_at: '2026-06-24T20:06:39.776147+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -84,5 +84,11 @@ The fix in all three: `options.fetch ?? globalThis.fetch.bind(globalThis)`.
 - **UAT**: `test_UAT_FC_BUG-8_default_fetch_is_callable_without_this_binding` — invoke `bootBuilder` / `new ChatsApi()` / `runChatTurn` with `options.fetch` omitted in a jsdom env where `globalThis.fetch` is a `Window`-bound function that throws on bad `this`; assert no `TypeError` is raised.
 
 Going ahead with: scope BUG-8 body → write UAT → fix three sites → commit `[FREE-CODED]` → set `status=free_coded` + `fields.commits=[sha]`. Confirm and I'll start.
+
+<!-- xgd-turn id="5df9c007-4055-420a-951a-0f466ee27348-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T20:06:33.263Z" -->
+#### You
+go ahead
 
 <!-- xgd-chat-end -->
