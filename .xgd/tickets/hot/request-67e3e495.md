@@ -6,9 +6,9 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-24T20:50:51.588067+00:00'
+updated_at: '2026-06-24T20:52:02.715455+00:00'
 completed_at: null
-last_field_updated: story_points
+last_field_updated: body
 status: free_coded
 fields:
   priority: high
@@ -117,3 +117,71 @@ When `compareToDigestId` resolves to a cached `ReferenceDigest`, the Haiku 4.5 c
 ## Story points
 
 5. Tool registration + `renderPreviewDigest` wrapper + `<PreviewDigestReport>` chat-card + multimodal two-image delta prompt + preview-URL resolver against the builder's existing preview infra. Smaller than [[REQ-22]] because the rendering pipeline, signal extraction, and screenshot upload are reused unchanged.
+
+
+
+## What shipped (free-coding cycle, 2026-06-24)
+
+Implementation matches the scope above. The notable choices the reconciler should see:
+
+1. **Preview URL is server-rendered HTML uploaded to R2**, not the operator-facing
+   builder iframe. The handler imports `@gendev/framework`'s `renderSiteToHtml`
+   (the same renderer the in-browser preview uses, per DOC-7 §2.4), writes the
+   HTML to `previews/{accountId}/{draftId}/{pageId}/page.html` in ASSETS_BUCKET,
+   then asks the Browser Rendering binding to navigate to
+   `{requestOrigin}/assets/{key}`. This keeps the cut-from-reality identical to
+   what the in-browser preview produces while reusing REQ-22's puppeteer wiring
+   end-to-end. No new Browser Rendering surface.
+
+2. **`draftId` is content-addressed** — the first 16 hex chars of the rendered
+   HTML's SHA-256. Same draft state → same draftId (R2 keys are stable across
+   identical-state calls); any change to the rendered HTML → new draftId.
+   Tested by UAT in `test_UAT_FC_REQ-51_preview_generated_page.test.ts`.
+
+3. **`ActionContext` gained `requestOrigin: string | null`** (`apps/control-app/src/operator/registry.ts`).
+   Populated by the chat handler from `request.url` and by the
+   `/api/operator/<action>` router. The preview handler uses it to build the
+   absolute `/assets` URL the Browser Rendering binding navigates to.
+   Existing handlers do not consume the field.
+
+4. **`uploadScreenshots()` accepts either `{ chatId, turnId }` or `{ pathPrefix }`**
+   so the new `previews/...` prefix family reuses the existing helper instead
+   of cloning it. The original two-arg shape is preserved for back-compat;
+   every existing caller still works unchanged.
+
+5. **Multimodal commentary** uses Haiku 4.5 (the same model as `analyze_page`).
+   When `compareToDigestId` resolves AND both desktop screenshots are present,
+   the call receives both images and the system prompt explicitly requires at
+   least one comparison phrase from `aligned/centered/left/denser/sparser/lighter/heavier/warmer/cooler/tighter/looser`
+   in the inspirationDelta — tested by pattern match in AC3.
+
+## Files touched
+
+**New**
+- `packages/extractor/src/preview-digest.ts` — `renderPreviewDigest()` wrapper +
+  `buildPreviewPrefix()` + `parsePreviewDigest/parseReferenceDigest` helpers
+- `apps/control-app/src/operator/preview-generated-page.ts` — operator handler
+- `packages/builder-ui/src/components/preview-digest-report.ts` — `<PreviewDigestReport>` chat-card
+- `tests/_helpers_REQ-51_preview.ts` — fake-driver + harness helpers
+- `tests/test_UAT_FC_REQ-51_preview_generated_page.test.ts` (7 UATs)
+- `tests/test_UAT_FC_REQ-51_preview_digest_report.test.ts` (4 UATs)
+- `tests/test_UAT_FC_REQ-51_tool_registered.test.ts` (3 UATs)
+
+**Modified**
+- `packages/extractor/src/schema.ts` — adds `PreviewDigest` + `PreviewSource` Zod schemas
+- `packages/extractor/src/index.ts` — re-exports for the new types/helpers
+- `packages/extractor/src/upload-screenshots.ts` — `UploadScreenshotsArgs` discriminated union
+- `apps/control-app/src/operator/registry.ts` — adds `requestOrigin` to `ActionContext` + registers `preview_generated_page` system_action
+- `apps/control-app/src/chat.ts` — populates `requestOrigin` for handler context
+- `apps/control-app/src/operator/router.ts` — populates `requestOrigin` for direct-route context
+- `apps/control-app/package.json` — adds `@gendev/framework` + `@gendev/site-schema` workspace deps
+- `packages/builder-ui/src/index.ts` — re-exports `registerPreviewDigestReport`
+- `packages/builder-ui/src/main.ts` — calls `registerPreviewDigestReport()` at boot
+- `tests/_helpers_REQ-21_analyze_page.ts`, `tests/_helpers_REQ-22_rendered.ts`,
+  `tests/_helpers_REQ-28_transcribe_site.ts`, and four REQ-46/REQ-33 tests —
+  thread the new required `requestOrigin` field through their `ActionContext`
+  literals (back-compat only; no behavior change).
+
+## Test results
+
+`pnpm exec vitest run`: 698 tests, all passing. 14 new tests in 3 files cover ACs 1–8.
