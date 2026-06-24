@@ -154,7 +154,11 @@ export function bootBuilder(options: BootBuilderOptions): {
       ? options.sessionStorageFacility
       : (globalThis.sessionStorage ?? null);
   const sessionId = resolveSessionId(options.sessionId, sessionStorageFacility);
-  const fetchImpl = options.fetch ?? globalThis.fetch;
+  // BUG-8: the browser's `fetch` is a Window method and the spec requires
+  // `this === Window` at call time. Capturing the bare reference and calling
+  // it later (as a free function or as an instance field) throws TypeError.
+  // Bind to globalThis so the receiver is correct regardless of call site.
+  const fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis);
   const siteId = options.siteId ?? "default";
   registerDigestReport();
   registerTranscribeProgress();
