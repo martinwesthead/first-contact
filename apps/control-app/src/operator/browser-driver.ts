@@ -1,3 +1,4 @@
+import puppeteer from "@cloudflare/puppeteer";
 import {
   COMPUTED_EXTRACTION_SCRIPT,
   resolveUrl,
@@ -71,15 +72,15 @@ interface PuppeteerBrowser {
   close(): Promise<void>;
 }
 
-interface PuppeteerModule {
-  default: { launch(binding: unknown): Promise<PuppeteerBrowser> };
-}
-
 /**
- * Real @cloudflare/puppeteer driver. Dynamic import keeps the dependency at
- * the binding edge — the extractor and the rest of the worker stay free of
- * puppeteer types. The module is declared via a local ambient shim so
- * typecheck passes without installing the runtime dep.
+ * Real @cloudflare/puppeteer driver. Wrangler bundles `@cloudflare/puppeteer`
+ * from the top-of-file static import so the worker can resolve it at runtime
+ * — the earlier string-indirect dynamic-import dodge hid the dep from the
+ * bundler and produced a "No such module" error at request time.
+ *
+ * Tests inject a fake driver via `setDriverFactoryForTest`, so the puppeteer
+ * package is imported but `puppeteer.launch()` is never called in tests. The
+ * package's entry has no module-load side effects, so this is safe under jsdom.
  */
 export function makePuppeteerDriver(binding: unknown): BrowserDriver {
   return {
@@ -88,15 +89,9 @@ export function makePuppeteerDriver(binding: unknown): BrowserDriver {
       viewports: readonly Viewport[],
     ): Promise<DriverResult> {
       const start = Date.now();
-      // String-indirect import so neither Vite nor esbuild pre-resolve the
-      // module at build time. The package is only loadable inside a Workers
-      // runtime with the BROWSER binding present. Tests inject a fake driver
-      // via setDriverFactoryForTest and never reach this path.
-      const modSpecifier = "@cloudflare/puppeteer";
-      const mod = (await import(
-        /* @vite-ignore */ modSpecifier
-      )) as unknown as PuppeteerModule;
-      const browser = await mod.default.launch(binding);
+      const browser = (await puppeteer.launch(
+        binding as Parameters<typeof puppeteer.launch>[0],
+      )) as unknown as PuppeteerBrowser;
       try {
         const screenshots: Partial<Record<ViewportName, Uint8Array>> = {};
         let lastHtml = "";
