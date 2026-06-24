@@ -6,9 +6,9 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-24T23:37:39.611162+00:00'
+updated_at: '2026-06-24T23:43:07.213420+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: commits
 status: free_coded
 fields:
   priority: high
@@ -19,6 +19,7 @@ fields:
   - 9947c6900313173f6048441f3e0af5a1f42f04d5
   - 1ece0cc5b8e8513846a9c861de64fbec9873490b
   - 93a59ebbec4735fc5afbff279f1cc400d53688e2
+  - 61e805ecd9008327756e601271046eacc5413e0f
   version: 0.0.37
 ---
 
