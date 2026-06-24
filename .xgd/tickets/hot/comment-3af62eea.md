@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-22
 created_by: xgd
 created_at: '2026-06-19T00:42:38.779961+00:00'
-updated_at: '2026-06-24T20:21:23.202040+00:00'
+updated_at: '2026-06-24T20:22:35.370545+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -203,5 +203,11 @@ That's a distinct capability from REQ-22 (which is about ingesting external page
 - **Propose a new REQ ticket** for the closed-loop preview capability — but I'll wait for your "create a new ticket" before filing it, per session rules
 
 Want me to amend REQ-22 with the flipped default now, and draft a proposal for the preview-render ticket for you to greenlight?
+
+<!-- xgd-turn id="0c40f11c-4a21-4487-a94d-8549e17cda99-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T20:22:09.165Z" -->
+#### You
+Agreed please proceed with both
 
 <!-- xgd-chat-end -->
