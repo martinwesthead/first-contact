@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Site } from "@gendev/site-schema";
 import { chargeBrowserBudget, DEFAULT_BROWSER_BUDGET } from "../packages/web-fetch-safety/src/index.js";
 import {
   expectOkPayload,
@@ -7,6 +8,43 @@ import {
   TINY_PNG,
 } from "./_helpers_REQ-51_preview.js";
 import type { PreviewDigest } from "../packages/extractor/src/index.js";
+import { buildEmptyScaffold } from "@gendev/builder-ui";
+
+function siteWithContent(): Site {
+  const scaffold = buildEmptyScaffold({ businessName: "Closed-Loop Co" });
+  return {
+    ...scaffold,
+    pages: [
+      {
+        ...scaffold.pages[0],
+        title: "Home",
+        modules: [
+          {
+            id: "site-header",
+            type: "header",
+            version: 1,
+            variant: "top-nav",
+            content: {
+              logo: "Closed-Loop Co",
+              entries: [
+                { label: "Home", target: { kind: "page", pageId: "home" } },
+              ],
+            },
+          },
+          {
+            id: "home-hero",
+            type: "text-block",
+            version: 1,
+            content: {
+              heading: "Welcome to Closed-Loop Co",
+              body: "<p>We make tools that close the AI perception loop.</p>",
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
 
 describe("UAT FC REQ-51: preview_generated_page closes the AI's perception loop", () => {
   it("AC1: pageId omitted defaults to the home page; all three viewport screenshots persist under previews/{accountId}/{draftId}/{pageId}/", async () => {
@@ -96,6 +134,42 @@ describe("UAT FC REQ-51: preview_generated_page closes the AI's perception loop"
       m.includes("compareToDigestId") && m.includes("nothing-here.test"),
     );
     expect(cited).toBe(true);
+  });
+
+  it("REQ-51 amendment: BROWSER binding missing — digest still surfaces structural signals (headings, content tree) extracted from the in-memory rendered HTML, not an empty 'not_detected' shape", async () => {
+    const h = makePreviewHarness({
+      site: siteWithContent(),
+      withBrowserBinding: false,
+    });
+    // No installDriver — the BROWSER-missing branch must not invoke the
+    // driver factory at all.
+
+    const result = await h.invoke({});
+    const payload = expectOkPayload(result);
+    const digest = payload.digest as PreviewDigest;
+
+    // No screenshots (visual capture skipped).
+    expect(digest.screenshotKeys.mobile).toBeUndefined();
+    expect(digest.screenshotKeys.tablet).toBeUndefined();
+    expect(digest.screenshotKeys.desktop).toBeUndefined();
+
+    // fetchPath flagged 'static' so the chat card / consumers can tell at
+    // a glance this is a degraded digest.
+    expect(digest.fetchPath).toBe("static");
+
+    // The structural signals MUST contain the real page content the
+    // operator put into the draft — not an empty all-not_detected shape.
+    const headings = digest.signals.content.headings.map((h) => h.text);
+    expect(headings).toContain("Welcome to Closed-Loop Co");
+    expect(digest.signals.assetInventory.length + digest.signals.content.sectionCount + digest.signals.content.headings.length).toBeGreaterThan(0);
+
+    // The reason for the degradation is surfaced at the top of whatsMissing
+    // so the operator knows why they aren't seeing screenshots.
+    expect(digest.commentary.whatsMissing[0]).toMatch(/BROWSER binding/);
+
+    // Summary mentions the page id and a non-zero heading count.
+    expect(digest.summary).toMatch(/home/);
+    expect(digest.summary).toMatch(/headings/);
   });
 
   it("AC5: budget-exhausted call succeeds with empty screenshots and a whatsMissing entry citing the exhausted budget (parity with analyze_page AC10)", async () => {
