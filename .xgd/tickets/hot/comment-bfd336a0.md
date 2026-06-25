@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-17
 created_by: xgd
 created_at: '2026-06-25T17:38:29.589653+00:00'
-updated_at: '2026-06-25T18:03:10.383261+00:00'
+updated_at: '2026-06-25T18:03:21.548414+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -104,5 +104,34 @@ Reply OK (or amend) and I'll write the ticket body and start coding.
 <!-- xgd-chat role="user" ts="2026-06-25T18:03:01.370Z" -->
 #### You
 Wait is the budget a configurable number? Can't we just set it to a very high number?
+
+<!-- xgd-turn id="777ea34e-0e01-469b-93ce-0ea26e05ad45-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-25T18:03:21.547Z" -->
+#### Claude
+Yes — the budget is fully configurable. `BrowserBudgetConfig` is a typed `{ sessionMaxSeconds, dayMaxSeconds }` object, and `checkBrowserBudget`/`chargeBrowserBudget` accept a per-call `config?: Partial<BrowserBudgetConfig>` override. The current values are just the defaults in `DEFAULT_BROWSER_BUDGET`:
+
+```ts
+export const DEFAULT_BROWSER_BUDGET: BrowserBudgetConfig = {
+  sessionMaxSeconds: 50,
+  dayMaxSeconds: 200,
+};
+```
+
+(`packages/web-fetch-safety/src/browser-budget.ts:8-11`)
+
+The three operator handlers (`analyze-page.ts`, `transcribe-site.ts`, `preview-generated-page.ts`) call those functions without passing any `config`, so they always use the defaults. Bumping the two default constants to a huge number is a one-file, two-line change and your "infinite budget" is done — no removed bindings, no deleted tests, no plumbing torn out.
+
+Revised proposal:
+
+**Ticket BUG-17 scope** — Raise `DEFAULT_BROWSER_BUDGET` to effectively infinite (e.g., `sessionMaxSeconds: 1_000_000_000`, `dayMaxSeconds: 1_000_000_000`). Existing budget infrastructure stays intact so it can be re-tightened later by editing one constant (or by passing a `config` override per call site).
+
+**UAT**: `test_UAT_FC_BUG-17_browser_budget_effectively_infinite`
+- Drive `checkBrowserBudget` with a large `costSeconds` charge (e.g., 100,000) against a fresh session, assert it returns `{ ok: true }`.
+- Confirm `DEFAULT_BROWSER_BUDGET.sessionMaxSeconds` and `dayMaxSeconds` are ≥ 1e9.
+
+The existing REQ-20 UAT (`tests/test_UAT_FC_REQ-20_browser_budget.test.ts`) will need updating since it asserts on the 50s cap — I'll need to either pass an explicit small `config` to those tests so they still exercise the cap logic with a tight value, or rewrite them to use the production-default. I'd recommend the former — keeps coverage of the cap mechanism honest without coupling it to the (now-huge) default.
+
+Want me to proceed with this approach? OK and I'll fill in the BUG-17 body and start.
 
 <!-- xgd-chat-end -->
