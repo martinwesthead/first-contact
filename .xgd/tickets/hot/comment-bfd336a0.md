@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-17
 created_by: xgd
 created_at: '2026-06-25T17:38:29.589653+00:00'
-updated_at: '2026-06-25T18:03:51.783213+00:00'
+updated_at: '2026-06-25T18:09:40.682821+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -139,5 +139,37 @@ Want me to proceed with this approach? OK and I'll fill in the BUG-17 body and s
 <!-- xgd-chat role="user" ts="2026-06-25T18:03:39.512Z" -->
 #### You
 yes please just make the config change
+
+<!-- xgd-turn id="9143e4d8-36f5-4c38-8b1f-91652fdc8304-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-25T18:09:39.676Z" -->
+#### Claude
+Scoping the ticket first, then I'll read the existing REQ-20 test to understand what needs updating.
+
+Three test files assert the 50s default — REQ-20, REQ-22, REQ-51. REQ-20 calls `chargeBrowserBudget` directly (easy: pass explicit config). REQ-22 and REQ-51 go through operator handlers that don't accept config, so I'll pre-populate the KV counter to ≥ 1e9 to trip the cap.
+
+Now REQ-51 — let me check the makePreviewHarness signature and confirm BROWSER_BUDGET_KV is exposed similarly.
+
+Good — same harness shape. Update REQ-51:
+
+All 15 tests pass. Now let me run the broader xgd quality pass via test-filter-expression so the lint/build phases also run.
+
+The xgd quality vitest filter is misconfigured at the project level (`test_dirs` contains a plugin id rather than a directory) — that's why it says "no test files found / vacuous pass". My affected tests do pass via `pnpm vitest run` though. Let me verify lint and build still pass explicitly.
+
+Lint and build pass. Now committing — task #5 is in progress.
+
+The free-coded commit is `ed5168a3`. Now setting ticket status=free_coded with commits=[sha].
+
+Promoted to `free_coded`. Closing out the task and verifying ticket state.
+
+The ticket body needs to mention the REQ-22 and REQ-51 test updates too. Updating to reflect what actually shipped.
+
+Done. BUG-17 is `free_coded` with both commit SHAs recorded.
+
+**Summary**
+
+- **`packages/web-fetch-safety/src/browser-budget.ts`** — `DEFAULT_BROWSER_BUDGET` raised to `{ sessionMaxSeconds: 1_000_000_000, dayMaxSeconds: 1_000_000_000 }`. The "Browser Rendering budget exhausted" message you were hitting in tests/dev is now effectively impossible (would take ~31.7 years of continuous browser-seconds on one session). KV counters, BROWSER_BUDGET_KV binding, and per-call `config` override all remain — you can tighten any specific call site again by passing `config: { sessionMaxSeconds: N, dayMaxSeconds: M }`.
+- **Tests**: REQ-20 now exercises the cap with an explicit tight 50s/200s `config`; REQ-22 and REQ-51 (which go through operator handlers that don't take a config) now seed the KV counter directly to test the exhausted-fallback path; new `tests/test_UAT_FC_BUG-17_browser_budget_effectively_infinite.test.ts` covers the new behavior. All 15 tests in the 4 affected files pass.
+- **Commits**: `ed5168a3` (feat + tests) and `313216d7` (version bump 0.0.38 → 0.0.39), both tagged `[FREE-CODED]`.
 
 <!-- xgd-chat-end -->
