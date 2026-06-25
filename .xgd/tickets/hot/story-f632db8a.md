@@ -6,10 +6,10 @@ title: Phase 0 1stcontact marketing site is served end-to-end by the public-site
   via Workers Static Assets
 created_by: xgd
 created_at: '2026-06-25T01:34:39.814075+00:00'
-updated_at: '2026-06-25T01:34:39.814075+00:00'
+updated_at: '2026-06-25T01:43:21.785063+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-474ee896
