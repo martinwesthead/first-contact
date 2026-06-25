@@ -77,7 +77,12 @@ export const previewGeneratedPageHandler: ActionHandler = async (input, ctx) => 
   // bytes in memory. `sourceUrl` becomes a synthetic identifier so the chat
   // card and any downstream consumer have a stable, human-readable handle.
   const previewUrl = `preview://${ctx.session.account_id}/${draftId}/${pageId.value}`;
-  const navigationUrl = htmlToDataUrl(html);
+  // A data URL has no origin, so `/assets/<key>` refs inside the rendered
+  // HTML cannot be resolved by the headless browser. Inline R2-backed assets
+  // as data: URLs so hero bg-image, services-grid item images, and logos
+  // render in the screenshot instead of 404'ing silently. (BUG-15.)
+  const htmlForBrowser = await inlineLocalAssetsForPreview(html, env.ASSETS_BUCKET);
+  const navigationUrl = htmlToDataUrl(htmlForBrowser);
 
   const capturedAt = new Date().toISOString();
   const previewSource = {
@@ -225,6 +230,74 @@ function resolvePageId(raw: unknown, site: Site): PageIdOk | PageIdErr {
  */
 function htmlToDataUrl(html: string): string {
   return `data:text/html;charset=utf-8;base64,${base64FromBytes(new TextEncoder().encode(html))}`;
+}
+
+/**
+ * Rewrite `/assets/<key>` references in the rendered HTML to inline
+ * `data:<contentType>;base64,<bytes>` URLs by fetching each unique key from
+ * R2. A data URL has no origin, so otherwise relative `/assets/...` refs
+ * resolve to nothing inside the headless browser and screenshots come back
+ * without their hero / services / logo imagery. (BUG-15.)
+ *
+ * Matches two reference shapes: `src="/assets/<key>"` (img tags) and CSS
+ * `url(/assets/<key>)` (style attributes, inline <style>). Each key is
+ * fetched once and cached. Keys that don't resolve in R2 preserve the
+ * original src — the operator can still see something is wrong; we don't
+ * silently destroy the page.
+ */
+async function inlineLocalAssetsForPreview(
+  html: string,
+  bucket: R2Bucket,
+): Promise<string> {
+  const ATTR_RE = /(\bsrc\s*=\s*")\/assets\/([^"]+)(")/g;
+  const URL_RE = /(\burl\(\s*['"]?)\/assets\/([^'")\s]+)(['"]?\s*\))/g;
+
+  const keys = new Set<string>();
+  for (const m of html.matchAll(ATTR_RE)) keys.add(safeDecode(m[2]));
+  for (const m of html.matchAll(URL_RE)) keys.add(safeDecode(m[2]));
+  if (keys.size === 0) return html;
+
+  const replacements = new Map<string, string>();
+  await Promise.all(
+    [...keys].map(async (key) => {
+      try {
+        const obj = await bucket.get(key);
+        if (!obj) return;
+        const ct = obj.httpMetadata?.contentType ?? "application/octet-stream";
+        const ab = await obj.arrayBuffer();
+        replacements.set(
+          key,
+          `data:${ct};base64,${base64FromBytes(new Uint8Array(ab))}`,
+        );
+      } catch {
+        // Swallow per-asset errors so one missing/broken object doesn't break
+        // the whole preview; original src is preserved.
+      }
+    }),
+  );
+  if (replacements.size === 0) return html;
+
+  const rewriteAttr = (
+    full: string,
+    prefix: string,
+    encodedKey: string,
+    suffix: string,
+  ): string => {
+    const data = replacements.get(safeDecode(encodedKey));
+    return data ? `${prefix}${data}${suffix}` : full;
+  };
+
+  return html
+    .replace(ATTR_RE, rewriteAttr)
+    .replace(URL_RE, rewriteAttr);
+}
+
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }
 
 type BudgetGate =
