@@ -5,9 +5,9 @@ type: bug
 title: 'Browser Rendering: raise default budget to effectively infinite'
 created_by: xgd
 created_at: '2026-06-25T17:35:58.068404+00:00'
-updated_at: '2026-06-25T18:09:06.880117+00:00'
+updated_at: '2026-06-25T18:09:26.997927+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   auto_merge_back: true
@@ -66,3 +66,23 @@ runaway-cost safety net.
 - packages/web-fetch-safety/src/browser-budget.ts (constant bump)
 - tests/test_UAT_FC_BUG-17_browser_budget_effectively_infinite.test.ts (new)
 - tests/test_UAT_FC_REQ-20_browser_budget.test.ts (update to pass explicit config)
+
+
+## Outcome (as shipped)
+
+Commits:
+- ed5168a3 — defaults bump + 3 test updates + new BUG-17 UAT
+- 313216d7 — version bump 0.0.38 → 0.0.39
+
+Files changed:
+- packages/web-fetch-safety/src/browser-budget.ts (defaults raised to 1_000_000_000)
+- tests/test_UAT_FC_REQ-20_browser_budget.test.ts (charge calls now pass an explicit config: { sessionMaxSeconds: 50, dayMaxSeconds: 200 } so the cap mechanism is still exercised under tight values; default-constant assertion updated to >= 1e9)
+- tests/test_UAT_FC_REQ-22_budget_exhausted_fallback.test.ts (operator handler doesn't accept a config override, so instead of burning 10×5s the test now seeds the session KV counter directly with spentSeconds = DEFAULT_BROWSER_BUDGET.sessionMaxSeconds to trip the exhausted-fallback path)
+- tests/test_UAT_FC_REQ-51_preview_generated_page.test.ts (same KV-seed treatment for AC5's budget-exhausted parity test)
+- tests/test_UAT_FC_BUG-17_browser_budget_effectively_infinite.test.ts (new — 3 ITs covering: defaults are >= 1e9; a 100_000s charge against a fresh session is accepted; 100 × 1_000s charges still leave checkBrowserBudget reporting ok)
+- package.json (0.0.38 → 0.0.39)
+
+Verification:
+- pnpm vitest run on the 4 affected test files: 15/15 pass.
+- xgd quality run --lint-only / --build-only: both SUCCESS.
+- xgd quality run with --test-filter-expression reports SUCCESS but vacuous (the project's quality.yaml has test_dirs set to a plugin id rather than a directory pattern, so vitest reports "no test files found"; preexisting condition, not introduced by this fix).
