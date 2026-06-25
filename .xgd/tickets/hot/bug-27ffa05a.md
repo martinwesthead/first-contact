@@ -6,9 +6,9 @@ title: Preview screenshots don't render /assets/ images — breaks hero bg-image
   service card photos
 created_by: xgd
 created_at: '2026-06-25T00:14:27.595296+00:00'
-updated_at: '2026-06-25T00:23:18.222155+00:00'
+updated_at: '2026-06-25T00:23:21.516562+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_points
 status: free_coded
 fields:
   auto_merge_back: true
@@ -17,6 +17,7 @@ fields:
   commits:
   - d8b762d378520fee43dac98b245e03bdedf8296e
   version: 0.0.38
+  story_points: 2
 ---
 
 When preview_generated_page renders a screenshot, images stored at /assets/sites/anonymous/imports/... are not loading. The hero module uses variant bg-image with a valid assetRef (id: sites/anonymous/imports/17cfe3cb0fe61c5b.jpg, src: /assets/sites/anonymous/imports/17cfe3cb0fe61c5b.jpg) but the screenshot shows no background image — just the inverse surface colour. Service card images in services-grid are also missing. The preview digest flags 'no hero image inferred' even though the content field is correctly populated.
