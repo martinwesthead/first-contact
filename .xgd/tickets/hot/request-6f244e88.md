@@ -5,10 +5,10 @@ type: request
 title: 'Builder UI: persistent chat sessions (session list, new-chat, infinite scroll)'
 created_by: xgd
 created_at: '2026-06-16T23:27:06.916520+00:00'
-updated_at: '2026-06-23T00:03:51.400570+00:00'
+updated_at: '2026-06-25T18:45:46.674223+00:00'
 completed_at: null
 last_field_updated: status
-status: free_coded
+status: ready_to_reconcile
 fields:
   priority: medium
   story_points: 4

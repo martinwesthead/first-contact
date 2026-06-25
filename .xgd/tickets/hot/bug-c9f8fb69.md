@@ -5,10 +5,10 @@ type: bug
 title: Transcription misses CSS background images
 created_by: xgd
 created_at: '2026-06-21T00:17:24.747350+00:00'
-updated_at: '2026-06-21T18:23:34.323350+00:00'
+updated_at: '2026-06-25T18:45:31.942513+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   auto_merge_back: true
   needs_review: false

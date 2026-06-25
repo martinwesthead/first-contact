@@ -5,16 +5,16 @@ type: request
 title: Module:icon-row@v1
 created_by: xgd
 created_at: '2026-06-20T21:14:29.736465+00:00'
-updated_at: '2026-06-20T23:14:47.601314+00:00'
+updated_at: '2026-06-25T19:41:23.153273+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: reconciling
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
   commits:
-  - f2d95081bb21b3a284efe4910bc890290009c528
+  - bf407f1fee00563939d0c9a7878d5c0cec936ea0
   version: 0.0.22
 ---
 
