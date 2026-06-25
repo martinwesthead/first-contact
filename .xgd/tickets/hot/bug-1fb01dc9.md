@@ -5,14 +5,18 @@ type: bug
 title: 'Browser Rendering: raise default budget to effectively infinite'
 created_by: xgd
 created_at: '2026-06-25T17:35:58.068404+00:00'
-updated_at: '2026-06-25T18:04:05.093564+00:00'
+updated_at: '2026-06-25T18:09:06.880117+00:00'
 completed_at: null
-last_field_updated: title
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
+  commits:
+  - ed5168a3a5e3d52215d82c89e033a5b3e119e21f
+  - 313216d72f2cd3043d38b065b8acea35b5965663
+  version: 0.0.39
 ---
 
 ## Symptom
