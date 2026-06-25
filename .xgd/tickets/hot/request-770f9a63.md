@@ -5,10 +5,10 @@ type: request
 title: Web fetch safety contract + R2 assets bucket binding and HTTP surface
 created_by: xgd
 created_at: '2026-06-16T23:23:43.955192+00:00'
-updated_at: '2026-06-19T01:17:40.169010+00:00'
+updated_at: '2026-06-25T02:41:17.338221+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   priority: high
   story_points: 7
@@ -16,6 +16,7 @@ fields:
   needs_review: false
   commits:
   - 212b974faed14287989899e9c83f0ad903506325
+  bundled_in: bundle-bbb1bd9c
 ---
 
 ## Problem
