@@ -9,7 +9,13 @@ suites:
   framework: vitest
   config:
     test_mode: node
-    source_dirs: []
+    source_dirs:
+    - apps/control-app/src
+    - apps/public-site/src
+    - packages/builder-ui/src
+    - packages/framework/src
+    - packages/site-schema/src
+    - tools/generate/src
     test_dirs:
     - tests
     per_test_timeout_seconds: 30
