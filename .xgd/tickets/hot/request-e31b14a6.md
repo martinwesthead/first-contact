@@ -6,10 +6,10 @@ title: 'Architecture: rename npm scope to @gendev + seed reusable productization
   + roadmap'
 created_by: xgd
 created_at: '2026-06-22T20:54:36.166056+00:00'
-updated_at: '2026-06-22T21:14:28.008897+00:00'
+updated_at: '2026-06-25T18:45:47.487273+00:00'
 completed_at: null
-last_field_updated: body
-status: free_coded
+last_field_updated: status
+status: ready_to_reconcile
 fields:
   priority: high
   story_points: 3
