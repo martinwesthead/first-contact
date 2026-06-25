@@ -5,9 +5,9 @@ type: report
 title: 'Report: fix_plan for report-57a8f0a6'
 created_by: xgd
 created_at: '2026-06-25T02:21:56.077833+00:00'
-updated_at: '2026-06-25T02:21:56.077833+00:00'
+updated_at: '2026-06-25T02:24:26.295282+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: batches_pending
 result: pass
 fields:
   report_kind: fix_plan
@@ -39,6 +39,7 @@ fields:
       in the first place at commit 2da52f47).'
     test_scope: project.min_coverage
   fix_iteration: 3
+  batches_pending: false
 ---
 
 # Fix Plan — Iteration 3
