@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-17
 created_by: xgd
 created_at: '2026-06-25T17:38:29.589653+00:00'
-updated_at: '2026-06-25T17:38:57.118791+00:00'
+updated_at: '2026-06-25T18:03:10.383261+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -98,5 +98,11 @@ Two things to confirm before I start:
 2. **Is this scoped to the operator handlers only, or should I also check whether other code paths in the repo charge against `BROWSER_BUDGET_KV`?** (My grep found only those three handlers, so I think yes — operator-only.)
 
 Reply OK (or amend) and I'll write the ticket body and start coding.
+
+<!-- xgd-turn id="777ea34e-0e01-469b-93ce-0ea26e05ad45-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-25T18:03:01.370Z" -->
+#### You
+Wait is the budget a configurable number? Can't we just set it to a very high number?
 
 <!-- xgd-chat-end -->
