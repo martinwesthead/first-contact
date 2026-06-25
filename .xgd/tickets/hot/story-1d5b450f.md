@@ -6,10 +6,10 @@ title: 'Framework module catalog: chrome modules (header, hero, footer) under a 
   registry'
 created_by: xgd
 created_at: '2026-06-25T00:56:14.997576+00:00'
-updated_at: '2026-06-25T00:56:14.997576+00:00'
+updated_at: '2026-06-25T01:08:41.830566+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-3630a42c
