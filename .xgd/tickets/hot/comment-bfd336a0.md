@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-17
 created_by: xgd
 created_at: '2026-06-25T17:38:29.589653+00:00'
-updated_at: '2026-06-25T18:03:21.548414+00:00'
+updated_at: '2026-06-25T18:03:51.783213+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -133,5 +133,11 @@ Revised proposal:
 The existing REQ-20 UAT (`tests/test_UAT_FC_REQ-20_browser_budget.test.ts`) will need updating since it asserts on the 50s cap — I'll need to either pass an explicit small `config` to those tests so they still exercise the cap logic with a tight value, or rewrite them to use the production-default. I'd recommend the former — keeps coverage of the cap mechanism honest without coupling it to the (now-huge) default.
 
 Want me to proceed with this approach? OK and I'll fill in the BUG-17 body and start.
+
+<!-- xgd-turn id="9143e4d8-36f5-4c38-8b1f-91652fdc8304-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-25T18:03:39.512Z" -->
+#### You
+yes please just make the config change
 
 <!-- xgd-chat-end -->
