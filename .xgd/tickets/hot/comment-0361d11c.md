@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-51
 created_by: xgd
 created_at: '2026-06-24T20:30:10.219512+00:00'
-updated_at: '2026-06-24T20:52:26.802052+00:00'
+updated_at: '2026-06-24T23:53:12.040942+00:00'
 completed_at: null
 last_field_updated: created_at
 status: null
@@ -152,5 +152,473 @@ REQ-51 is free-coded and ready for the operator to promote to reconcile.
 - **Tests**: 14 UATs in 3 files cover ACs 1–8; full suite 698/698 green.
 
 **Ticket**: `REQ-51` at `status=free_coded`, `commits=[9947c69]`, `version=0.0.37`, `story_points=5`. Ready for you to promote to `ready_to_reconcile` when convenient.
+
+<!-- xgd-turn id="11245b2e-751e-4a6d-b80c-1d48e591ff1a-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:01:46.201Z" -->
+#### You
+Let me try the preview tool first to see what we have: I can see the issue — the preview tool ran but it says **"BROWSER binding not configured for this environment"**. This is a infrastructure/configuration issue on the server side, not a per-session budget limit. The Browser Rendering worker isn't wired up in this environment.
+
+Since you're the author of the tool — this looks like the `BROWSER` binding needs to be configured in the Cloudflare Worker environment for `preview_generated_page` and `analyze_page` to return actual screenshots and visual signals.
+
+In the meantime, can you tell me what you see in the live editor preview? I can iterate based on your description. Or if you want, I can do a `get_site_definition` to at least confirm the current structure of what was built.
+
+✗analyze_page — rejected
+
+operator intent required: paste a URL in chat (or pass a fresh intentToken) before calling analyze_page
+
+◇Preview — home
+
+This is what the AI reports
+
+#
+
+<!-- xgd-turn id="11245b2e-751e-4a6d-b80c-1d48e591ff1a-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:02:56.240Z" -->
+#### Claude
+Let me check the wrangler config to see if BROWSER is bound there:
+
+The behavior you're seeing is correct, but the UX is poor. Here's what happened:
+
+1. **`analyze_page` rejected** — that's REQ-20's intent-token gate; it needs a URL pasted in chat. Unrelated to REQ-51 and working as designed.
+
+2. **`preview_generated_page` "succeeded" but rendered empty** — exactly the degraded-BROWSER path that AC5 asserts. `apps/control-app/wrangler.toml:46-50` says BROWSER is bound only under `[env.production.browser]`, so local `wrangler dev` (without `--remote`) has no Browser Rendering binding. The handler returns a digest with `screenshotKeys: {}` and `whatsMissing: ["Visual signals unavailable — BROWSER binding not configured for this environment."]`, and the chat card hides the screenshot strip when no keys are present.
+
+The card body is mostly empty because there are no signals to render either — `renderDigestMarkdown` on an empty `Signals` shape is sparse.
+
+Two ways forward, neither yet scoped:
+
+- **Operationally**: run `pnpm --filter @gendev/control-app dev` with `wrangler dev --remote` to exercise the real BROWSER binding locally. No code change needed.
+- **UX**: make the empty `<PreviewDigestReport>` louder — show the `whatsMissing` note prominently instead of just a `#` header, so the operator sees "BROWSER binding not configured" surfaced in the card body. This would be a new ticket (a follow-up to REQ-51), not in-scope here.
+
+Want me to file a follow-up ticket for the empty-card UX, or are you going to test with `--remote`? I won't code either path until you say.
+
+<!-- xgd-turn id="9fdfe56c-6625-4678-9246-3b9146521922-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:12:15.495Z" -->
+#### You
+1. `analyze_page`** rejected** — that's REQ-20's intent-token gate; it needs a URL pasted in chat. Unrelated to REQ-51 and working as designed. <-- I don't understand why it was designed that way I did not ask for any site budget and I need it removed so that I can test it!
+
+2. `preview_generated_page`** "succeeded" but rendered empty** <— I was looking at the site in my browser, it was NOT empty
+
+<!-- xgd-turn id="9fdfe56c-6625-4678-9246-3b9146521922-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:16:55.003Z" -->
+#### Claude
+Both issues are real. Let me dig into the empty-card claim first since it's in REQ-51 scope.
+
+Found it. When BROWSER is missing my handler returns an all-`not_detected` digest — but the rendered HTML I already have in memory contains real content (headings, modules, asset refs). I should extract signals from that HTML instead of giving you nothing.
+
+Per the system reminder I'm staying in REQ-51 — this is a usability fix to the tool I just shipped, not a new feature. Let me amend the implementation:
+
+Now I'll refactor the degraded path to extract signals from the in-memory HTML:
+
+Now replace the budget-gated empty-payload branch and rewrite `buildBudgetExhaustedPayload` to use the rendered HTML:
+
+Now replace `buildBudgetExhaustedPayload` with `buildDegradedPayload`:
+
+Now update the existing AC5 test to assert the new behavior, then add a new test specifically for the BROWSER-missing case:
+
+Now let me add the new test:
+
+Now insert the new test for BROWSER-missing degraded mode:
+
+Now run all REQ-51 tests to verify:
+
+All 8 handler tests pass (the new degraded-mode test included). Let me make sure the full suite still passes:
+
+699 tests pass (added one new UAT). Build the bundle:
+
+Now commit and append to the ticket:
+
+Now record this commit on the ticket and append a body section so reconcile sees the amendment:
+
+Ticket now records both commits and the amendment is in the body.
+
+Done with the REQ-51 amendment. Refresh your builder and call `preview_generated_page` again — instead of `# Preview` you should now see the actual headings and sections from your draft, with a `whatsMissing` note explaining the screenshots are absent because BROWSER isn't bound locally. (For real screenshots, you'd need `wrangler dev --remote` or a deploy.)
+
+**On the second issue (`analyze_page` intent gate):** that's REQ-20 territory, not REQ-51. The gate exists to prevent the AI from autonomously fetching arbitrary URLs without the operator having explicitly asked — it's a safety contract. Two options:
+
+1. **File a new ticket** to relax/remove it (your call on whether it should be removed entirely, made opt-in via a per-account flag, or just made trip-free when the operator's recent message contains certain keywords).
+2. **Workaround now**: paste the URL directly in your chat message (e.g. "analyze https://example.com") — `operatorMessageImpliesIntent()` will accept it and the next `analyze_page` call goes through.
+
+Want me to file a separate ticket for the analyze_page intent-gate change? If so, what's the intended behavior — fully open (no gate), opt-in flag, or smarter keyword detection?
+
+<!-- xgd-turn id="4440f51b-1fef-4fe4-991d-2bf8fbbca8d6-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:20:45.360Z" -->
+#### You
+Please create a new ticket. Then look at this:
+
+Are you seeing the renedered site screenshot? Can you share it?
+
+Let me try the preview tool right now to check!Unfortunately the answer is still **no** — the preview tool ran but returned **"Visual signals unavailable — BROWSER binding not configured for this environment."** No screenshot was captured.
+
+The structural signals confirm the site has some content (the H1 heading and 2 assets), but the Browser rendering worker (`BROWSER` binding) still isn't wired up — so no visual screenshot is being produced.
+
+Since you're the author, this is likely a Cloudflare Worker configuration issue — the `BROWSER` binding needs to be set up in `wrangler.toml` (or the Workers dashboard) for the worker that handles `preview_generated_page`. Something like:
+
+```toml
+[[browser]]
+binding = "BROWSER"
+
+```
+
+Once that's in place, the screenshots should flow through. Want me to focus on the site content itself in the meantime, or is fixing the binding your next step?
+
+◇Preview — home
+
+<!-- xgd-turn id="4440f51b-1fef-4fe4-991d-2bf8fbbca8d6-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:22:04.107Z" -->
+#### Claude
+To answer the immediate question: **no, I can't see your browser** — I'm a separate process from the AI running in your builder. I only see what you paste into our chat. The good news: my degraded-mode fix worked. Where the old card showed only "# Preview", the new one is reporting "H1 heading and 2 assets" — that's `extractSignals` running over the in-memory rendered HTML.
+
+For the BROWSER binding: confirmed it's only bound under `[env.production.browser]` in `wrangler.toml:86-87`. Local `wrangler dev` doesn't get it. To capture real screenshots you'd need `wrangler dev --remote` or a deploy.
+
+Now let me scope the new ticket for the `analyze_page` intent-gate issue.
+
+Ticket **REQ-52** filed at `status=draft`. It outlines three concrete options (A: turn-scoped relaxed gate, B: session-scoped opt-in toggle, C: full removal) with the original REQ-20 safety motivation included so the design conversation is grounded.
+
+It's intentionally left at `draft` (not `ready_to_implement`) so you can pick the option that fits before headless implementation kicks in. When you decide which option, just say the word and I'll sharpen the acceptance criteria and either free-code it or you can promote the ticket.
+
+**Quick recap:**
+- REQ-51 amendment (degraded-mode signals) shipped — your second test showed the fix landed (you saw the H1 and asset count).
+- BROWSER binding is a config issue, not a code issue (`wrangler.toml:86-87` binds it only in `[env.production.browser]`). Use `wrangler dev --remote` or deploy to exercise the real screenshot path.
+- REQ-52 filed for the analyze_page intent-gate friction.
+
+<!-- xgd-turn id="8a034303-a8b6-4e6f-8206-f06b0ce36978-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:25:15.502Z" -->
+#### You
+I don't understand. The chat AI is saying that neither the preview nor the asset acquisition are creating a screen shot. Can you explain why?
+
+<!-- xgd-turn id="8a034303-a8b6-4e6f-8206-f06b0ce36978-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:26:10.826Z" -->
+#### Claude
+Let me look at exactly how local dev is wired up, then I'll explain.
+
+I understand the frustration — you're hitting the same wall both ways. Here's the full picture in one place:
+
+## Why neither tool produces a screenshot
+
+Both `analyze_page` (REQ-22) and `preview_generated_page` (REQ-51) use the **same** mechanism for screenshots: Cloudflare's Browser Rendering service, accessed via the binding called `BROWSER` (`@cloudflare/puppeteer`).
+
+When `env.BROWSER` is undefined, both tools skip the rendered path and return a degraded digest with no screenshot. The chat-card message you saw — *"Visual signals unavailable — BROWSER binding not configured for this environment"* — is from that degraded path.
+
+## Why `env.BROWSER` is undefined in your session
+
+Two independent things are conspiring:
+
+1. **`wrangler.toml` only binds BROWSER under `[env.production.browser]` (lines 86-87).** It is NOT declared at the top level. The `pnpm dev` script runs plain `wrangler dev --port 8788` (no `--env production`), so Wrangler uses the top-level config — which has no BROWSER binding.
+
+2. **Even if it were at the top level, Wrangler dev doesn't emulate Browser Rendering locally.** Browser Rendering is a Cloudflare-hosted service (it actually spins up Chromium on Cloudflare infra). Miniflare can fake KV / R2 / D1 locally, but it cannot fake Browser Rendering. The Cloudflare docs require `--remote` for any binding that calls out to a real CF service.
+
+## What you'd need to actually see screenshots
+
+Three options, in order of effort:
+
+1. **`wrangler dev --remote --env production`** — runs your local code against real Cloudflare infrastructure including BROWSER. Needs Wrangler logged in to your CF account and the `puppeteer` binding enabled there. Fastest path to seeing real screenshots from your laptop.
+
+2. **`pnpm --filter @gendev/control-app deploy`** then test against `app.1stcontact.io` — full production path. Same code, same wiring.
+
+3. **Tests** — the UATs (`tests/test_UAT_FC_REQ-51_*.test.ts`) inject a fake driver that returns a 1×1 PNG, so the *code path* is exercised; just no real Chromium output. Useful for regression but doesn't answer "does my hero look centered?".
+
+There is no path that produces real screenshots from `wrangler dev` without `--remote`. This is a Cloudflare platform constraint, not something fixable in our code.
+
+**No new ticket scoped** — this is configuration / infra explanation, not a code change. The chat-card already says "BROWSER binding not configured for this environment" exactly because we expect this every time you run plain `wrangler dev`.
+
+Want me to update the `dev` script in `apps/control-app/package.json` to default to `wrangler dev --remote --env production` so you stop hitting this? (Trade-off: every `pnpm dev` would burn against your real CF account and budget.) Or leave the local default as-is and you switch flags when you want to test the rendered path?
+
+<!-- xgd-turn id="5f1d2538-cc8d-46e8-9a59-250930038118-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:28:21.169Z" -->
+#### You
+You can just tell me what I need to run
+
+<!-- xgd-turn id="5f1d2538-cc8d-46e8-9a59-250930038118-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:28:35.754Z" -->
+#### Claude
+From your repo root:
+
+```bash
+cd apps/control-app
+pnpm exec wrangler dev --remote --env production --port 8788
+```
+
+That's it. Same port your builder is already pointing at (`http://127.0.0.1:8788`), so refresh the browser tab and your existing chat session keeps working — only difference is `env.BROWSER` is now a real binding wired to Cloudflare's Browser Rendering service.
+
+Caveats worth knowing before you hit enter:
+- **Wrangler needs to be logged in** to a CF account that has Browser Rendering enabled. If not: `pnpm exec wrangler login` first.
+- **Costs real money / counts toward CF budget** — every analyze_page / preview_generated_page call spins up real Chromium on CF infra (~$0.09 per browser-second per Cloudflare pricing). The per-session REQ-20 budget cap (50 seconds) still applies and will trip if you burn through it testing.
+- **Other bindings (KV, R2, D1) also become real** under `--env production --remote`. Anything you write hits production buckets/namespaces. If you don't want that, you can pass `--remote` selectively (`--remote=BROWSER`) — but easiest is just remember you're talking to prod state in this mode.
+
+No code change needed.
+
+<!-- xgd-turn id="dd4dbc08-f720-4da2-8c66-0a2657375924-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:35:13.679Z" -->
+#### You
+```
+((.venv-working) ) martin@nyx control-app % pnpm exec wrangler dev --remote --env production --port 8788
+
+ ⛅️ wrangler 4.103.0 (update available 4.104.0)
+───────────────────────────────────────────────
+Support for remote bindings in `wrangler dev` is now available as a replacement for `wrangler dev --remote`. Try it out now by running `wrangler dev` with the `remote` option enabled on your resources and let us know how it goes!
+This gives you access to remote resources in development while retaining all the usual benefits of local dev: fast iteration speed, breakpoint debugging, and more.
+
+Refer to https://developers.cloudflare.com/workers/development-testing/#remote-bindings for more information.
+Using secrets defined in .dev.vars
+Your Worker has access to the following bindings:
+Binding                                                    Resource                  
+env.FETCH_RATE_KV (placeholder_fetch_rate_kv)              KV Namespace              
+env.FETCH_CACHE_KV (placeholder_fetch_cache_kv)            KV Namespace              
+env.FETCH_ROBOTS_KV (placeholder_fetch_robots_kv)          KV Namespace              
+env.BROWSER_BUDGET_KV (placeholder_browser_budget_kv)      KV Namespace              
+env.SITES_DB (1stcontact-sites)                            D1 Database               
+env.ASSETS_BUCKET (1stcontact-assets)                      R2 Bucket                 
+env.BROWSER                                                Browser Run               
+env.ASSETS                                                 Assets                    
+env.CLAUDE_API_KEY ("(hidden)")                            Environment Variable      
+env.DEV_TOOLS_ENABLED ("(hidden)")                         Environment Variable      
+
+╭────────────────────────────────────────────────────────────────────────────╮
+│  [b] open a browser [e] open local explorer [c] clear console [x] to exit  │
+╰────────────────────────────────────────────────────────────────────────────╯
+⎔ Starting remote preview...
+🌀 Building list of assets...
+Total Upload: 1685.09 KiB / gzip: 372.76 KiB
+✨ Read 6 files from the assets directory /Users/martin/Projects/first-contact/apps/control-app/public
+🌀 Starting asset upload...
+🌀 Found 4 new or modified static assets to upload. Proceeding with upload...
++ /starter-sites/1stcontact.json
++ /_assets/builder.js.map
++ /builder.html
++ /_assets/builder.js
+Uploaded 1 of 4 assets
+Uploaded 3 of 4 assets
+Uploaded 4 of 4 assets
+✨ Success! Uploaded 4 files (3.36 sec)
+
+✘ [ERROR] A request to the Cloudflare API (/accounts/8feaadfce95919ab2d2b93aa8df6f6ce/workers/scripts/1stcontact-control-app-production/edge-preview) failed.
+
+  KV namespace 'placeholder_browser_budget_kv' is not valid. Please verify the namespace_id in your
+  configuration. [code: 10042]
+
+✘ [ERROR] A request to the Cloudflare API (/accounts/8feaadfce95919ab2d2b93aa8df6f6ce/workers/scripts/1stcontact-control-app-production/edge-preview) failed.
+
+🪵  Logs were written to "/Users/martin/Library/Preferences/.wrangler/logs/wrangler-2026-06-24_23-34-29_217.log"
+((.venv-working) ) martin@nyx control-app %
+
+```
+
+<!-- xgd-turn id="dd4dbc08-f720-4da2-8c66-0a2657375924-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:36:02.191Z" -->
+#### Claude
+The `--remote --env production` path failed because Wrangler tries to push your worker to Cloudflare's edge-preview environment, and the production-env KV/D1 IDs in your `wrangler.toml` are literal `"placeholder_*"` strings — never replaced with real CF resource IDs. You'd have to create real KV namespaces + a real D1 database just to test BROWSER, which is overkill.
+
+The cleaner fix (and what the deprecation banner at the top of your output is pointing at): mark **just** the BROWSER binding as remote on the *local* config, leave everything else local in Miniflare.
+
+**Edit `apps/control-app/wrangler.toml`** — add this block under the existing top-level bindings (e.g. right before the `[env.production]` line):
+
+```toml
+[browser]
+binding = "BROWSER"
+remote = true
+```
+
+**Then run plain**:
+
+```bash
+pnpm --filter @gendev/control-app dev
+```
+
+(or `cd apps/control-app && pnpm dev`)
+
+That gives you: local Miniflare KV/R2/D1 (no infra setup), real Cloudflare Browser Rendering only for the BROWSER binding. Every other binding stays in placeholder-land where you've been all along.
+
+This IS a config change. Want me to:
+- **(a)** make the edit myself under REQ-51 scope (config tweak that completes the dogfooding loop for the ticket), or
+- **(b)** leave it to you so the change has your fingerprints on the wrangler.toml?
+
+If (a), I'll do it, add a one-line `[FREE-CODED]` commit, and append the SHA to the ticket. Just say "do it".
+
+<!-- xgd-turn id="f0767364-62ab-476e-b3cc-3f67a359fef0-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:36:41.151Z" -->
+#### You
+Please make these changes
+
+<!-- xgd-turn id="f0767364-62ab-476e-b3cc-3f67a359fef0-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:37:52.248Z" -->
+#### Claude
+Now commit and update the ticket:
+
+Done. Now stop your current `wrangler dev` (if it's still running from the failed `--remote --env production` attempt) and run:
+
+```bash
+cd apps/control-app
+pnpm dev
+```
+
+You should see `env.BROWSER` listed as `Browser Run` in the binding table again, but this time the worker boots successfully (no placeholder-KV error) because KV/R2/D1 stay local in Miniflare. Call `preview_generated_page` from chat — it should now return real screenshots in the chat card.
+
+REQ-51 ticket now records all three commits (`9947c69`, `1ece0cc`, `93a59eb`).
+
+<!-- xgd-turn id="8afd3026-4cdd-4aab-878c-2ed558def4b3-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:40:23.070Z" -->
+#### You
+Still not working — now the error is:
+
+> *"No such module *`@cloudflare/puppeteer`*"*
+
+So the binding is there now (progress! 🎉) but the `@cloudflare/puppeteer`** package isn't installed/available** in the Worker bundle. As the author, you'd need to add it as a dependency:
+
+```bash
+npm install @cloudflare/puppeteer
+
+```
+
+And make sure it's bundled with the Worker. Once that's in place, the screenshot pipeline should be fully operational. Getting closer!
+
+✗preview_generated_page — rejected
+
+preview render failed: No such module "@cloudflare/puppeteer".
+
+I tried the install but :
+
+```
+((.venv-working) ) martin@nyx first-contact % npm install @cloudflare/puppeteer
+npm error code EUNSUPPORTEDPROTOCOL
+npm error Unsupported URL Type "workspace:": workspace:*
+npm error A complete log of this run can be found in: /Users/martin/.npm/_logs/2026-06-24T23_39_36_089Z-debug-0.log
+((.venv-working) ) martin@nyx first-contact %
+
+```
+
+<!-- xgd-turn id="8afd3026-4cdd-4aab-878c-2ed558def4b3-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:43:33.052Z" -->
+#### Claude
+Let me check what's actually installed.
+
+The package IS installed. The "No such module" error is a Wrangler bundler issue: my code uses a string-indirect dynamic import (`await import(modSpecifier)`) specifically to fool Vite/esbuild — but that also hides the import from Wrangler, so it never bundles the package, and the Workers runtime can't resolve it at request time.
+
+The standard CF pattern is a plain static `import puppeteer from "@cloudflare/puppeteer"`. Let me check whether that import is safe to evaluate in our test environment (jsdom):
+
+Static import is safe (no side effects). Let me convert browser-driver.ts to use a static import so Wrangler bundles the package:
+
+Now drop the local `PuppeteerModule` interface and update `makePuppeteerDriver` to use the static import:
+
+Now run the tests to make sure jsdom can load puppeteer without errors:
+
+Tests pass. Run the full suite to confirm no regressions:
+
+699/699 still green. Commit:
+
+Done. Restart `pnpm dev` (Wrangler needs a fresh worker bundle to pick up the static import — Ctrl-C and re-run from `apps/control-app`):
+
+```bash
+cd apps/control-app
+pnpm dev
+```
+
+Then call `preview_generated_page` again from chat. The module-resolution error should be gone and you should finally get real screenshot bytes back. If you hit a budget-exhausted message right away, your earlier failed runs may have charged seconds against the session budget — open a fresh chat session to reset, or wait for the per-session window to roll over.
+
+REQ-51 now records four commits: `9947c69` (initial), `1ece0cc` (degraded-mode signals), `93a59eb` (wrangler.toml BROWSER binding), `61e805e` (static puppeteer import).
+
+<!-- xgd-turn id="ba865377-dfdd-418e-87db-6bd559666baf-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-24T23:48:14.799Z" -->
+#### You
+Try now
+
+Getting closer — different error this time! The browser launched but the **session connection failed**. It looks like the browser session isn't ready/available when the connection attempt is made. This is a timing/session-management issue — the Worker is trying to attach to a session that isn't fully initialized yet.
+
+As the author, this might be a case of needing to:
+
+1. **Retry logic** — wait for the session to be ready before connecting, or
+2. **Launch a fresh session** rather than connecting to an existing one — the `4d9e83b4...` session ID suggests it's trying to reuse a stale session handle.
+
+Want me to try again immediately in case it's a transient timing issue?
+
+✗preview_generated_page — rejected
+
+preview render failed: Unable to connect to existing session 4d9e83b4-6c23-456c-aaf0-d5c7b15b312f (it may still be in use or not ready yet) - retry or launch a new browser: TypeError: Cannot read properties of null (reading 'accept')
+
+[system] The previous turn produced 1 failed tool call. Review the errors and retry where appropriate: - preview_generated_page({}) → unknown tool: preview_generated_page
+
+Sure
+
+It's working now! 🎉 However, the screenshot captured a **"localhost is blocked"** error page rather than your actual site. This happens because the preview renderer is trying to load the draft HTML via an internal `localhost` URL, and something in the rendering environment is blocking that loopback request.
+
+The tool itself is fully operational — browser launched, page loaded, screenshots taken, and digest returned. The issue is just that the preview URL (`localhost:8788/assets/previews/...`) is being blocked at the network level inside the renderer.
+
+So the fix is on the infrastructure side: the preview renderer needs to be able to reach the local dev server (or the preview HTML needs to be served from a non-localhost origin). Does that match what you're seeing?
+
+◇Preview — home
+
+mobile
+
+tablet
+
+desktop
+
+# Reference Digest — http://localhost:8788/assets/previews/anonymous/2cb652c41ddc76fa/home/page.html
+
+So there's a start up timing issue and then a localhost issue?
+
+<!-- xgd-turn id="ba865377-dfdd-418e-87db-6bd559666baf-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-24T23:53:11.037Z" -->
+#### Claude
+Yes — two distinct issues, both real, both need fixing:
+
+1. **Localhost is unreachable**: Cloudflare's Browser Rendering service runs in CF's cloud. It can't see `localhost:8788`. My handler builds the preview URL as `{requestOrigin}/assets/{key}` — that points at the operator's localhost, which CF's headless Chrome (running in a datacenter) can't reach. So the browser shows the "site blocked" interstitial. This is a fundamental issue, not local-dev-only — even in production, routing the rendered HTML through a public URL adds a round-trip with no benefit when we already have the HTML in memory.
+
+2. **Session reconnection race**: Cloudflare's puppeteer wrapper reuses browser sessions; when a stale handle is attached you get the `null.accept` error. Their own error message says "retry or launch a new browser". A single retry on that specific error class makes it disappear.
+
+Let me scope and fix both:
+
+**Step 1: Switch preview-generated-page.ts from R2-served URL to data: URL** (and drop the redundant R2 HTML upload):
+
+Now update the `renderPreviewDigest` call to use the data URL, and tell `renderPreviewDigest` what the logical `sourceUrl` should be:
+
+Now add the `htmlToDataUrl` helper and remove the now-unused `buildPreviewUrl` helper:
+
+Now also remove the import of `ActionContext` if no longer used, and check the unused requestOrigin reference. Actually `ActionContext` is still used for the `gateBrowserBudget` and other helpers, so we leave it. Let me check if there's an unused field — actually I removed the `requestOrigin` requirement. But the registry still has the field. We can leave it; other tools might use it later.
+
+Now update the `renderPreviewDigest` signature in extractor to accept the new args shape:
+
+**Step 2: Add retry-once on session-attach race in browser-driver.ts**
+
+Now add the `launchWithRetry` helper just above `makePuppeteerDriver`:
+
+Now let me update the tests. The `previewUrl` parameter is renamed to `navigationUrl`/`sourceUrl` so the helpers test the new shape:
+
+Good — tests don't reference those fields directly. Let me run the test suite:
+
+Now let me add UATs for the new behaviors. First a test that verifies sourceUrl uses the `preview://` scheme, and one for the retry logic via direct call to `launchWithRetry`:
+
+Run again to confirm:
+
+Now run the full suite:
+
+701/701 pass (added 2 new UATs). Commit:
+
+Both real, now both fixed. Restart `pnpm dev` and try `preview_generated_page` again:
+
+- **Localhost fix**: puppeteer now navigates to a `data:text/html;base64,…` URL containing your rendered HTML inline — no localhost reach-back, no R2 round-trip. The screenshot should show your actual draft, not the "blocked" interstitial.
+- **Session-attach retry**: if the first launch hits the "session not ready / `null.accept`" race, the driver retries once silently. Two consecutive failures still bubble up.
+
+The chat-card header will now read `Preview — home` with `sourceUrl: preview://anonymous/<draftId>/home` (a synthetic identifier — that's intentional; data: URLs are awful to display).
+
+REQ-51 ticket now records five commits: initial → degraded-mode signals → wrangler.toml BROWSER binding → static puppeteer import → data: URL + retry.
 
 <!-- xgd-chat-end -->

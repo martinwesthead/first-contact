@@ -6,7 +6,7 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-24T20:52:02.715455+00:00'
+updated_at: '2026-06-24T23:52:59.835179+00:00'
 completed_at: null
 last_field_updated: body
 status: free_coded
@@ -17,6 +17,10 @@ fields:
   needs_review: false
   commits:
   - 9947c6900313173f6048441f3e0af5a1f42f04d5
+  - 1ece0cc5b8e8513846a9c861de64fbec9873490b
+  - 93a59ebbec4735fc5afbff279f1cc400d53688e2
+  - 61e805ecd9008327756e601271046eacc5413e0f
+  - 3dcf34955191b829e9854a5c2d3e4b2da61663a3
   version: 0.0.37
 ---
 
@@ -185,3 +189,134 @@ Implementation matches the scope above. The notable choices the reconciler shoul
 ## Test results
 
 `pnpm exec vitest run`: 698 tests, all passing. 14 new tests in 3 files cover ACs 1–8.
+
+
+
+## Amendment 2026-06-24 — degraded-mode signals (commit 1ece0cc)
+
+**Problem found in dogfooding**: the first pass returned a digest with all
+signals as `not_detected` whenever BROWSER was missing or budget exhausted,
+so the chat card rendered as essentially empty ("Preview — home" + a single
+`#` from `renderDigestMarkdown` on an all-empty `Signals` shape). Locally
+(without `wrangler dev --remote`) BROWSER is never bound, so the tool was
+useless during local development even on drafts with real content.
+
+**Fix**: the handler already has the in-memory rendered HTML it just uploaded
+to R2 for the browser to navigate to. On the degraded path, run
+`extractSignals(html, previewUrl)` over that HTML so the digest surfaces the
+structural picture the static extractors can produce — headings, nav links,
+asset inventory, section counts — even when visual capture is unavailable.
+
+Concrete behaviour:
+- `fetchPath` is now `'static'` on the degraded path (was `'rendered'` with
+  empty signals). Consumers can tell at a glance this is a degraded digest.
+- `whatsMissing[0]` is the degradation reason (`"BROWSER binding not
+  configured for this environment."` or `"Browser Rendering budget exhausted
+  …"`). Remaining entries are the usual `deriveWhatsMissing(signals)` output.
+- `summary` reads `"Preview of draft page '{pageId}' (visual capture
+  unavailable; structural signals only): N headings, N sections, N assets."`
+
+**Coverage**: new UAT in `test_UAT_FC_REQ-51_preview_generated_page.test.ts`
+asserts that a draft with content modules produces a digest whose
+`signals.content.headings` contains the draft's actual headings, with
+`fetchPath: 'static'`, no screenshots, and the BROWSER-binding note at the
+top of `whatsMissing`. Existing AC5 (budget-exhausted) still passes — it
+only required undefined screenshot keys + a budget-related note, both still true.
+
+
+
+## Amendment 2026-06-24 — wrangler.toml top-level BROWSER binding (commit 93a59eb)
+
+**Problem found in dogfooding (continued)**: even after the degraded-mode
+fix, the BROWSER binding was unreachable from local `pnpm dev`. The previous
+`wrangler.toml` only declared BROWSER under `[env.production.browser]`, so
+plain `wrangler dev --port 8788` left `env.BROWSER` undefined and both
+analyze_page and preview_generated_page degraded forever during local dev.
+
+Falling back to `wrangler dev --remote --env production` failed because the
+production-env KV/D1 IDs are still literal `"placeholder_*"` strings (the
+worker has never been fully deployed). Cloudflare's edge-preview rejects
+the deploy with `KV namespace 'placeholder_browser_budget_kv' is not valid`.
+
+**Fix**: use Wrangler's per-binding remote feature. Add a top-level
+`[browser]` block with `binding = "BROWSER"` and `remote = true`. This
+proxies ONLY BROWSER calls to real Cloudflare while KV / R2 / D1 stay in
+Miniflare. No need to provision real CF KV/D1 IDs just to test Browser
+Rendering locally.
+
+After this change: `cd apps/control-app && pnpm dev` exercises the rendered
+fetch path for both analyze_page and preview_generated_page. Browser-second
+charges hit the configured CF account; the REQ-20 per-session budget cap
+(50s) still applies.
+
+
+
+## Amendment 2026-06-24 — static-import @cloudflare/puppeteer (commit 61e805e)
+
+**Problem found in dogfooding (continued, third pass)**: with the BROWSER
+binding now reachable (previous amendment), preview_generated_page got
+further but failed with `No such module "@cloudflare/puppeteer"` at request
+time. The package WAS installed in node_modules — but the
+`apps/control-app/src/operator/browser-driver.ts` `makePuppeteerDriver`
+helper used a deliberately-opaque `await import(modSpecifier)` pattern to
+keep Vite/esbuild from pre-resolving puppeteer at test build time. That
+same opacity also kept Wrangler's bundler from including puppeteer in the
+worker bundle, so the runtime had nothing to resolve.
+
+**Fix**: replace the dynamic indirection with a plain top-of-file
+`import puppeteer from "@cloudflare/puppeteer"`. Wrangler picks up the
+static import and bundles the package. Tests stay green because
+`setDriverFactoryForTest` is called before any handler invocation, so
+`makePuppeteerDriver` never runs in test paths, and puppeteer's entry
+module has no module-load side effects (verified by jsdom suite passing
+all 699 tests after the change).
+
+The local `PuppeteerModule` ambient shim is no longer needed and was deleted.
+
+
+
+## Amendment 2026-06-24 — data: URL navigation + session-attach retry (commit 3dcf349)
+
+**Two failures surfaced once the rendered path could finally launch:**
+
+### 1. Localhost-unreachable
+
+Cloudflare's Browser Rendering binding runs in the CF cloud, not on the
+operator's machine. The handler was uploading rendered HTML to R2 and
+pointing the browser at `{requestOrigin}/assets/{key}` — CF couldn't
+resolve the localhost origin and screenshotted a "localhost is blocked"
+interstitial. Even in production this added a network round-trip when we
+already had the bytes in memory.
+
+**Fix**: skip the R2 HTML upload, pass the rendered HTML to puppeteer via
+a `data:text/html;base64,...` URL. `sourceUrl` becomes a synthetic
+`preview://{accountId}/{draftId}/{pageId}` identifier so the chat card has
+a stable, human-readable handle (a data: URL is unusable for display).
+
+`renderPreviewDigest` signature changed: instead of a single `previewUrl`,
+it now takes `navigationUrl` (what puppeteer goes to) and `sourceUrl`
+(what the digest records). Internal-only change — the only caller is the
+handler, which now passes a data URL + a `preview://` URL respectively.
+
+### 2. Session-attach race
+
+CF's puppeteer wrapper reuses browser sessions for efficiency. Attaching
+to a session that's still warming up surfaces as
+`"Unable to connect to existing session <id> ... TypeError: Cannot read
+properties of null (reading 'accept')"`. Their own error message says
+"retry or launch a new browser".
+
+**Fix**: new `launchWithRetry()` in `browser-driver.ts` pattern-matches on
+the specific error class (`Unable to connect to existing session` or
+`reading 'accept'`) and retries `puppeteer.launch()` exactly once. A
+second consecutive failure bubbles to the handler.
+
+### Coverage
+
+- New UAT asserts `digest.sourceUrl` uses the `preview://` scheme (never
+  http/https/data — those would be confusing in the chat card).
+- New UAT asserts the URL the driver actually navigates to is a
+  `data:text/html;charset=utf-8;base64,...` URL whose decoded content
+  includes the draft's headings (proves the rendered HTML reaches the
+  browser without a network hop).
+- Full vitest suite: 701/701.
