@@ -6,10 +6,10 @@ title: 'Framework module catalog: content modules (text-block, services-grid, co
   with progressive-enhancement form and validator extensions'
 created_by: xgd
 created_at: '2026-06-25T01:11:07.589587+00:00'
-updated_at: '2026-06-25T01:11:07.589587+00:00'
+updated_at: '2026-06-25T01:20:43.116273+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-3630a42c
