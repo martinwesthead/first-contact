@@ -12,7 +12,7 @@ suites:
     source_dirs: []
     test_dirs:
     - tests
-    per_test_timeout: 30000
+    per_test_timeout_seconds: 30
     lint:
       tool: eslint
     build:
