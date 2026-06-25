@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Site } from "@gendev/site-schema";
-import { chargeBrowserBudget, DEFAULT_BROWSER_BUDGET } from "../packages/web-fetch-safety/src/index.js";
+import { DEFAULT_BROWSER_BUDGET } from "../packages/web-fetch-safety/src/index.js";
 import {
   expectOkPayload,
   makeFakeDriver,
@@ -175,18 +175,18 @@ describe("UAT FC REQ-51: preview_generated_page closes the AI's perception loop"
   it("AC5: budget-exhausted call succeeds with empty screenshots and a whatsMissing entry citing the exhausted budget (parity with analyze_page AC10)", async () => {
     const h = makePreviewHarness({ accountId: "acct-exh", sessionId: "sess-exh" });
 
-    // Burn the full session budget in advance — same shape as the REQ-22 budget test.
-    for (let i = 0; i < 10; i++) {
-      await chargeBrowserBudget(
-        { BROWSER_BUDGET_KV: h.env.BROWSER_BUDGET_KV },
-        {
-          accountId: "acct-exh",
-          sessionId: "sess-exh",
-          costSeconds: 5,
-        },
-      );
-    }
-    expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBe(50);
+    // BUG-17: defaults are 1e9s. The handler doesn't accept a config
+    // override, so seed the session counter directly with a spent value
+    // >= the (huge) cap to trip the budget-exhausted fallback.
+    const nowSec = Math.floor(Date.now() / 1000);
+    await h.env.BROWSER_BUDGET_KV.put(
+      "bb:session:sess-exh",
+      JSON.stringify({
+        spentSeconds: DEFAULT_BROWSER_BUDGET.sessionMaxSeconds,
+        resetsAt: nowSec + 24 * 60 * 60,
+      }),
+    );
+    expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBeGreaterThanOrEqual(1_000_000_000);
 
     h.installDriver(
       makeFakeDriver({

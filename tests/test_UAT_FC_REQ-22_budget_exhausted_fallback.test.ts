@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chargeBrowserBudget, DEFAULT_BROWSER_BUDGET } from "../packages/web-fetch-safety/src/index.js";
+import { DEFAULT_BROWSER_BUDGET } from "../packages/web-fetch-safety/src/index.js";
 import {
   loadFixture,
   makeFakeDriver,
@@ -11,18 +11,18 @@ describe("UAT FC REQ-22: budget-exhausted falls back to static (AC 10)", () => {
   it("AC10: when the session browser budget is exhausted, analyze_page returns ok with fetchPath='static' and a whatsMissing entry citing the budget", async () => {
     const h = makeHarness({ sessionId: "sess-exh", accountId: "acct-exh" });
 
-    // Burn the full session budget in advance.
-    for (let i = 0; i < 10; i++) {
-      await chargeBrowserBudget(
-        { BROWSER_BUDGET_KV: h.env.BROWSER_BUDGET_KV },
-        {
-          accountId: "acct-exh",
-          sessionId: "sess-exh",
-          costSeconds: 5,
-        },
-      );
-    }
-    expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBe(50);
+    // BUG-17: defaults are 1e9s. The handler doesn't accept a config
+    // override, so to exercise the budget-exhausted fallback we seed the
+    // session counter directly with a spent value >= the (huge) cap.
+    const nowSec = Math.floor(Date.now() / 1000);
+    await h.env.BROWSER_BUDGET_KV.put(
+      "bb:session:sess-exh",
+      JSON.stringify({
+        spentSeconds: DEFAULT_BROWSER_BUDGET.sessionMaxSeconds,
+        resetsAt: nowSec + 24 * 60 * 60,
+      }),
+    );
+    expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBeGreaterThanOrEqual(1_000_000_000);
 
     // Render-by-default (REQ-22 Amendment 2026-06-24): every analyze_page
     // call attempts the rendered path. The budget gate fires inside

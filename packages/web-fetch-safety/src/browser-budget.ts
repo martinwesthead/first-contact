@@ -5,9 +5,13 @@ export type BrowserBudgetConfig = {
   dayMaxSeconds: number;
 };
 
+// BUG-17: defaults are effectively infinite (1e9 seconds ≈ 31.7 years) so the
+// cap never trips for production callers. Tighten per-call via the `config`
+// override on chargeBrowserBudget / checkBrowserBudget if a future caller
+// needs a real ceiling — the enforcement machinery is unchanged.
 export const DEFAULT_BROWSER_BUDGET: BrowserBudgetConfig = {
-  sessionMaxSeconds: 50,
-  dayMaxSeconds: 200,
+  sessionMaxSeconds: 1_000_000_000,
+  dayMaxSeconds: 1_000_000_000,
 };
 
 export type BrowserBudgetEnv = {
