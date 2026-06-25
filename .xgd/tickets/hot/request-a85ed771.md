@@ -5,10 +5,10 @@ type: request
 title: Reference Digest schema + static-fetch path + Layer A signal extractors
 created_by: xgd
 created_at: '2026-06-16T23:24:59.849248+00:00'
-updated_at: '2026-06-19T01:17:36.425865+00:00'
+updated_at: '2026-06-25T02:41:17.454554+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   priority: high
   story_points: 7
@@ -16,6 +16,7 @@ fields:
   needs_review: false
   commits:
   - e4ac8800875ff8861c8a0bb029f77ba846fbefd1
+  bundled_in: bundle-bbb1bd9c
 ---
 
 ## Problem
