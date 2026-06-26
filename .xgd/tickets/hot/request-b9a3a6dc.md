@@ -5,9 +5,9 @@ type: request
 title: Publish action + R2 site snapshots + History tab for revert
 created_by: xgd
 created_at: '2026-06-16T23:20:30.006555+00:00'
-updated_at: '2026-06-16T23:20:30.006555+00:00'
+updated_at: '2026-06-26T00:31:04.888629+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: status
 status: draft
 fields:
   story_points: 8
