@@ -15,7 +15,7 @@ fields:
   auto_merge_back: true
   needs_review: false
   commits:
-  - e4ac8800875ff8861c8a0bb029f77ba846fbefd1
+  - 2bf2e4ee83e06b767c524dfb255ee256bf330950
   bundled_in: bundle-bbb1bd9c
 ---
 
