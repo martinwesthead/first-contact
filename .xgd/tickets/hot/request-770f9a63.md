@@ -5,17 +5,17 @@ type: request
 title: Web fetch safety contract + R2 assets bucket binding and HTTP surface
 created_by: xgd
 created_at: '2026-06-16T23:23:43.955192+00:00'
-updated_at: '2026-06-25T02:41:17.338221+00:00'
-completed_at: null
+updated_at: '2026-06-27T02:20:24.871044+00:00'
+completed_at: '2026-06-27T02:20:24.871044+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: high
   story_points: 7
   auto_merge_back: true
   needs_review: false
   commits:
-  - d1cadff562e896775b85b828809ed01a8007038a
+  - 212b974faed14287989899e9c83f0ad903506325
   bundled_in: bundle-bbb1bd9c
 ---
 

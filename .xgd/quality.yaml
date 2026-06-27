@@ -12,14 +12,21 @@ suites:
     source_dirs:
     - apps/control-app/src
     - apps/public-site/src
+    - packages/api-contracts/src
+    - packages/auth/src
+    - packages/billing/src
     - packages/builder-ui/src
+    - packages/extractor/src
     - packages/framework/src
+    - packages/portal-ui/src
     - packages/site-schema/src
     - packages/web-fetch-safety/src
     test_dirs:
-    - tests
+    - ai.gendevlabs.swift_xctest_open
+    per_test_timeout_seconds: 30
     lint:
-      tool: eslint
+      tools:
+      - eslint
     build:
       tool: tsc
     extra_args: []
