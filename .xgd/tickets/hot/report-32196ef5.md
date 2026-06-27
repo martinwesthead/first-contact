@@ -1,0 +1,596 @@
+---
+uid: report-32196ef5
+id: REPORT-628
+type: report
+title: 'Regression quality: fail (76 tests, 3 failed)'
+created_by: xgd
+created_at: '2026-06-27T01:37:29.697221+00:00'
+updated_at: '2026-06-27T01:37:29.697221+00:00'
+completed_at: null
+last_field_updated: created_at
+result: fail
+fields:
+  report_kind: quality
+  subject_uid: report-a5713a64
+  commit: 808d5fbf42b17c8bc22dffd2fd113566ba4a9e0a
+---
+
+{
+  "timestamp": "2026-06-27T01:36:46.445437Z",
+  "lint": {
+    "status": "success",
+    "exit_code": 0,
+    "duration_seconds": 0.00012187473475933075,
+    "errors": 0,
+    "warnings": 0,
+    "error_list": [],
+    "warning_list": []
+  },
+  "build": {
+    "status": "success",
+    "exit_code": 0,
+    "duration_seconds": 0.0,
+    "errors": 0,
+    "error_list": []
+  },
+  "preflight": {
+    "status": "pass",
+    "violations": []
+  },
+  "suites": {
+    "javascript-vitest": {
+      "suite_name": "javascript-vitest",
+      "status": "failure",
+      "exit_code": 1,
+      "duration_seconds": 17.76056220801547,
+      "passed": 73,
+      "failed": 2,
+      "skipped": 0,
+      "errors": 0,
+      "total": 75,
+      "deselected": 303,
+      "test_filter": [
+        "test_UAT_AC477",
+        "test_UAT_AC478",
+        "test_UAT_AC479",
+        "test_UAT_AC480",
+        "test_UAT_AC481",
+        "test_UAT_AC482",
+        "test_UAT_AC483",
+        "test_UAT_AC484",
+        "test_UAT_AC485",
+        "test_UAT_AC486",
+        "test_UAT_AC487",
+        "test_UAT_AC544",
+        "test_UAT_AC545",
+        "test_UAT_AC546",
+        "test_UAT_AC547",
+        "test_UAT_AC548",
+        "test_UAT_AC549",
+        "test_UAT_AC550",
+        "test_UAT_AC551",
+        "test_UAT_AC552",
+        "test_UAT_AC553",
+        "test_UAT_AC554",
+        "test_UAT_AC555",
+        "test_UAT_AC556",
+        "test_UAT_AC557",
+        "test_UAT_AC558",
+        "test_UAT_AC559",
+        "test_UAT_AC560",
+        "test_UAT_AC561",
+        "test_UAT_AC562",
+        "test_UAT_AC563",
+        "test_UAT_AC564",
+        "test_UAT_AC565",
+        "test_UAT_AC566",
+        "test_UAT_AC567",
+        "test_UAT_AC568",
+        "test_UAT_AC569",
+        "test_UAT_AC570",
+        "test_UAT_AC571",
+        "test_UAT_AC572",
+        "test_UAT_AC573",
+        "test_UAT_AC574",
+        "test_UAT_AC575",
+        "test_UAT_AC576",
+        "test_UAT_AC577",
+        "test_UAT_AC578",
+        "test_UAT_AC579",
+        "test_UAT_AC580",
+        "test_UAT_AC581",
+        "test_UAT_AC582",
+        "test_UAT_AC583",
+        "test_UAT_AC584",
+        "test_UAT_AC587",
+        "test_UAT_AC588",
+        "test_UAT_AC589",
+        "test_UAT_AC590",
+        "test_UAT_AC591",
+        "test_UAT_AC592",
+        "test_UAT_AC593",
+        "test_UAT_AC594",
+        "test_UAT_AC595",
+        "test_UAT_AC596",
+        "test_UAT_AC597",
+        "test_UAT_AC598",
+        "test_UAT_AC599",
+        "test_UAT_AC600",
+        "test_UAT_AC601",
+        "test_UAT_AC602",
+        "test_UAT_AC603",
+        "test_UAT_AC604",
+        "test_UAT_AC605",
+        "test_UAT_AC606",
+        "test_UAT_AC607",
+        "test_UAT_AC608",
+        "test_UAT_AC609",
+        "test_UAT_FC_BUNDLE_3",
+        "test_UAT_FC_REQ_13",
+        "test_UAT_FC_REQ_20",
+        "test_UAT_FC_REQ_21",
+        "test_UAT_FC_REQ_9"
+      ],
+      "coverage": 0.0,
+      "lines_covered": 0,
+      "lines_total": 0,
+      "files_covered": [],
+      "junit_xml_path": null,
+      "stdout": "s_appear_verbatim_in_custom_properties\",\"status\":\"skipped\",\"title\":\"test_UAT_AC404_supplied_values_appear_verbatim_in_custom_properties\",\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts\"],\"fullName\":\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts test_UAT_AC405_partial_token_input_fills_unspecified_slots_from_defaults\",\"status\":\"skipped\",\"title\":\"test_UAT_AC405_partial_token_input_fills_unspecified_slots_from_defaults\",\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts\"],\"fullName\":\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts test_UAT_AC406_no_input_produces_fully_defaulted_stylesheet\",\"status\":\"skipped\",\"title\":\"test_UAT_AC406_no_input_produces_fully_defaulted_stylesheet\",\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts\"],\"fullName\":\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts test_UAT_AC407_dark_palette_emits_media_block_with_only_supplied_color_roles\",\"status\":\"skipped\",\"title\":\"test_UAT_AC407_dark_palette_emits_media_block_with_only_supplied_color_roles\",\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts\"],\"fullName\":\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts test_UAT_AC408_vetted_fonts_shortlist_publishes_13_families_with_metadata\",\"status\":\"skipped\",\"title\":\"test_UAT_AC408_vetted_fonts_shortlist_publishes_13_families_with_metadata\",\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts\"],\"fullName\":\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts test_UAT_AC409_font_family_declaration_resolves_case_insensitively_ignoring_quotes\",\"status\":\"skipped\",\"title\":\"test_UAT_AC409_font_family_declaration_resolves_case_insensitively_ignoring_quotes\",\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts\"],\"fullName\":\"Story story-e53ba4cf: theme tokens \u2192 CSS custom properties + vetted fonts test_UAT_AC410_google_fonts_url_lists_each_family_with_weights_and_display_swap\",\"status\":\"skipped\",\"title\":\"test_UAT_AC410_google_fonts_url_lists_each_family_with_weights_and_display_swap\",\"failureMessages\":[],\"meta\":{}}],\"startTime\":1782524208087,\"endTime\":1782524208087,\"status\":\"passed\",\"message\":\"\",\"name\":\"/Users/martin/.xgd/worktrees/https___github.com_gendevlabs_1stcontact.git/reconcile-BUNDLE-3/tests/test_reconciliation_theme_css_and_fonts.test.ts\"},{\"assertionResults\":[{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC555_internal_and_ssrf_targets_rejected_with_typed_detail\",\"status\":\"passed\",\"title\":\"test_UAT_AC555_internal_and_ssrf_targets_rejected_with_typed_detail\",\"duration\":1.615083000000027,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC556_disallowed_schemes_rejected_with_typed_reason\",\"status\":\"passed\",\"title\":\"test_UAT_AC556_disallowed_schemes_rejected_with_typed_reason\",\"duration\":0.37420799999995324,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC557_plain_http_requires_same_origin_approval\",\"status\":\"passed\",\"title\":\"test_UAT_AC557_plain_http_requires_same_origin_approval\",\"duration\":0.14845900000000256,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC558_redirects_revalidate_target_on_every_hop\",\"status\":\"passed\",\"title\":\"test_UAT_AC558_redirects_revalidate_target_on_every_hop\",\"duration\":1.1275000000000546,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC559_redirect_chain_capped_at_five_hops\",\"status\":\"passed\",\"title\":\"test_UAT_AC559_redirect_chain_capped_at_five_hops\",\"duration\":1.4667090000000371,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC560_response_body_capped_at_five_megabytes\",\"status\":\"passed\",\"title\":\"test_UAT_AC560_response_body_capped_at_five_megabytes\",\"duration\":1.9300830000000815,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC561_identical_get_fetches_within_one_hour_return_from_cache\",\"status\":\"passed\",\"title\":\"test_UAT_AC561_identical_get_fetches_within_one_hour_return_from_cache\",\"duration\":3.362707999999998,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC562_per_account_hourly_fetch_limit_rate_limited_on_overage\",\"status\":\"passed\",\"title\":\"test_UAT_AC562_per_account_hourly_fetch_limit_rate_limited_on_overage\",\"duration\":0.8265410000000202,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC563_per_account_burst_limit_rate_limited_at_eleven_in_sixty_seconds\",\"status\":\"passed\",\"title\":\"test_UAT_AC563_per_account_burst_limit_rate_limited_at_eleven_in_sixty_seconds\",\"duration\":0.22008400000004258,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC564_per_account_daily_fetch_limit_rate_limited_on_overage\",\"status\":\"passed\",\"title\":\"test_UAT_AC564_per_account_daily_fetch_limit_rate_limited_on_overage\",\"duration\":1.0500000000000682,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC565_browser_budget_exhausts_per_chat_session_at_fifty_seconds\",\"status\":\"passed\",\"title\":\"test_UAT_AC565_browser_budget_exhausts_per_chat_session_at_fifty_seconds\",\"duration\":0.38133300000004056,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC566_browser_budget_exhausts_per_account_day_at_two_hundred_seconds\",\"status\":\"passed\",\"title\":\"test_UAT_AC566_browser_budget_exhausts_per_account_day_at_two_hundred_seconds\",\"duration\":0.1582499999999527,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC567_robots_txt_rules_govern_with_longest_match_precedence\",\"status\":\"passed\",\"title\":\"test_UAT_AC567_robots_txt_rules_govern_with_longest_match_precedence\",\"duration\":0.6482090000000653,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC568_per_chat_robots_override_unblocks_origin_without_affecting_other_chats\",\"status\":\"passed\",\"title\":\"test_UAT_AC568_per_chat_robots_override_unblocks_origin_without_affecting_other_chats\",\"duration\":0.6424160000000256,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC569_operator_intent_token_required_for_ai_fetch_tool_call\",\"status\":\"passed\",\"title\":\"test_UAT_AC569_operator_intent_token_required_for_ai_fetch_tool_call\",\"duration\":0.3636660000000802,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC570_operator_intent_token_expires_after_sixty_seconds\",\"status\":\"passed\",\"title\":\"test_UAT_AC570_operator_intent_token_expires_after_sixty_seconds\",\"duration\":0.40075000000001637,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC571_operator_intent_token_bound_to_its_chat_session\",\"status\":\"passed\",\"title\":\"test_UAT_AC571_operator_intent_token_bound_to_its_chat_session\",\"duration\":0.07016699999996945,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC572_operator_messages_with_url_or_fetch_keyword_imply_intent\",\"status\":\"passed\",\"title\":\"test_UAT_AC572_operator_messages_with_url_or_fetch_keyword_imply_intent\",\"duration\":0.27779099999997925,\"failureMessages\":[],\"meta\":{}},{\"ancestorTitles\":[\"Story story-a0482aed: External fetch safety contract\"],\"fullName\":\"Story story-a0482aed: External fetch safety contract test_UAT_AC573_safety_health_endpoint_returns_calling_accounts_rate_limit_state\",\"status\":\"passed\",\"title\":\"test_UAT_AC573_safety_health_endpoint_returns_calling_accounts_rate_limit_state\",\"duration\":1.0329590000000053,\"failureMessages\":[],\"meta\":{}}],\"startTime\":1782524208889,\"endTime\":1782524208905.033,\"status\":\"passed\",\"message\":\"\",\"name\":\"/Users/martin/.xgd/worktrees/https___github.com_gendevlabs_1stcontact.git/reconcile-BUNDLE-3/tests/test_reconciliation_web_fetch_safety.test.ts\"}]}",
+      "stderr": "",
+      "tests": [
+        {
+          "name": "UAT AC-477: GET /builder and /builder/ return the SPA shell via Workers Static Assets test_UAT_AC477_builder_route_serves_spa_shell_and_passes_other_assets",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-478: chat panel collapses to a 32px restore rail and restores remembered width across reload test_UAT_AC478_chat_panel_collapses_restores_and_persists_state",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-479: collapsed restore rail sits on the left edge of the preview, not the right test_UAT_AC479_restore_rail_sits_left_of_preview_in_dom_order",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-480: splitter drag resizes the chat panel, clamps to min and max, and persists the final width test_UAT_AC480_splitter_drag_resizes_clamps_persists_and_rehydrates",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-481: preview viewport presets resize the iframe to mobile 375px, tablet 768px, desktop 100% test_UAT_AC481_viewport_presets_resize_iframe_and_track_active_state",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-482: preview iframe fills the full height of its panel rather than collapsing to the iframe default test_UAT_AC482_preview_iframe_fills_panel_height_via_flex_column_contract",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-483: accepted AI tool call advances the working site and re-renders the preview test_UAT_AC483_accepted_set_theme_token_updates_store_and_preview_iframe",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-484: rejected AI tool call leaves site state unchanged and records a structured error in the chat log test_UAT_AC484_invalid_set_module_dial_rejected_with_structured_error",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-485: working site definition is persisted to browser storage and survives builder re-mount test_UAT_AC485_site_definition_persisted_survives_remount_and_warns_when_too_large",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-486: POST /api/chat proxies the Anthropic Messages API and returns extracted text and tool_use blocks test_UAT_AC486_chat_endpoint_forwards_to_anthropic_and_extracts_text_and_tool_use_blocks",
+          "file": "",
+          "status": "failed"
+        },
+        {
+          "name": "UAT AC-487: POST /api/chat returns 500 when API key is missing and 502 when the upstream call fails test_UAT_AC487_chat_endpoint_returns_500_when_key_missing_and_502_on_upstream_errors",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-553: Trial-plan chat session is offered state-edit tools but no paid-tier system-action tools test_UAT_AC553_trial_session_tool_list_includes_state_edit_tools_and_excludes_publish_stub",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-554: Paid-plan chat session additionally receives paid-tier system-action tools in its Anthropic tool list test_UAT_AC554_paid_session_tool_list_is_strict_superset_of_trial_and_includes_publish_stub",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-574: uploaded asset is retrievable with the same bytes and content type test_UAT_AC574_uploaded_asset_returns_same_bytes_and_content_type",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-575: listing endpoint enumerates stored assets with full metadata test_UAT_AC575_list_returns_entry_per_asset_with_key_size_etag_uploaded_contenttype",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-576: overwrite with matching If-Match etag succeeds and yields a new etag test_UAT_AC576_matching_if_match_overwrite_returns_2xx_with_new_etag_and_new_bytes",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-577: overwrite with stale If-Match etag is rejected and leaves object unchanged test_UAT_AC577_stale_if_match_returns_412_and_object_bytes_unchanged",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-578: deleted asset is no longer retrievable test_UAT_AC578_delete_followed_by_get_returns_404",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-579: full CRUD flow operates against locally-emulated asset storage test_UAT_AC579_put_list_get_ifmatch_delete_round_trip_on_wrangler_emulated_r2",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-580: get_site_definition read tool returns the current draft and is available on every plan tier test_UAT_AC580_get_site_definition_returns_draft_on_every_tier",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-581: assistant messages render as sanitized markdown; user and system messages stay plaintext test_UAT_AC581_assistant_markdown_sanitized_user_plaintext",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-582: chat input is a markdown-aware rich-text editor with markdown round-trip on send test_UAT_AC582_chat_input_markdown_round_trip_on_send",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-583: ChatCard primitive renders header, body, actions, collapse, and one of five tones test_UAT_AC583_chatcard_header_body_actions_collapse_and_tone",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-584: tool_result kind to renderer dispatcher with markdown fallback and danger card on failure test_UAT_AC584_tool_result_dispatcher_routes_kind_fallback_and_danger",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-587: palette roles inferred with a capped supporting list test_UAT_AC587_palette_roles_inferred_with_capped_supporting",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-588: typography signals report declared font styles and a primary pair test_UAT_AC588_typography_declared_styles_and_primary_pair",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-589: layout signals report content width, alignment bias, and density test_UAT_AC589_layout_content_width_bias_density",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-590: asset inventory captures every visual asset across all reference paths with per-kind counts test_UAT_AC590_asset_inventory_all_paths_with_counts",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-591: duplicate asset URLs collapse to one record with a references count and first-discovered kind test_UAT_AC591_duplicate_asset_urls_collapse",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-592: content structure reports headings, nav links, form fields, and group counts test_UAT_AC592_content_structure_headings_nav_forms_counts",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-593: absent signals serialize as content, never as omission test_UAT_AC593_absent_signals_serialize_as_content",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-594: Reference Digest conforms to a versioned schema enforced by a validator test_UAT_AC594_reference_digest_schema_validator",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-595: digest renders as KMS-aware markdown with title, ToC, per-category sections, and asset inventory test_UAT_AC595_digest_renders_kms_aware_markdown",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-596: a deterministic what's-missing list is produced from absent signals without any AI pass test_UAT_AC596_deterministic_whats_missing_list",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-597: every page is analyzed via the static path; rendered-path escalation never triggers test_UAT_AC597_escalation_never_triggers_static_path",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-598: analyzing a valid URL returns a reference_digest with full digest, markdown, and a cache-miss marker test_UAT_AC598_valid_url_returns_reference_digest_miss",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-599: analysis is refused without operator intent and proceeds with a pasted URL or a valid intent token test_UAT_AC599_intent_required_then_proceeds_with_url_or_token",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-600: a repeat analysis of the same URL within 24h returns the cached digest without re-fetching or re-running commentary test_UAT_AC600_repeat_analysis_returns_cached_digest_hit",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-601: every fetch-safety failure is returned as a typed error, never an uncaught exception test_UAT_AC601_safety_failures_surface_as_typed_errors",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-602: robots.txt disallow blocks analysis with a typed failure naming the origin test_UAT_AC602_robots_disallow_blocks_with_typed_failure",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-603: rate-limit exhaustion blocks analysis with a typed failure carrying a retry hint test_UAT_AC603_rate_limit_exhaustion_blocks_with_retry_hint",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-604: digest commentary is produced by the AI pass, with a deterministic fallback that never fails analysis test_UAT_AC604_ai_commentary_with_deterministic_fallback",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-605: a successful analysis through chat surfaces a kind-tagged reference_digest tool_result test_UAT_AC605_chat_success_surfaces_kind_tagged_reference_digest",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-606: kind-tagged system-action results surface to the front-end dispatcher; the legacy no-kind read tool does not test_UAT_AC606_kind_tagged_surfaces_legacy_read_does_not",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-607 / AC-608 / AC-609: Digest Report card rendering test_UAT_AC607_renders_source_url_markdown_and_per_kind_asset_inventory",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-607 / AC-608 / AC-609: Digest Report card rendering test_UAT_AC608_convert_emits_event_discard_collapses_card",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "UAT AC-607 / AC-608 / AC-609: Digest Report card rendering test_UAT_AC609_failed_or_malformed_payload_renders_non_info_card",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC544_unknown_operator_action_returns_404_with_no_side_effects",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC545_authorized_system_action_returns_structured_payload",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC546_plan_tier_mismatch_returns_403_with_both_tiers_and_skips_handler",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC547_missing_or_invalid_auth_headers_default_to_trial_tier",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC548_sse_endpoint_streams_five_event_types_heartbeats_and_closes_cleanly",
+          "file": "",
+          "status": "failed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC549_successful_system_action_emits_action_notify_to_subscribers_within_100ms",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC550_validation_error_event_payload_carries_path_expected_got",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC551_registry_exposes_category_plan_tier_tool_spec_ui_route_via_tool_list_and_parity_audit",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC552_state_edit_actions_cannot_be_invoked_through_direct_post_dispatcher",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC555_internal_and_ssrf_targets_rejected_with_typed_detail",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC556_disallowed_schemes_rejected_with_typed_reason",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC557_plain_http_requires_same_origin_approval",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC558_redirects_revalidate_target_on_every_hop",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC559_redirect_chain_capped_at_five_hops",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC560_response_body_capped_at_five_megabytes",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC561_identical_get_fetches_within_one_hour_return_from_cache",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC562_per_account_hourly_fetch_limit_rate_limited_on_overage",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC563_per_account_burst_limit_rate_limited_at_eleven_in_sixty_seconds",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC564_per_account_daily_fetch_limit_rate_limited_on_overage",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC565_browser_budget_exhausts_per_chat_session_at_fifty_seconds",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC566_browser_budget_exhausts_per_account_day_at_two_hundred_seconds",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC567_robots_txt_rules_govern_with_longest_match_precedence",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC568_per_chat_robots_override_unblocks_origin_without_affecting_other_chats",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC569_operator_intent_token_required_for_ai_fetch_tool_call",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC570_operator_intent_token_expires_after_sixty_seconds",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC571_operator_intent_token_bound_to_its_chat_session",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC572_operator_messages_with_url_or_fetch_keyword_imply_intent",
+          "file": "",
+          "status": "passed"
+        },
+        {
+          "name": "Story story-a0482aed: External fetch safety contract test_UAT_AC573_safety_health_endpoint_returns_calling_accounts_rate_limit_state",
+          "file": "",
+          "status": "passed"
+        }
+      ],
+      "hung_test": null,
+      "timeout_reason": null,
+      "partial_results": false,
+      "failures": [
+        {
+          "test_name": "UAT AC-486: POST /api/chat proxies the Anthropic Messages API and returns extracted text and tool_use blocks test_UAT_AC486_chat_endpoint_forwards_to_anthropic_and_extracts_text_and_tool_use_blocks",
+          "message": "(structured failure details unavailable \u2014 JUnit XML missing or unparseable; this entry synthesised from streamed pytest output. Run pytest -k <test_name> to fetch full traceback.)",
+          "file_path": "",
+          "line_number": null,
+          "error_type": "assertion",
+          "action_required": null,
+          "traceback": null,
+          "synthesised": true
+        },
+        {
+          "test_name": "Story story-a07c8ed3: Operator action dispatch namespace, plan-tier auth, SSE channel test_UAT_AC548_sse_endpoint_streams_five_event_types_heartbeats_and_closes_cleanly",
+          "message": "(structured failure details unavailable \u2014 JUnit XML missing or unparseable; this entry synthesised from streamed pytest output. Run pytest -k <test_name> to fetch full traceback.)",
+          "file_path": "",
+          "line_number": null,
+          "error_type": "assertion",
+          "action_required": null,
+          "traceback": null,
+          "synthesised": true
+        }
+      ]
+    },
+    "Quality Config": {
+      "suite_name": "Quality Config",
+      "status": "failure",
+      "passed": 0,
+      "failed": 1,
+      "total": 1,
+      "failures": [
+        {
+          "test_name": "project.min_coverage",
+          "k_eligible": false,
+          "error_type": "config_error",
+          "message": "Coverage 0.0% below minimum 25.0%",
+          "suggested_fix": "Add tests to increase coverage",
+          "field": "project.min_coverage",
+          "kind": "quality_config_violation"
+        }
+      ],
+      "tests": []
+    }
+  },
+  "overall": {
+    "status": "failure",
+    "issues": []
+  },
+  "validation": {
+    "anomalies": []
+  },
+  "quality_config_validation": {
+    "issues": [
+      {
+        "severity": "error",
+        "category": "config_error",
+        "field": "project.min_coverage",
+        "message": "Coverage 0.0% below minimum 25.0%",
+        "suggestion": "Add tests to increase coverage",
+        "context": {
+          "actual": 0.0,
+          "minimum": 25.0
+        }
+      },
+      {
+        "severity": "error",
+        "category": "test_failure",
+        "field": "test results",
+        "message": "2 test(s) failed",
+        "suggestion": "Fix failing tests",
+        "context": {
+          "failures": 2
+        }
+      }
+    ]
+  }
+}
