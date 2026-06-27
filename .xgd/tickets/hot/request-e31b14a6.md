@@ -16,7 +16,7 @@ fields:
   auto_merge_back: true
   needs_review: true
   commits:
-  - 3847ff00ff1cd86fd3dbbe028802d10523230ded
+  - 6edebf37e47151f7af1c6db720930f7ee80fea4f
   version: 0.0.34
 ---
 
