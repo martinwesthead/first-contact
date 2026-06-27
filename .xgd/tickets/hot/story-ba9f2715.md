@@ -6,9 +6,9 @@ title: Chat-driven site builder SPA with live preview, AI tool validation, and A
   proxy
 created_by: xgd
 created_at: '2026-06-25T01:58:41.731250+00:00'
-updated_at: '2026-06-27T00:28:38.448656+00:00'
+updated_at: '2026-06-27T00:54:16.973450+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
@@ -37,9 +37,13 @@ fields:
 **I want** the AI tool list available in any chat session to reflect exactly what my plan tier permits me to do, so that an unauthenticated or trial session sees only the state-edit tools while a paid session additionally sees system-action tools (e.g. `publish_stub`),
 **so that** the AI never offers an action my plan does not authorise and the platform's "Operator API parity" principle is enforced uniformly at the tool-surface boundary.
 
+**As the** 1st Contact platform operator,
+**I want** the AI to receive a structured result after every tool call and to be able to read the current draft definition back on demand, my assistant's replies rendered as formatted markdown (not raw text), a chat input that understands pasted markdown, and structured tool outcomes shown as consistent cards in the chat log,
+**so that** the AI reasons from confirmed state rather than its own inference across a multi-step change, and the chat is legible and visually consistent.
+
 ## Description
 
-This story documents the Phase 0 chat-driven site builder: the operator-facing single-page application that turns plain-English nudges into structured edits against a `Site` definition, validated against the framework catalog and `@1stcontact/site-schema` before being applied, with a live in-browser preview that re-renders on every accepted change. It also covers the `/builder` route on `apps/control-app` (served from Workers Static Assets) and the `/api/chat` POST endpoint that proxies the Anthropic Messages API with a plan-tier-filtered tool surface derived from the `OPERATOR_ACTIONS` registry, the framework catalog as a system prompt, and structured extraction of text + tool_use blocks.
+This story documents the Phase 0 chat-driven site builder: the operator-facing single-page application that turns plain-English nudges into structured edits against a `Site` definition, validated against the framework catalog and `@1stcontact/site-schema` before being applied, with a live in-browser preview that re-renders on every accepted change. It also covers the `/builder` route on `apps/control-app` (served from Workers Static Assets) and the `/api/chat` POST endpoint that proxies the Anthropic Messages API with a plan-tier-filtered tool surface derived from the `OPERATOR_ACTIONS` registry, the framework catalog as a system prompt, and structured extraction of text + tool_use blocks. The `/api/chat` endpoint runs a multi-turn tool loop: after each Anthropic response carrying tool calls it executes each call server-side, feeds a structured `tool_result` back to the model, and recomputes the site-state snapshot in the system prompt from the canonical working definition before the next turn — capped at 8 turns. Assistant replies render as sanitized markdown, the chat input is a rich-text (TipTap) editor with markdown round-trip, and structured tool outcomes render through a reusable card primitive.
 
 In scope:
 
@@ -52,6 +56,11 @@ In scope:
 - A `POST /api/chat` endpoint on `apps/control-app` that proxies the Anthropic Messages API using the bound `CLAUDE_API_KEY` secret (default model `claude-sonnet-4-6`, overrideable via `CLAUDE_MODEL`), with the plan-tier-filtered tool list (see above) and the framework catalog as the system prompt; returns `{text, toolCalls}` extracted from `text` and `tool_use` content blocks. Responds 500 when the API key is unbound and 502 when the upstream call errors or returns a non-2xx response.
 - `apps/control-app` routes `/builder` and `/builder/` to the Workers Static Assets binding by rewriting to `/builder.html`; all other paths fall through to the static assets binding first, then the control-app placeholder.
 - A starter site (`/starter-sites/1stcontact.json`) is fetched at SPA boot from the same origin; the `?site=` query param selects which starter to load (defaults to `1stcontact`).
+- Multi-turn AI tool loop on `/api/chat`: after each Anthropic response that returns tool calls, the worker executes each call, appends a structured `tool_result` content block (`{ok: true, applied: {tool, args, summary}}` on success — `data`/`kind` added when the tool returns structured payload — or `{ok: false, error: {tool, validation}}` on failure, with the failure also flagged `is_error` on the block returned to Anthropic), recomputes the system-prompt site-state snapshot from the canonical working definition, and re-calls Anthropic until no tool calls remain or 8 turns are reached.
+- A `get_site_definition` read tool in `OPERATOR_ACTIONS` (`category: 'system_action'`, `plan_tier: 'trial'`, `ui_route: null`) whose handler returns the current draft site definition so the AI can verify canonical state mid-conversation; it is available on every plan tier and its returned payload is surfaced to the model as `applied.data`.
+- Assistant chat messages render as markdown (headers, lists, fenced code become DOM elements; links open in a new tab with `rel="noopener noreferrer"`) sanitized so injected `<script>` tags and `on*=` event-handler attributes are stripped; user and system messages remain plaintext.
+- The chat input is a rich-text editor that accepts pasted markdown and shows it as formatted text, sends on Cmd/Ctrl+Enter, and serializes its content back to markdown for the `/api/chat` request.
+- A reusable chat-card primitive (bordered card with an icon+title header, body slot, optional actions row with click callbacks, optional collapse caret, and one of five tones — neutral / info / success / warning / danger — applying an edge accent) plus a `tool_result` kind→renderer dispatcher: known kinds route to a registered renderer, unknown or untagged successful results fall back to a markdown card showing the summary, and failed results render as a danger-toned card. Downstream REQs register their per-kind renderers through this dispatcher.
 
 Out of scope (deferred per the source ticket):
 
@@ -72,6 +81,9 @@ Out of scope (deferred per the source ticket):
 - **Framework-choice divergence from the source ticket**: the source ticket named React components; the implemented slice uses vanilla DOM (`BuilderStore` + DOM factory functions). The user-visible behaviours documented in this story — panel/splitter/viewport UX, tool validation, preview re-render, persistence, the chat endpoint — are framework-agnostic and continue to hold after a hypothetical React rewrite. The matrix documents what the user sees, not the framework choice.
 - **DOC-8 §5.3 invalid-dial example**: DOC-8 names `shape: 'cirle'` as the canonical invalid-dial UAT. None of the Phase 0 modules declare a `shape` dial, so the implemented UAT asserts on `size: 'huge'` against the hero (whose `size` dial is `[sm, md, lg]`). Same validator code path, same DOC-8 §6 invariant pinned.
 - **Tool validation pre-check note**: the implemented tool validator does NOT separately catalog-validate the `add_module`'s `variant`/`dials` — those land via `validateSite`'s structural rules. The behaviour the user observes (invalid values are rejected, state is unchanged, chat log shows a structured error) is unchanged regardless of which validator layer surfaces the rejection.
+- **Multi-turn loop (REQ-13)**: the chat handler loops up to `MAX_TOOL_TURNS = 8`. State-edit calls advance an in-handler working copy of the site (`applyToolCall`) and the success `summary` describes what landed (e.g. `"set dial 'spacingTop' to 'lg' on hero-1"`); the system prompt is rebuilt each turn from that working copy, so continuation accuracy holds across long sessions. `get_site_definition` is dispatched as a system action and its payload is surfaced to the AI via the legacy no-`kind` path (`applied.data`), while any system action returning a `payload.kind` string surfaces `applied.data` + `applied.kind` on `body.toolCalls` for the FE dispatcher.
+- **Markdown rendering (REQ-13)**: assistant messages go through `marked` (v14, GFM on, a custom link renderer adding `target="_blank" rel="noopener noreferrer"`) then `DOMPurify.sanitize`; user/system messages use `textContent`. The chat input is a TipTap editor (`StarterKit` + `tiptap-markdown` with `html: false`), serializing back to markdown on submit.
+- **ChatCard + dispatcher (REQ-13)**: implemented as the vanilla-DOM `createChatCard` factory and a `kind → renderer` registry (`registerToolResultRenderer` / `renderToolResult`), not the React `<ChatCard>`/`react-markdown` the source ticket named. The user-visible behaviours (card shell + tones + collapse, markdown fallback, danger card on failure, per-kind routing) are framework-agnostic — the matrix documents what the user sees, not the framework choice (consistent with the divergence note above).
 
 ## Dependencies
 
