@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-3 (REQ-9 + REQ-20 + REQ-13 + REQ-21)'
 created_by: xgd
 created_at: '2026-06-27T00:03:18.704352+00:00'
-updated_at: '2026-06-27T01:11:43.393187+00:00'
+updated_at: '2026-06-27T01:26:39.654980+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -264,7 +264,7 @@ fields:
       Distinct from item 6 because the action's plumbing (cache, safety, robots, intent,
       AI commentary pass, registry wiring, FE rendering) is substantial in its own
       right and would obscure the extractor story if merged.
-    story_uid: null
+    story_uid: story-15bae45e
 ---
 
 # Reconciliation Plan: BUNDLE-3 (REQ-9 + REQ-20 + REQ-13 + REQ-21)
