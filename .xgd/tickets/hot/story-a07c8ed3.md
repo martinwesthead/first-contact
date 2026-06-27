@@ -5,10 +5,10 @@ type: story
 title: Operator action dispatch namespace with plan-tier auth and SSE event channel
 created_by: xgd
 created_at: '2026-06-27T00:08:37.399506+00:00'
-updated_at: '2026-06-27T00:08:37.399506+00:00'
+updated_at: '2026-06-27T00:19:36.903815+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-bbb1bd9c
   capability_uid: capability-f14050e3
