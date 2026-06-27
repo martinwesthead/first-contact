@@ -6,10 +6,10 @@ title: 'Operator API foundation: /api/operator namespace + SSE event registry + 
   framework + plan-tier authorization'
 created_by: xgd
 created_at: '2026-06-15T22:42:14.698941+00:00'
-updated_at: '2026-06-25T02:41:17.286699+00:00'
-completed_at: null
+updated_at: '2026-06-27T02:20:24.954685+00:00'
+completed_at: '2026-06-27T02:20:24.954685+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: medium
   story_points: 4
