@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-3 (REQ-9 + REQ-20 + REQ-13 + REQ-21)'
 created_by: xgd
 created_at: '2026-06-27T00:03:18.704352+00:00'
-updated_at: '2026-06-27T00:25:05.402375+00:00'
+updated_at: '2026-06-27T00:35:46.274563+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -99,7 +99,7 @@ fields:
       in item 7; REQ-22 Browser Rendering; REQ-28 transcription; REQ-29 search-references)
       — the safety contract is non-negotiable per DOC-9 §11 and must exist before
       any consumer can ship.
-    story_uid: null
+    story_uid: story-a0482aed
   - index: 4
     component: Assets Storage
     item_type: feature
