@@ -20,7 +20,7 @@ fields:
     llm-context docs to match. Existing REQ-5 tests updated to new contract; new REQ-44
     UATs cover image asset-ref, imageStyle dial, and one-col rendering.'
   commits:
-  - bcee4ed7f869daa7f2c00628bd2eee4293b5cf3b
+  - 9cdd55b27a04b74bd8424ae3ef91b8036420f874
   version: 0.0.25
   fields.commits:
   - 83a8041bf92eee0ee71eb5a69b63ae68c08001ce
