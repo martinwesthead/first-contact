@@ -16,7 +16,7 @@ fields:
   venv_path: /Users/martin/Projects/xgendev-main/.venv-working/bin/xgd
   progress: complete_with_e2e_smoke
   commits:
-  - 3484fb12ab1426fa3e23084288ac586307a1b9da
+  - 1b2413194cd975827af6677565e6e93a9a969821
   - 35eeb8de019afe89c8518564c2ca8d5a60568a84
   - f4724a302438258ec8083ad57964cb0be98ef166
   - cec9420d01987fcc7afbcbf9f62633680e0efeb5
