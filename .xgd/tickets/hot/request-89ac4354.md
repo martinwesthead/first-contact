@@ -14,7 +14,7 @@ fields:
   needs_review: false
   priority: medium
   commits:
-  - 394bbfbe86a48ea271b85a3ccb45af3bea1fa5ac
+  - 6d0feee276caf9fe10105ae2956ed1b938c865db
   - c91aabdab780c1a5645656313ce8a534e5bdfd50
   version: 0.0.24
 ---
