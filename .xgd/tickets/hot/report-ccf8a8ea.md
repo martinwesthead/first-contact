@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-3 (REQ-9 + REQ-20 + REQ-13 + REQ-21)'
 created_by: xgd
 created_at: '2026-06-27T00:03:18.704352+00:00'
-updated_at: '2026-06-27T00:09:39.747732+00:00'
+updated_at: '2026-06-27T00:25:05.402375+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -54,7 +54,7 @@ fields:
       is a user-visible behavioral change (trial sessions never see system-action
       tools). No new capability bucket: this extends the chat endpoint that STORY-46
       already documents.'
-    story_uid: null
+    story_uid: story-ba9f2715
     target_story_ids:
     - story-ba9f2715
     intent_delta_summary: Modify AC-486 to reflect that the chat tool list is now
