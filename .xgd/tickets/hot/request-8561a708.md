@@ -6,10 +6,10 @@ title: 'Convert flow rework: mechanical transcribe_site + R2 digest + page-CRUD 
   + LLM how-to doc'
 created_by: xgd
 created_at: '2026-06-19T22:07:48.306894+00:00'
-updated_at: '2026-06-24T17:59:10.584475+00:00'
+updated_at: '2026-06-27T02:20:43.714712+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   priority: high
   story_points: 8
@@ -19,6 +19,7 @@ fields:
   - 44c637a259abe504282c8bcb50b3994800f5b127
   - 1d249b0884d37f0cc8eca955ae9ee98f789c7c50
   version: 0.14.1234
+  bundled_in: bundle-24c4d23c
 ---
 
 ## Problem
