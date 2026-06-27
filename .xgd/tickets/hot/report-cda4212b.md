@@ -5,9 +5,9 @@ type: report
 title: 'Regression success: none caught (regression)'
 created_by: xgd
 created_at: '2026-06-27T00:19:39.003289+00:00'
-updated_at: '2026-06-27T00:19:39.003289+00:00'
+updated_at: '2026-06-27T00:19:54.249198+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 fields:
   report_kind: regression_success
   subject_uid: 23ed0309
@@ -15,5 +15,7 @@ fields:
   intent_uid: ''
   regression_count: 0
 ---
+
+Regression cycle 23ed0309 ran the full UAT suite against the reconciled `main` and caught zero regressions. No annotation work was required because the entry list is empty; the cycle is clean.
 
 []
