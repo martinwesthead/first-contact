@@ -5,10 +5,10 @@ type: request
 title: Reference Digest schema + static-fetch path + Layer A signal extractors
 created_by: xgd
 created_at: '2026-06-16T23:24:59.849248+00:00'
-updated_at: '2026-06-25T02:41:17.454554+00:00'
-completed_at: null
+updated_at: '2026-06-27T02:20:24.703571+00:00'
+completed_at: '2026-06-27T02:20:24.703571+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: high
   story_points: 7
