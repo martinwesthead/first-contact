@@ -5,9 +5,9 @@ type: report
 title: 'Report: fix_plan for report-a5713a64'
 created_by: xgd
 created_at: '2026-06-27T01:37:31.950900+00:00'
-updated_at: '2026-06-27T01:37:31.950900+00:00'
+updated_at: '2026-06-27T01:47:24.174920+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: batches_pending
 fields:
   report_kind: fix_plan
   subject_uid: report-a5713a64
@@ -21,6 +21,7 @@ fields:
     dependency_tests: []
     instructions: ''
     test_scope: test_UAT_AC486 or test_UAT_AC548
+  batches_pending: false
 ---
 
 {
