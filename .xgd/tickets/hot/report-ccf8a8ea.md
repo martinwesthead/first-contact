@@ -5,9 +5,9 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-3 (REQ-9 + REQ-20 + REQ-13 + REQ-21)'
 created_by: xgd
 created_at: '2026-06-27T00:03:18.704352+00:00'
-updated_at: '2026-06-27T00:03:18.704352+00:00'
+updated_at: '2026-06-27T00:09:39.747732+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: items
 fields:
   report_kind: reconciliation_plan
   subject_uid: bundle-bbb1bd9c
@@ -34,7 +34,7 @@ fields:
       all subsequent operator-action REQs (publish, rollback, analyze_page, transcribe,
       etc.) consume. Required by every downstream item in this plan (items 2, 5, 7)
       and the convert-flow critical path.
-    story_uid: null
+    story_uid: story-a07c8ed3
   - index: 2
     component: Builder UI / chat handler
     item_type: upgrade
