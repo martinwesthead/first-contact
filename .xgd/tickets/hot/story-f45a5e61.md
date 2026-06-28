@@ -5,14 +5,14 @@ type: story
 title: 'Reconstruction blueprint: deterministic transcription digest and read-back'
 created_by: xgd
 created_at: '2026-06-28T20:28:56.679925+00:00'
-updated_at: '2026-06-28T20:37:53.982593+00:00'
+updated_at: '2026-06-28T23:39:48.749659+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-24c4d23c
   capability_uid: capability-e343131c
-  story_kind: feature
+  story_kind: upgrade
   story_points: 3
 ---
 
@@ -25,7 +25,7 @@ This story covers the **deterministic building blocks** of the convert flow and 
 
 In scope:
 - **Theme-token derivation** — map a Reference Digest's detected palette roles (background, body text, accent, call-to-action) and typography (body + heading families) into a theme-token patch, normalising colours; when a signal is absent the framework default is preserved unchanged. No LLM — fully deterministic and idempotent for a given digest.
-- **The transcription digest contract** — a machine-readable blueprint carrying: the derived theme tokens; a per-page plan (one entry per page, each with the page URL, a valid slug derived from the URL path, a human title, a desktop screenshot reference, the page's extracted text content, and an ordered list of suggested module-type hints); an asset inventory whose entries point at platform-hosted (content-addressed) copies of the source's images/backgrounds/videos; and a mirror summary.
+- **The transcription digest contract** — a machine-readable blueprint carrying: the derived theme tokens; a per-page plan (one entry per page, each with the page URL, a valid slug derived from the URL path, a human title, a desktop screenshot reference, the page's extracted text content, and an ordered list of suggested module-type hints); an asset inventory whose entries point at platform-hosted (content-addressed) copies of the source's images/backgrounds/videos and additionally carry a precomputed, ready-to-use image AssetRef object the AI can drop straight into an image content field; and a mirror summary.
 - **Multi-page discovery** — the per-page plan includes the home page plus any same-origin page the source's nav links to that is already cached. Cross-origin links are excluded. Cardinality is unbounded — no maximum page count is enforced.
 - **Content & module-type projection** — deterministic extraction of headings, nav links, and form fields into content blocks, and a deterministic heuristic that orders suggested module types (e.g. a contact-form hint when form fields are present, footer always last). No LLM.
 - **Read-back** — an operator/AI action that retrieves the previously written transcription digest for a given site, or reports a not-found failure when none exists, or rejects a request lacking a site identifier.
@@ -42,6 +42,8 @@ Out of scope (other stories): the four-stage orchestration handler and confirmat
   - REQ-28's spec said the digest is fetched "from the chat history"; REQ-30 supersedes this — the read-back action reads from R2 at the documented key. The intent reconciled here is the REQ-30 net state.
   - The read-back failure surfaces the cause as an error string **containing** `digest_not_found` (prefixed with detail), per the plan's `error contains 'digest_not_found'` contract.
   - The digest-shape acceptance criteria are observable on the persisted digest artifact, which in the running system is produced by the orchestration story; the *contract and derivation* are owned here.
+  - **Precomputed image AssetRef (BUG-5).** Each `assetInventory` entry now carries a precomputed `assetRef` object `{ id: r2Key, src: "/assets/<r2Key>", alt: altText ?? "" }`, composed in `buildTranscriptionDigest` and shaped to validate against the framework's image `AssetRef` schema (`id`/`src`/`alt`). This makes the source-image→content-field mapping mechanical: the AI passes the precomputed object verbatim into an image content field rather than composing one (or, per the prior bug, passing a bare `/assets/{r2Key}` string the validator and renderer both reject, yielding empty `<img>` tags).
+  - **How-to consumption contract (BUG-5).** The convert-flow reproduction guidance — `docs/llm-context/reproducing-a-website.md` and its inlined mirror in `apps/control-app/src/llm-context.ts` — instructs the AI to set image content fields to the entry's precomputed `assetRef` object (with a worked example), explicitly warning that a bare path string is rejected. This corrects the doc that previously instructed a string path. This is the consumption guidance for *this story's* digest asset-inventory contract; it does not change which how-to documents are wired into the chat system prompt (that wiring remains out of scope here).
 
 ## Dependencies
 
