@@ -50,4 +50,9 @@ describe("UAT AC-458/AC-459/AC-460: public-site Worker serves the freshly-genera
     const resp = await worker.fetch("/does-not-exist-anywhere");
     expect(resp.status).toBe(404);
   });
+
+  it("test_UAT_AC616_head_root_returns_200_via_assets_binding", async () => {
+    const resp = await worker.fetch("/", { method: "HEAD" });
+    expect(resp.status).toBe(200);
+  });
 });
