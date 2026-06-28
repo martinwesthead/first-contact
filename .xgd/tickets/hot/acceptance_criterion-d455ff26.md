@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: GET on an unknown path returns a 404 response
 created_by: xgd
 created_at: '2026-06-25T01:35:40.683627+00:00'
-updated_at: '2026-06-28T19:50:22.862885+00:00'
+updated_at: '2026-06-28T20:08:35.998447+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-f632db8a
   kind: behavior
   regression_only: false
+  uat_coverage: fail
 ---
 
 ## Criterion
