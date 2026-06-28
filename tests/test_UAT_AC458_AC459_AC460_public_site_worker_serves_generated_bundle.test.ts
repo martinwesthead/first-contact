@@ -49,6 +49,7 @@ describe("UAT AC-458/AC-459/AC-460: public-site Worker serves the freshly-genera
   it("test_UAT_AC460_get_unknown_path_returns_404", async () => {
     const resp = await worker.fetch("/does-not-exist-anywhere");
     expect(resp.status).toBe(404);
+    expect(resp.headers.get("content-type") ?? "").toMatch(/^text\/plain/);
   });
 
   it("test_UAT_AC616_head_root_returns_200_via_assets_binding", async () => {
