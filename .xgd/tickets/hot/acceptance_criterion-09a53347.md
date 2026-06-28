@@ -6,14 +6,15 @@ title: Theme tokens schema enforces the locked superset (palette/typography/spac
   surfaces)
 created_by: xgd
 created_at: '2026-06-25T00:39:22.445569+00:00'
-updated_at: '2026-06-25T00:39:22.445569+00:00'
+updated_at: '2026-06-28T21:38:50.795729+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-aecb7377
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
