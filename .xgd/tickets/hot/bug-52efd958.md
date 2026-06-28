@@ -5,10 +5,10 @@ type: bug
 title: 'Convert flow: blank iframe + missing TranscribeProgress card after REQ-34/REQ-35'
 created_by: xgd
 created_at: '2026-06-20T19:23:27.055507+00:00'
-updated_at: '2026-06-20T23:07:47.360855+00:00'
+updated_at: '2026-06-28T21:47:10.630439+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
@@ -16,6 +16,7 @@ fields:
   commits:
   - 65e79b603f5daaee6f596a1c35cf1e40873ee877
   version: 0.0.14
+  bundled_in: bundle-d4ce3987
 ---
 
 ## What's broken

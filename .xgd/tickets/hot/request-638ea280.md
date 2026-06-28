@@ -6,10 +6,10 @@ title: 'Convert flow: remove destructive-confirmation gate (defer copyright/robo
   concerns)'
 created_by: xgd
 created_at: '2026-06-20T18:25:57.452443+00:00'
-updated_at: '2026-06-20T21:18:05.649816+00:00'
+updated_at: '2026-06-28T21:47:10.503262+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   priority: high
   story_points: 1
@@ -18,6 +18,7 @@ fields:
   commits:
   - 58fce2bce264137fade6564aa1b0c73a993c2876
   version: 0.0.12
+  bundled_in: bundle-d4ce3987
 ---
 
 ## What is the user-visible change?

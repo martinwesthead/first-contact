@@ -6,18 +6,18 @@ title: 'Convert flow rework: mechanical transcribe_site + R2 digest + page-CRUD 
   + LLM how-to doc'
 created_by: xgd
 created_at: '2026-06-19T22:07:48.306894+00:00'
-updated_at: '2026-06-27T02:20:43.714712+00:00'
-completed_at: null
+updated_at: '2026-06-28T21:46:51.093708+00:00'
+completed_at: '2026-06-28T21:46:51.093708+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: high
   story_points: 8
   auto_merge_back: true
   needs_review: false
   commits:
-  - 4e58b43af541434e498121ab36757cea7a512f16
-  - 9ea1a37227b29340054fdd44cf6f1276a70d3d67
+  - 44c637a259abe504282c8bcb50b3994800f5b127
+  - 1d249b0884d37f0cc8eca955ae9ee98f789c7c50
   version: 0.14.1234
   bundled_in: bundle-24c4d23c
 ---
