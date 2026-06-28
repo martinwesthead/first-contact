@@ -5,12 +5,13 @@ type: capability
 title: Public Site Delivery
 created_by: xgd
 created_at: '2026-06-25T01:34:06.589987+00:00'
-updated_at: '2026-06-25T01:34:06.589987+00:00'
+updated_at: '2026-06-28T20:08:45.297761+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: active
 fields:
   name: Public Site Delivery
+  uat_coverage: fail
 ---
 
 The 1stcontact.io public-facing marketing site and the Worker that serves it.
