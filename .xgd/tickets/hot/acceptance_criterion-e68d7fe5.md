@@ -6,7 +6,7 @@ title: Marketing site definition declares the Phase 0 seven-module home page wit
   in-page-anchors navigation
 created_by: xgd
 created_at: '2026-06-25T01:35:07.003017+00:00'
-updated_at: '2026-06-28T20:08:31.453683+00:00'
+updated_at: '2026-06-28T20:15:13.450116+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: pending
