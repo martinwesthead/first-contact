@@ -6,14 +6,15 @@ title: Files under the source assets/ tree are copied to <out>/assets/site/ pres
   their relative paths
 created_by: xgd
 created_at: '2026-06-25T01:24:36.115151+00:00'
-updated_at: '2026-06-25T01:24:36.115151+00:00'
+updated_at: '2026-06-28T20:31:14.388632+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-d111f966
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
