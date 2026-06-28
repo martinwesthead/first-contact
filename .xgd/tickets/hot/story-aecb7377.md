@@ -5,15 +5,16 @@ type: story
 title: 'site-schema: typed site contract + runtime validation'
 created_by: xgd
 created_at: '2026-06-25T00:38:20.870460+00:00'
-updated_at: '2026-06-25T00:45:13.279699+00:00'
+updated_at: '2026-06-28T21:38:56.963658+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: uat_coverage
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-b7eebd2b
   story_kind: feature
   story_points: 2
+  uat_coverage: pass
 ---
 
 ## Story
