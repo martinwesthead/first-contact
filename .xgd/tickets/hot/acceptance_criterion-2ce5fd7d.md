@@ -5,7 +5,7 @@ type: acceptance_criterion
 title: HEAD / returns 200 from the public-site Worker via the Static Assets binding
 created_by: xgd
 created_at: '2026-06-28T19:50:13.588025+00:00'
-updated_at: '2026-06-28T20:01:45.786873+00:00'
+updated_at: '2026-06-28T20:15:19.324169+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: pending
