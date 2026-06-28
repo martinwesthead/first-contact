@@ -6,14 +6,15 @@ title: CLI fc-generate accepts --site, --out, and optional --clean flags and run
   the generator
 created_by: xgd
 created_at: '2026-06-25T01:23:45.751024+00:00'
-updated_at: '2026-06-25T01:23:45.751024+00:00'
+updated_at: '2026-06-28T20:31:08.946342+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-d111f966
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
