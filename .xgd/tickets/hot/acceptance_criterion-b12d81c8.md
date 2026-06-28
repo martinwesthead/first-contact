@@ -2,13 +2,13 @@
 uid: acceptance_criterion-b12d81c8
 id: AC-597
 type: acceptance_criterion
-title: Every page is analyzed via the static path; rendered-path escalation never
-  triggers in this version
+title: A thin static body escalates to the rendered path; a content-rich body stays
+  on the static path
 created_by: xgd
 created_at: '2026-06-27T01:11:26.883539+00:00'
-updated_at: '2026-06-28T19:40:50.792223+00:00'
+updated_at: '2026-06-28T19:40:56.045558+00:00'
 completed_at: null
-last_field_updated: regression_only
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-3f73931a
