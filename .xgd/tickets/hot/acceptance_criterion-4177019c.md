@@ -6,14 +6,15 @@ title: Each module instance is wrapped in an anchor element carrying its instanc
   id and a data-module-instance marker
 created_by: xgd
 created_at: '2026-06-25T01:23:58.624804+00:00'
-updated_at: '2026-06-25T01:23:58.624804+00:00'
+updated_at: '2026-06-28T20:31:10.686969+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-d111f966
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
