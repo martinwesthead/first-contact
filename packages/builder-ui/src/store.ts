@@ -39,6 +39,9 @@ export interface BuilderState {
 export type Listener = (state: BuilderState) => void;
 
 export const DEFAULT_STORAGE_KEY = "1stcontact_builder_site_v1";
+/** Chat-turn history is persisted under a sibling key so the site-definition
+ * key format (consumed by AC-485 et al.) stays a bare serialised Site. */
+const CHAT_KEY_SUFFIX = "_chat";
 
 export interface BuilderStoreOptions {
   storage?: Storage | null;
@@ -52,20 +55,27 @@ export class BuilderStore {
   private readonly listeners = new Set<Listener>();
   private readonly storage: Storage | null;
   private readonly storageKey: string;
+  private readonly chatStorageKey: string;
   private readonly sizeWarningBytes: number;
   /** Diff log of historical (site definition before patch) entries — supports per-session undo. */
   private readonly history: Site[] = [];
 
   constructor(initial: BuilderState, options: BuilderStoreOptions = {}) {
-    const persisted = options.storage
-      ? loadPersisted(options.storage, options.storageKey ?? DEFAULT_STORAGE_KEY)
-      : null;
-    this.state = persisted
-      ? { siteDefinition: persisted, chatHistory: initial.chatHistory }
-      : initial;
     this.storage = options.storage ?? null;
     this.storageKey = options.storageKey ?? DEFAULT_STORAGE_KEY;
+    this.chatStorageKey = `${this.storageKey}${CHAT_KEY_SUFFIX}`;
     this.sizeWarningBytes = options.sizeWarningBytes ?? 1_000_000;
+
+    const persistedSite = this.storage
+      ? loadPersisted(this.storage, this.storageKey)
+      : null;
+    const persistedChat = this.storage
+      ? loadPersistedChat(this.storage, this.chatStorageKey)
+      : null;
+    this.state = {
+      siteDefinition: persistedSite ?? initial.siteDefinition,
+      chatHistory: persistedChat ?? initial.chatHistory,
+    };
   }
 
   getState(): BuilderState {
@@ -97,6 +107,7 @@ export class BuilderStore {
       ...this.state,
       chatHistory: [...this.state.chatHistory, message],
     };
+    this.persistChat();
     this.emit();
   }
 
@@ -129,6 +140,18 @@ export class BuilderStore {
       console.warn("[builder-ui] failed to persist site definition", err);
     }
   }
+
+  private persistChat(): void {
+    if (!this.storage) return;
+    try {
+      this.storage.setItem(
+        this.chatStorageKey,
+        JSON.stringify(this.state.chatHistory),
+      );
+    } catch (err) {
+      console.warn("[builder-ui] failed to persist chat history", err);
+    }
+  }
 }
 
 function loadPersisted(storage: Storage, key: string): Site | null {
@@ -138,6 +161,17 @@ function loadPersisted(storage: Storage, key: string): Site | null {
     const parsed: unknown = JSON.parse(raw);
     const result = validateSite(parsed);
     return result.ok ? result.value : null;
+  } catch {
+    return null;
+  }
+}
+
+function loadPersistedChat(storage: Storage, key: string): ChatMessage[] | null {
+  try {
+    const raw = storage.getItem(key);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ChatMessage[]) : null;
   } catch {
     return null;
   }

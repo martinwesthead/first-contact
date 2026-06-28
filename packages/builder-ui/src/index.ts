@@ -78,4 +78,9 @@ export {
   type ChatToolResult,
   type ChatTurnResult,
 } from "./chat-driver.js";
-export { bootBuilder, type BootBuilderOptions } from "./main.js";
+export {
+  bootBuilder,
+  bootFromQuery,
+  type BootBuilderOptions,
+  type BootFromQueryOptions,
+} from "./main.js";

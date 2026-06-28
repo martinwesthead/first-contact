@@ -144,3 +144,45 @@ export function bootBuilder(options: BootBuilderOptions): {
     },
   };
 }
+
+export interface BootFromQueryOptions {
+  /** Mount point for the builder. */
+  root: HTMLElement;
+  /** Query string, e.g. `window.location.search`. */
+  search: string;
+  /** Fetch implementation. Defaults to `globalThis.fetch`. */
+  fetch?: typeof fetch;
+  /** Chat endpoint, forwarded to bootBuilder. */
+  chatEndpoint?: string;
+  /** localStorage facility, forwarded to bootBuilder. */
+  storage?: Storage | null;
+}
+
+/**
+ * Resolve the starter site from the `?site=` query parameter (defaulting to
+ * `1stcontact` when absent or empty), fetch `/starter-sites/<name>.json` from
+ * the same origin, and boot the builder with the returned definition as the
+ * initial working site. Returns the builder handle, or `null` if the fetch
+ * failed (an error message is rendered into `root`).
+ */
+export async function bootFromQuery(
+  options: BootFromQueryOptions,
+): Promise<ReturnType<typeof bootBuilder> | null> {
+  const fetchImpl = options.fetch ?? globalThis.fetch;
+  const params = new URLSearchParams(options.search);
+  const siteName = params.get("site") || "1stcontact";
+  const resp = await fetchImpl(
+    `/starter-sites/${encodeURIComponent(siteName)}.json`,
+  );
+  if (!resp.ok) {
+    options.root.innerHTML = `<p>Could not load site '${siteName}' (HTTP ${resp.status}).</p>`;
+    return null;
+  }
+  const site = (await resp.json()) as Site;
+  return bootBuilder({
+    root: options.root,
+    initialSite: site,
+    chatEndpoint: options.chatEndpoint,
+    storage: options.storage,
+  });
+}
