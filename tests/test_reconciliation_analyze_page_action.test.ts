@@ -227,7 +227,7 @@ describe("UAT AC-604: digest commentary is produced by the AI pass, with a deter
     expect(r1.status).toBe("ok");
     if (r1.status !== "ok") return;
     const d1 = (r1.payload as { digest: { summary: string; commentary: { perSection: Record<string, string>; whatsMissing: string[] } } }).digest;
-    expect(d1.summary).toContain("Static-fetch digest for");
+    expect(d1.summary).toContain("Reference digest for");
     expect(d1.summary).toContain(TARGET_URL);
     expect(Object.keys(d1.commentary.perSection)).toHaveLength(0);
     expect(Array.isArray(d1.commentary.whatsMissing)).toBe(true);
@@ -241,7 +241,7 @@ describe("UAT AC-604: digest commentary is produced by the AI pass, with a deter
     expect(r2.status).toBe("ok");
     if (r2.status !== "ok") return;
     const d2 = (r2.payload as { digest: { summary: string; commentary: { perSection: Record<string, string> } } }).digest;
-    expect(d2.summary).toContain("Static-fetch digest for");
+    expect(d2.summary).toContain("Reference digest for");
     expect(Object.keys(d2.commentary.perSection)).toHaveLength(0);
     expect(badModel.anthropicCalls).toBe(1); // it tried, then fell back
 

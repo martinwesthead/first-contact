@@ -124,10 +124,11 @@ export function createTranscribeProgressCard(
   const renderStage4Count = (): void => {
     const li = list.querySelector(
       '[data-fc-transcribe-stage="4"]',
-    ) as HTMLElement;
-    const count = li.querySelector(
+    ) as HTMLElement | null;
+    const count = li?.querySelector(
       "[data-fc-transcribe-stage-count]",
-    ) as HTMLElement;
+    ) as HTMLElement | null;
+    if (!count) return;
     if (stage4Total > 0) {
       count.textContent = ` ${mirroredCount}/${stage4Total}${failedCount > 0 ? ` (${failedCount} failed)` : ""}`;
     } else if (mirroredCount > 0 || failedCount > 0) {
@@ -155,7 +156,8 @@ export function createTranscribeProgressCard(
       renderStage4Count();
       const li = list.querySelector(
         '[data-fc-transcribe-stage="4"]',
-      ) as HTMLElement;
+      ) as HTMLElement | null;
+      if (!li) return;
       li.setAttribute(
         "data-fc-transcribe-mirrored",
         String(mirroredCount),
