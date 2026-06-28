@@ -6,14 +6,15 @@ title: Deploy workflow runs the public-site generate step before the public-site
   deploy
 created_by: xgd
 created_at: '2026-06-25T01:36:11.336992+00:00'
-updated_at: '2026-06-25T01:36:11.336992+00:00'
+updated_at: '2026-06-28T20:08:35.312793+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-f632db8a
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
