@@ -5,12 +5,13 @@ type: capability
 title: Site Definition Schema
 created_by: xgd
 created_at: '2026-06-25T00:37:42.497383+00:00'
-updated_at: '2026-06-25T00:37:42.497383+00:00'
+updated_at: '2026-06-28T21:38:57.630321+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: active
 fields:
   name: site_definition_schema
+  uat_coverage: pass
 ---
 
 # Site Definition Schema
