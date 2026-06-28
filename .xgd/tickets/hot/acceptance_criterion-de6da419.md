@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Services-grid collapses to a single column at viewports below the md breakpoint
 created_by: xgd
 created_at: '2026-06-25T01:11:40.966688+00:00'
-updated_at: '2026-06-25T01:11:40.966688+00:00'
+updated_at: '2026-06-28T20:58:02.836244+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-f1e061ba
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
