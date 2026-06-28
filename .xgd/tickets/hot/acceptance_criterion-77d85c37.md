@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: leads table is created by migration 0001 with the CRM Lite schema and indexes
 created_by: xgd
 created_at: '2026-06-25T01:46:55.043019+00:00'
-updated_at: '2026-06-25T01:46:55.043019+00:00'
+updated_at: '2026-06-28T19:38:58.668556+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-37572647
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
