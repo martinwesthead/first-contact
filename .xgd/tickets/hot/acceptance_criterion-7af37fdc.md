@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Every rendered page links to the generated theme stylesheet at /assets/theme.css
 created_by: xgd
 created_at: '2026-06-25T01:24:13.071529+00:00'
-updated_at: '2026-06-25T01:24:13.071529+00:00'
+updated_at: '2026-06-28T20:31:12.261108+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-d111f966
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
