@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Every chrome module exposes meta conforming to the module contract
 created_by: xgd
 created_at: '2026-06-25T00:56:50.011083+00:00'
-updated_at: '2026-06-25T00:56:50.011083+00:00'
+updated_at: '2026-06-28T21:09:01.372213+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-1d5b450f
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
