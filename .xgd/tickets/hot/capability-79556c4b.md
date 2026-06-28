@@ -5,12 +5,13 @@ type: capability
 title: Lead Capture & CRM Lite
 created_by: xgd
 created_at: '2026-06-25T01:45:52.325653+00:00'
-updated_at: '2026-06-25T01:45:52.325653+00:00'
+updated_at: '2026-06-28T19:39:17.807624+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: active
 fields:
   name: Lead Capture & CRM Lite
+  uat_coverage: pass
 ---
 
 End-to-end intake of contact-form submissions from published 1st Contact sites into the lead database, with spam protection (honeypot + Cloudflare Turnstile) and best-effort owner notification.
