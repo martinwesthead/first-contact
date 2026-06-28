@@ -6,14 +6,15 @@ title: Generated pages containing a contact-form module include the Turnstile sc
   and site-key meta when a Turnstile site key is configured
 created_by: xgd
 created_at: '2026-06-25T01:48:10.743435+00:00'
-updated_at: '2026-06-25T01:48:10.743435+00:00'
+updated_at: '2026-06-28T19:39:05.452759+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-37572647
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
