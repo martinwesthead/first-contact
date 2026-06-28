@@ -11,8 +11,9 @@ describe("UAT AC-624: after consent, conversion returns only the mechanical comp
     const h = makeTranscribeHarness({ accountId: "acct-624" });
     const url = "https://acme.test/";
     await h.seedDigest(url);
-    await h.invokeConfirm({ url });
 
+    // Reshape (REQ-34/35): no consent/confirmation step — convert proceeds
+    // immediately on the first invocation.
     const result = await h.invokeTranscribe({ digestId: url });
 
     expect(result.status).toBe("ok");

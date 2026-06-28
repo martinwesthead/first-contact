@@ -109,7 +109,6 @@ describe("UAT AC-633: end-to-end single-page conversion yields a source-styled d
         ],
       },
     } as Partial<ReferenceDigest>);
-    await h.invokeConfirm({ url: "https://acme.test/" });
     const transcribeResult = await h.invokeTranscribe({
       digestId: "https://acme.test/",
     });

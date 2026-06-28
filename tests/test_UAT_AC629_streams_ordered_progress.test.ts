@@ -15,7 +15,6 @@ describe("UAT AC-629: successful conversion streams ordered progressive-reveal p
     await h.seedDigest(url, {
       screenshotKeys: { desktop: "references/a/b/desktop.png" },
     });
-    await h.invokeConfirm({ url });
 
     const result = await h.invokeTranscribe({ digestId: url });
     expect(result.status).toBe("ok");

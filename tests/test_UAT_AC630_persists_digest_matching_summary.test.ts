@@ -85,7 +85,6 @@ describe("UAT AC-630: successful conversion persists a per-site digest matching 
       "https://acme.test/menu",
       minimalSignals("Menu", [], []),
     );
-    await h.invokeConfirm({ url: "https://acme.test/" });
 
     const result = await h.invokeTranscribe({ digestId: "https://acme.test/" });
     expect(result.status).toBe("ok");

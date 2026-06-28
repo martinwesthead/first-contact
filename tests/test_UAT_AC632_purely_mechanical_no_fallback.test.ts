@@ -18,7 +18,6 @@ describe("UAT AC-632: conversion is purely mechanical with no internal-synthesis
     // Success path → mechanical completion summary, no synthesized site.
     const h1 = makeTranscribeHarness({ accountId: "acct-632a" });
     await h1.seedDigest(url);
-    await h1.invokeConfirm({ url });
     const success = await h1.invokeTranscribe({ digestId: url });
     expect(success.status).toBe("ok");
     const successPayload =
@@ -29,24 +28,28 @@ describe("UAT AC-632: conversion is purely mechanical with no internal-synthesis
       expect(successPayload).not.toHaveProperty(forbidden);
     }
 
-    // Edge: unconfirmed → confirmation request, still not a synthesized site.
+    // Edge: no prior consent/confirmation recorded → convert still runs
+    // end-to-end to the mechanical summary. The reshape (REQ-34/35) removed the
+    // confirmation gate, so there is no `convert_confirmation` branch to hit.
     const h2 = makeTranscribeHarness({ accountId: "acct-632b" });
     await h2.seedDigest(url);
-    const gate = await h2.invokeTranscribe({ digestId: url });
-    const gatePayload =
-      (gate as { payload?: Record<string, unknown> }).payload ?? {};
-    expect(gatePayload.kind).toBe("convert_confirmation");
-    expect(gatePayload).not.toHaveProperty("modules");
-    expect(gatePayload).not.toHaveProperty("site");
+    const fresh = await h2.invokeTranscribe({ digestId: url });
+    expect(fresh.status).toBe("ok");
+    const freshPayload =
+      (fresh as { payload?: Record<string, unknown> }).payload ?? {};
+    expect(freshPayload.kind).toBe("transcribe_site_done");
+    expect(freshPayload.kind).not.toBe("convert_confirmation");
+    expect(freshPayload).not.toHaveProperty("modules");
+    expect(freshPayload).not.toHaveProperty("site");
 
     // Edge: no digest → clean failure, no synthesis fallback.
     const h3 = makeTranscribeHarness({ accountId: "acct-632c" });
-    await h3.invokeConfirm({ url });
     const miss = await h3.invokeTranscribe({ digestId: url });
     expect(miss.status).toBe("failed");
     expect((miss as { payload?: unknown }).payload).toBeUndefined();
 
-    // No legacy/fallback synthesis branch is reachable in the orchestration.
+    // Neither a legacy/fallback synthesis branch nor a confirmation/consent
+    // gate is reachable in the orchestration source.
     const here = dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(
       resolve(here, "../apps/control-app/src/operator/transcribe-site.ts"),
@@ -61,6 +64,11 @@ describe("UAT AC-632: conversion is purely mechanical with no internal-synthesis
       "callOpusForTranscription",
       "attemptTranscription",
       "fellBackToHero",
+      // Confirmation/consent gate symbols removed by the reshape.
+      "convert_confirmation",
+      "requires_confirmation",
+      "convertConfirmed",
+      "confirm_convert",
     ]) {
       expect(src).not.toContain(banned);
     }

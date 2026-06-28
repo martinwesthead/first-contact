@@ -10,9 +10,8 @@ describe("UAT AC-628: converting a never-analyzed URL fails cleanly with digest_
   it("test_UAT_AC628_never_analyzed_url_fails_with_digest_not_found", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-628" });
     const url = "https://never-analyzed.test/";
-    // Consent so the confirmation gate is not the blocker; still no digest seeded.
-    await h.invokeConfirm({ url });
-
+    // No confirmation gate exists post-reshape; the never-analyzed URL is the
+    // only blocker — no digest is seeded for it.
     const result = await h.invokeTranscribe({ digestId: url });
 
     expect(result.status).toBe("failed");

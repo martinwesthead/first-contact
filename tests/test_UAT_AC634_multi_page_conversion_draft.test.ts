@@ -101,7 +101,6 @@ describe("UAT AC-634: end-to-end multi-page conversion yields a multi-page draft
       "https://acme.test/contact",
       minimalDigest("Contact", [], [{ name: "email", kind: "email" }]),
     );
-    await h.invokeConfirm({ url: "https://acme.test/" });
     const transcribeResult = await h.invokeTranscribe({
       digestId: "https://acme.test/",
     });
