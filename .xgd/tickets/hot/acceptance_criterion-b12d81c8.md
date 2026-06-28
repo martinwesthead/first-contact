@@ -6,18 +6,18 @@ title: Every page is analyzed via the static path; rendered-path escalation neve
   triggers in this version
 created_by: xgd
 created_at: '2026-06-27T01:11:26.883539+00:00'
-updated_at: '2026-06-27T01:11:26.883539+00:00'
+updated_at: '2026-06-28T19:40:50.792223+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: regression_only
 status: pending
 fields:
   story_uid: story-3f73931a
   kind: behavior
-  regression_only: true
+  regression_only: false
 ---
 
 ## Criterion
-The static-only escalation decision always reports "do not escalate" for any digest in this version. The Browser Rendering (rendered) fetch path is out of scope for this REQ; the escalation point exists as a wired integration hook (REQ-22 replaces its decision logic) but never selects the rendered path here, so analysis stays on the static fetch path for every input.
+The escalation decision inspects the static fetch and reports whether to escalate to the rendered path. Given a fetched document whose visible `<body>` text is under 200 characters (a thin SPA shell), the decision reports `escalate: true` with reason `thin_body`. Given a content-rich document whose visible body text meets or exceeds the threshold (and is not JS-dominant or force-rendered), the decision reports `escalate: false` (reason `sufficient`) and analysis stays on the static fetch path.
 
 ## Verification
-Invoke the escalation decision against a range of digests — fully-populated, sparse, and empty → assert it reports "do not escalate" (static path) in every case.
+Invoke the escalation decision against (a) an HTML shell whose body renders fewer than 200 visible characters → assert `escalate: true` and reason `thin_body`; and (b) a content-rich HTML page with ample visible body text → assert `escalate: false`.
