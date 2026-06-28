@@ -5,9 +5,9 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-5 (BUG-4/BUG-3/BUG-5/BUG-7/REQ-32/REQ-33/REQ-34/REQ-35/BUG-10/REQ-14)'
 created_by: xgd
 created_at: '2026-06-28T22:07:18.547683+00:00'
-updated_at: '2026-06-28T22:07:18.547683+00:00'
+updated_at: '2026-06-28T22:13:28.680062+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: items
 fields:
   report_kind: reconciliation_plan
   subject_uid: bundle-d4ce3987
@@ -41,7 +41,7 @@ fields:
         AND after it rejects (finally-cleared).
       modify: []
       remove: []
-    story_uid: null
+    story_uid: story-ba9f2715
   - index: 2
     component: Builder UI — live preview
     item_type: upgrade
