@@ -6,10 +6,10 @@ title: 'Browser Rendering integration: JS-rendered fetch path with screenshots a
   computed-CSS signals'
 created_by: xgd
 created_at: '2026-06-16T23:26:13.165904+00:00'
-updated_at: '2026-06-27T02:20:43.539774+00:00'
-completed_at: null
+updated_at: '2026-06-28T21:46:51.375990+00:00'
+completed_at: '2026-06-28T21:46:51.375990+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: high
   story_points: 6
