@@ -6,14 +6,15 @@ title: On a non-2xx response, contact-form remains visible and surfaces an inlin
   error message
 created_by: xgd
 created_at: '2026-06-25T01:12:27.833489+00:00'
-updated_at: '2026-06-25T01:12:27.833489+00:00'
+updated_at: '2026-06-28T21:09:15.850811+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-f1e061ba
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
