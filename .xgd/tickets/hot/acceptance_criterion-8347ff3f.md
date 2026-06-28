@@ -6,14 +6,15 @@ title: Schema validation failure raises SiteLoadError carrying a JSON-pointer-st
   report of every violation
 created_by: xgd
 created_at: '2026-06-25T01:24:42.078233+00:00'
-updated_at: '2026-06-25T01:24:42.078233+00:00'
+updated_at: '2026-06-28T20:31:15.216540+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-d111f966
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
