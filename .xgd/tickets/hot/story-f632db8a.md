@@ -6,7 +6,7 @@ title: Phase 0 1stcontact marketing site is served end-to-end by the public-site
   via Workers Static Assets
 created_by: xgd
 created_at: '2026-06-25T01:34:39.814075+00:00'
-updated_at: '2026-06-28T20:08:44.653816+00:00'
+updated_at: '2026-06-28T20:13:24.215658+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: reconciling
@@ -15,7 +15,7 @@ fields:
   capability_uid: capability-474ee896
   story_kind: feature
   story_points: 2
-  uat_coverage: fail
+  uat_coverage: pass
 ---
 
 ## Story
