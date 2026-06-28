@@ -6,14 +6,15 @@ title: Framework module registry resolves all six Phase 0 modules (header, hero,
   text-block, services-grid, contact-form) at their declared versions
 created_by: xgd
 created_at: '2026-06-25T01:12:43.469928+00:00'
-updated_at: '2026-06-25T01:12:43.469928+00:00'
+updated_at: '2026-06-28T21:09:17.027526+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-f1e061ba
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
