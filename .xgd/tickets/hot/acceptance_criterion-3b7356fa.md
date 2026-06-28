@@ -6,9 +6,9 @@ title: Convert confirmation card renders with destructive prompt, ownership chec
   and Confirm/Cancel actions
 created_by: xgd
 created_at: '2026-06-28T20:55:15.982353+00:00'
-updated_at: '2026-06-28T20:55:15.982353+00:00'
+updated_at: '2026-06-28T23:31:47.175624+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: pending
 fields:
   story_uid: story-2524a1ae
@@ -17,7 +17,7 @@ fields:
 ---
 
 ## Criterion
-When the convert flow signals that confirmation is required, the builder chat renders a warning-toned card titled "Convert site" whose body contains: the destructive-overwrite prompt text (naming the target URL and stating the change cannot be automatically undone), an "I own this site" checkbox that is unchecked by default, and an actions row with a Confirm action and a Cancel action.
+The convert flow surfaces no confirmation card: no renderer is registered for `kind: "convert_confirmation"`, so a tool result carrying that kind has no special "Convert site" card (no destructive-overwrite prompt, no "I own this site" checkbox, no Confirm/Cancel actions) and instead falls back to the plain summary card produced by the dispatcher for unregistered kinds.
 
 ## Verification
-Render the "confirmation required" tool result into the chat. Assert the card tone is the warning tone, the title reads "Convert site", the body shows the prompt text referencing the URL and the "cannot be automatically undone" wording, the ownership checkbox is present and unchecked, and both Confirm and Cancel actions are present.
+With the builder booted, render a tool result whose applied kind is `convert_confirmation`. Assert no warning-toned "Convert site" card is produced — no ownership checkbox and no Confirm/Cancel actions appear — and the dispatcher emits the generic summary fallback card instead.
