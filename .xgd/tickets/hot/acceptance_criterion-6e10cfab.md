@@ -5,7 +5,7 @@ type: acceptance_criterion
 title: Contact-form renders a hidden honeypot input that is visually concealed
 created_by: xgd
 created_at: '2026-06-25T01:12:01.656824+00:00'
-updated_at: '2026-06-28T20:58:05.452637+00:00'
+updated_at: '2026-06-28T21:09:12.997481+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: pending
