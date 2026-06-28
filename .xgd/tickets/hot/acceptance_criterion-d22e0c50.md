@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Registry resolves a known module to its component and meta
 created_by: xgd
 created_at: '2026-06-25T00:56:28.474369+00:00'
-updated_at: '2026-06-25T00:56:28.474369+00:00'
+updated_at: '2026-06-28T21:08:58.965513+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-1d5b450f
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
