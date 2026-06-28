@@ -5,12 +5,13 @@ type: capability
 title: Framework Theme Tokens & CSS Generation
 created_by: xgd
 created_at: '2026-06-25T00:48:22.764636+00:00'
-updated_at: '2026-06-25T00:48:22.764636+00:00'
+updated_at: '2026-06-28T21:25:08.668361+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: active
 fields:
   name: framework_theme_tokens
+  uat_coverage: pass
 ---
 
 # Framework Theme Tokens & CSS Generation
