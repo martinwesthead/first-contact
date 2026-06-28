@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Deploy workflow injects Cloudflare credentials into the deploy job
 created_by: xgd
 created_at: '2026-06-25T00:28:44.495574+00:00'
-updated_at: '2026-06-25T00:28:44.495574+00:00'
+updated_at: '2026-06-28T21:55:17.417262+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-067dc2f8
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
