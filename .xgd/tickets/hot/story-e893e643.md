@@ -6,10 +6,10 @@ title: 'AI editing tool surface: page management, nav editing, page metadata, an
   module duplication'
 created_by: xgd
 created_at: '2026-06-28T20:47:07.071919+00:00'
-updated_at: '2026-06-28T23:52:58.522359+00:00'
+updated_at: '2026-06-28T23:54:45.792090+00:00'
 completed_at: null
-last_field_updated: story_kind
-status: reconciling
+last_field_updated: status
+status: updated
 fields:
   intent_uid: bundle-24c4d23c
   capability_uid: capability-6694c60f
