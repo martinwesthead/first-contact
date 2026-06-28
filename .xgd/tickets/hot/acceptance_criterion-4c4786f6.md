@@ -6,7 +6,7 @@ title: Public-site build, deploy, and dry-run scripts regenerate the static bund
   from sites/1stcontact before continuing
 created_by: xgd
 created_at: '2026-06-25T01:35:52.819513+00:00'
-updated_at: '2026-06-28T20:08:34.014072+00:00'
+updated_at: '2026-06-28T20:15:16.858572+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: pending
