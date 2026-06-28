@@ -5,12 +5,13 @@ type: capability
 title: Platform Deployment Infrastructure
 created_by: xgd
 created_at: '2026-06-25T00:27:45.149678+00:00'
-updated_at: '2026-06-25T00:27:45.149678+00:00'
+updated_at: '2026-06-28T21:55:28.059789+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: active
 fields:
   name: platform_deployment_infrastructure
+  uat_coverage: pass
 ---
 
 # Platform Deployment Infrastructure
