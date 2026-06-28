@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: --clean flag wipes the output directory before writing new artifacts
 created_by: xgd
 created_at: '2026-06-25T01:24:51.253381+00:00'
-updated_at: '2026-06-25T01:24:51.253381+00:00'
+updated_at: '2026-06-28T20:31:16.630719+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-d111f966
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
