@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Toolchain is pinned to Node 20+ and pnpm 9+ with a frozen lockfile
 created_by: xgd
 created_at: '2026-06-25T00:28:54.222710+00:00'
-updated_at: '2026-06-25T00:28:54.222710+00:00'
+updated_at: '2026-06-28T21:55:18.498840+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-067dc2f8
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
