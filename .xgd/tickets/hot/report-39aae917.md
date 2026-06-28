@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-5 (BUG-4/BUG-3/BUG-5/BUG-7/REQ-32/REQ-33/REQ-34/REQ-35/BUG-10/REQ-14)'
 created_by: xgd
 created_at: '2026-06-28T22:07:18.547683+00:00'
-updated_at: '2026-06-28T23:11:21.043376+00:00'
+updated_at: '2026-06-28T23:33:30.791167+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -209,7 +209,7 @@ fields:
       - 'The Convert confirmation card variant: warning-toned ''Convert site'' card,
         ''I own this site'' checkbox, Confirm/Cancel actions, and the fc:convert-confirmed
         / fc:convert-cancelled signalling contract.'
-    story_uid: null
+    story_uid: story-2524a1ae
   - index: 7
     component: Convert flow — transcription digest
     item_type: upgrade
