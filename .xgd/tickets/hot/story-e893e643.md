@@ -5,10 +5,10 @@ type: story
 title: 'AI page-management tools: add, remove, and reorder pages in a site draft'
 created_by: xgd
 created_at: '2026-06-28T20:47:07.071919+00:00'
-updated_at: '2026-06-28T20:47:07.071919+00:00'
+updated_at: '2026-06-28T20:51:56.517606+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-24c4d23c
   capability_uid: capability-6694c60f
