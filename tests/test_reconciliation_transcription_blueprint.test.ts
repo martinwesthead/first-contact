@@ -12,6 +12,16 @@ import {
 import { defaultThemeTokens } from "../packages/framework/src/tokens/defaults.js";
 import { findAction } from "../apps/control-app/src/operator/registry.js";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
+import { AssetRef } from "@1stcontact/site-schema";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+import { REPRODUCING_A_WEBSITE_DOC } from "../apps/control-app/src/llm-context.js";
+
+const HOWTO_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../docs/llm-context/reproducing-a-website.md",
+);
 
 // Story story-f45a5e61 — Reconstruction blueprint: deterministic transcription
 // digest and read-back. These UATs prove the deterministic building blocks
@@ -239,7 +249,6 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
       },
     } as Partial<ReferenceDigest>);
 
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const obj = await h.env.ASSETS_BUCKET.get(
@@ -346,7 +355,6 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
       },
     } as Partial<ReferenceDigest>);
 
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const obj = await h.env.ASSETS_BUCKET.get(
@@ -398,7 +406,6 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
       },
     } as Partial<ReferenceDigest>);
 
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     const obj = await h.env.ASSETS_BUCKET.get(
@@ -422,12 +429,59 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
     expect((failures[0].reason as string).length).toBeGreaterThan(0);
   });
 
+  it("test_UAT_AC703_asset_inventory_entries_carry_precomputed_image_assetref", () => {
+    const digest = refDigest({
+      signals: {
+        ...refDigest().signals,
+        imagery: { imgCount: 2, backgroundCount: 0, videoCount: 0, heroDetected: true },
+        content: {
+          ...refDigest().signals.content,
+          headings: [{ level: 1, text: "Acme" }],
+        },
+        assetInventory: [
+          // One with alt text, one without.
+          { url: "https://assets.test/hero.png", kind: "img", classification: "hero", references: 1, alt: "Hero shot" },
+          { url: "https://assets.test/decor.png", kind: "img", classification: "decorative", references: 1 },
+        ],
+      },
+    });
+    const urlToR2Key = new Map<string, string>([
+      ["https://assets.test/hero.png", "sites/site-1/imports/aaaaaaaaaaaaaaaa.png"],
+      ["https://assets.test/decor.png", "sites/site-1/imports/bbbbbbbbbbbbbbbb.png"],
+    ]);
+
+    const blueprint = buildBlueprint(digest, {
+      urlToR2Key,
+      mirrorSummary: { mirrored: 2, failed: 0, failures: [] },
+    });
+
+    expect(blueprint.assetInventory).toHaveLength(2);
+    for (const entry of blueprint.assetInventory) {
+      // assetRef present alongside source URL, kind, and hosted key.
+      expect(entry.assetRef).toBeDefined();
+      // id === hosted key; src === /assets/<hosted-key>.
+      expect(entry.assetRef.id).toBe(entry.r2Key);
+      expect(entry.assetRef.src).toBe(`/assets/${entry.r2Key}`);
+      // id and src non-empty.
+      expect(entry.assetRef.id.length).toBeGreaterThan(0);
+      expect(entry.assetRef.src.length).toBeGreaterThan(0);
+      // Validates against the framework's image AssetRef contract (id/src/alt).
+      const parsed = AssetRef.safeParse(entry.assetRef);
+      expect(parsed.success).toBe(true);
+    }
+
+    // alt is the captured alt text, or "" when none was captured.
+    const hero = blueprint.assetInventory.find((e) => e.sourceUrl.endsWith("hero.png"))!;
+    const decor = blueprint.assetInventory.find((e) => e.sourceUrl.endsWith("decor.png"))!;
+    expect(hero.assetRef.alt).toBe("Hero shot");
+    expect(decor.assetRef.alt).toBe("");
+  });
+
   // ── Read-back ───────────────────────────────────────────────────────────
 
   it("test_UAT_AC642_read_back_returns_digest_for_existing_site", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-ac642" });
     await h.seedDigest("https://acme.test/");
-    await h.invokeConfirm({ url: "https://acme.test/" });
     await h.invokeTranscribe({ digestId: "https://acme.test/" });
 
     // Registered as a system action the operator AI can invoke.
@@ -465,5 +519,35 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
     expect(result.status).toBe("failed");
     // No blueprint contents are returned on a rejected request.
     expect("payload" in result).toBe(false);
+  });
+
+  // ── Reproduction how-to consumption contract (BUG-5) ─────────────────────
+
+  it("test_UAT_AC704_reproduction_howto_instructs_precomputed_assetref_object", () => {
+    const fromDisk = readFileSync(HOWTO_PATH, "utf-8");
+    // Both guidance artifacts: the on-disk how-to and its inlined mirror.
+    const artifacts: ReadonlyArray<readonly [string, string]> = [
+      ["docs/llm-context/reproducing-a-website.md", fromDisk],
+      [
+        "apps/control-app/src/llm-context.ts (REPRODUCING_A_WEBSITE_DOC)",
+        REPRODUCING_A_WEBSITE_DOC,
+      ],
+    ];
+
+    for (const [name, src] of artifacts) {
+      // Instructs the precomputed `assetRef` object for image fields.
+      expect(src, name).toMatch(/assetRef/);
+      expect(src, name).toMatch(/objects[, ]*not strings/i);
+      // Worked example matching the { id, src, alt } AssetRef shape.
+      expect(src, name).toContain("id:");
+      expect(src, name).toContain("src:");
+      expect(src, name).toContain("alt:");
+      expect(src, name).toMatch(/\/assets\/<r2Key>/);
+      // Explicitly warns that a bare path string is rejected by the validator.
+      expect(src, name).toMatch(/bare string/i);
+      expect(src, name).toMatch(/rejected/i);
+      // Never instructs setting an image field to a bare /assets path string.
+      expect(src, name).not.toMatch(/value:\s*["'`]?\/assets\//);
+    }
   });
 });
