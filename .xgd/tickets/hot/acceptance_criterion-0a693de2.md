@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Validator returns ValidationError list with JSON-pointer paths on failure
 created_by: xgd
 created_at: '2026-06-25T00:39:07.343913+00:00'
-updated_at: '2026-06-25T00:39:07.343913+00:00'
+updated_at: '2026-06-28T21:38:50.197494+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-aecb7377
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
