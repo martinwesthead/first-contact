@@ -5,10 +5,10 @@ type: request
 title: 'Convert flow: clear existing draft to empty scaffold before AI reconstruction'
 created_by: xgd
 created_at: '2026-06-20T18:25:53.585952+00:00'
-updated_at: '2026-06-20T21:17:01.448841+00:00'
+updated_at: '2026-06-28T21:47:10.567730+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   priority: high
   story_points: 2
@@ -17,6 +17,7 @@ fields:
   commits:
   - c54359d6b6a24521b3345fb098acaaec4e55f661
   version: 0.0.13
+  bundled_in: bundle-d4ce3987
 ---
 
 ## What is the user-visible change?
