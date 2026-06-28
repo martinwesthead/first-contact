@@ -25,6 +25,8 @@ fields:
   - c3f5924ac8433587c9dffa479bb8712d69a47696
   auto_merge_back: true
   priority: medium
+  skipped_commits:
+  - 502d741b2b57068764909b543b7a1b5188749599
 ---
 
 # Bundle
