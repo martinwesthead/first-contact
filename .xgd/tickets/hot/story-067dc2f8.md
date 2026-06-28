@@ -5,15 +5,16 @@ type: story
 title: Monorepo + two-Worker Cloudflare deploy pipeline
 created_by: xgd
 created_at: '2026-06-25T00:28:15.576460+00:00'
-updated_at: '2026-06-25T00:35:20.598825+00:00'
+updated_at: '2026-06-28T21:55:27.469509+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: uat_coverage
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-8bfbe75a
   story_kind: feature
   story_points: 2
+  uat_coverage: pass
 ---
 
 ## Story
