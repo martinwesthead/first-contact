@@ -5,22 +5,21 @@ type: story
 title: Monorepo + two-Worker Cloudflare deploy pipeline
 created_by: xgd
 created_at: '2026-06-25T00:28:15.576460+00:00'
-updated_at: '2026-06-28T21:55:27.469509+00:00'
+updated_at: '2026-06-28T22:33:36.063314+00:00'
 completed_at: null
-last_field_updated: uat_coverage
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-8bfbe75a
-  story_kind: feature
+  story_kind: upgrade
   story_points: 2
-  uat_coverage: pass
 ---
 
 ## Story
 
 **As a** platform operator,
-**I want** a single pnpm monorepo whose two Cloudflare Worker apps are continuously validated on every pull request and automatically deployed to production whenever the `xgd-stable` branch advances,
+**I want** a single pnpm monorepo whose two Cloudflare Worker apps are continuously validated on every pull request and automatically deployed to production whenever the `xgd-stable` branch advances — and whose builder SPA bundle rebuilds live while I develop,
 **so that** the 1stcontact.io platform can ship safely and reproducibly without manual deploy steps and every new feature inherits a working build/deploy substrate.
 
 ## Description
@@ -49,6 +48,12 @@ capability stands on:
   `wrangler deploy --env production` for both Workers, with a
   concurrency group preventing two deploys from racing on the same
   ref.
+- A live dev loop for the control app: the builder SPA bundler runs
+  in a file-watching mode that incrementally rebuilds the served
+  bundle whenever builder-ui or framework source changes, and the
+  control-app dev command runs that watcher alongside the local
+  Worker dev server so edits surface in the browser without a manual
+  rebuild step.
 - All identifiers aligned to the `1stcontact` slug across the root
   `package.json` name, both Worker names in `wrangler.toml`, the
   `sites/1stcontact/` subdirectory, and the project's CLAUDE.md
@@ -74,6 +79,16 @@ capability stands on:
   primary backend, Workers Static Assets for the control app, and
   GitHub used only for the platform's own CI/CD — this story is the
   surface where those policies first land.
+- The builder SPA is served as a static asset built by the
+  `build-builder-bundle.mjs` esbuild script. The script accepts a
+  `--watch` flag that switches it from a one-shot `esbuild.build()`
+  to `esbuild.context().watch()`; the control-app `dev` script uses
+  `concurrently` to run that watcher (`build:bundle:watch`) next to
+  `wrangler dev`. Because esbuild walks the entry dependency graph
+  from `packages/builder-ui/src/spa.ts`, edits anywhere in the entry
+  graph (builder-ui or framework) trigger an incremental rebuild
+  with no extra plumbing. This dev watch-rebuild loop was added under
+  BUG-7 to fix silent bundle staleness during development.
 - The original REQ-1 intent named a public-site placeholder
   (`Hello from 1stcontact.io`). That placeholder was superseded
   mid-bundle by REQ-6, which began serving the generated site from
