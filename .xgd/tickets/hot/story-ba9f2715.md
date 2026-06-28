@@ -6,9 +6,9 @@ title: Chat-driven site builder SPA with live preview, AI tool validation, and A
   proxy
 created_by: xgd
 created_at: '2026-06-25T01:58:41.731250+00:00'
-updated_at: '2026-06-27T01:06:47.673130+00:00'
+updated_at: '2026-06-28T21:03:50.632539+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
@@ -59,7 +59,7 @@ In scope:
 - Multi-turn AI tool loop on `/api/chat`: after each Anthropic response that returns tool calls, the worker executes each call, appends a structured `tool_result` content block (`{ok: true, applied: {tool, args, summary}}` on success — `data`/`kind` added when the tool returns structured payload — or `{ok: false, error: {tool, validation}}` on failure, with the failure also flagged `is_error` on the block returned to Anthropic), recomputes the system-prompt site-state snapshot from the canonical working definition, and re-calls Anthropic until no tool calls remain or 8 turns are reached.
 - A `get_site_definition` read tool in `OPERATOR_ACTIONS` (`category: 'system_action'`, `plan_tier: 'trial'`, `ui_route: null`) whose handler returns the current draft site definition so the AI can verify canonical state mid-conversation; it is available on every plan tier and its returned payload is surfaced to the model as `applied.data`.
 - Assistant chat messages render as markdown (headers, lists, fenced code become DOM elements; links open in a new tab with `rel="noopener noreferrer"`) sanitized so injected `<script>` tags and `on*=` event-handler attributes are stripped; user and system messages remain plaintext.
-- The chat input is a rich-text editor that accepts pasted markdown and shows it as formatted text, sends on Cmd/Ctrl+Enter, and serializes its content back to markdown for the `/api/chat` request.
+- The chat input is a rich-text editor that accepts pasted markdown and shows it as formatted text, sends on Cmd/Ctrl+Enter, and serializes its content back to markdown for the `/api/chat` request. The input row lays the editor and Send button out as `[ editor ][ Send ]`: the editor renders as a visible bordered, dark-background field that fills the available width and highlights its border on focus, while the Send button stays compact on its right.
 - A reusable chat-card primitive (bordered card with an icon+title header, body slot, optional actions row with click callbacks, optional collapse caret, and one of five tones — neutral / info / success / warning / danger — applying an edge accent) plus a `tool_result` kind→renderer dispatcher: known kinds route to a registered renderer, unknown or untagged successful results fall back to a markdown card showing the summary, and failed results render as a danger-toned card. Downstream REQs register their per-kind renderers through this dispatcher.
 
 Out of scope (deferred per the source ticket):
@@ -83,6 +83,7 @@ Out of scope (deferred per the source ticket):
 - **Tool validation pre-check note**: the implemented tool validator does NOT separately catalog-validate the `add_module`'s `variant`/`dials` — those land via `validateSite`'s structural rules. The behaviour the user observes (invalid values are rejected, state is unchanged, chat log shows a structured error) is unchanged regardless of which validator layer surfaces the rejection.
 - **Multi-turn loop (REQ-13)**: the chat handler loops up to `MAX_TOOL_TURNS = 8`. State-edit calls advance an in-handler working copy of the site (`applyToolCall`) and the success `summary` describes what landed (e.g. `"set dial 'spacingTop' to 'lg' on hero-1"`); the system prompt is rebuilt each turn from that working copy, so continuation accuracy holds across long sessions. `get_site_definition` is dispatched as a system action and its payload is surfaced to the AI via the legacy no-`kind` path (`applied.data`), while any system action returning a `payload.kind` string surfaces `applied.data` + `applied.kind` on `body.toolCalls` for the FE dispatcher.
 - **Markdown rendering (REQ-13)**: assistant messages go through `marked` (v14, GFM on, a custom link renderer adding `target="_blank" rel="noopener noreferrer"`) then `DOMPurify.sanitize`; user/system messages use `textContent`. The chat input is a TipTap editor (`StarterKit` + `tiptap-markdown` with `html: false`), serializing back to markdown on submit.
+- **Chat-input styling (BUG-1)**: `apps/control-app/public/builder.html` styles the TipTap editor DOM introduced by REQ-13 so the input is visible and correctly laid out — `.fc-chat__editor` (`flex: 1 1 auto`, `min-width: 0`, dark background, border, `:focus-within` highlight) wraps `.fc-chat__editor-content` (min/max height, padding, text colour, `outline: none`) inside a `.fc-chat__input` flex row with the Send button pinned compact on the right. The stale `.fc-chat__textarea` rule from the pre-REQ-13 plain-textarea input is removed; without these rules the editor wrapper collapsed to zero size and the Send button took over the row.
 - **ChatCard + dispatcher (REQ-13)**: implemented as the vanilla-DOM `createChatCard` factory and a `kind → renderer` registry (`registerToolResultRenderer` / `renderToolResult`), not the React `<ChatCard>`/`react-markdown` the source ticket named. The user-visible behaviours (card shell + tones + collapse, markdown fallback, danger card on failure, per-kind routing) are framework-agnostic — the matrix documents what the user sees, not the framework choice (consistent with the divergence note above).
 
 ## Dependencies
