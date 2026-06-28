@@ -6,15 +6,16 @@ title: Static site generator turns a validated site definition into a deployable
   bundle, via programmatic API and CLI
 created_by: xgd
 created_at: '2026-06-25T01:23:22.609200+00:00'
-updated_at: '2026-06-25T01:32:24.950180+00:00'
+updated_at: '2026-06-28T20:31:21.631089+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: uat_coverage
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-820fbc22
   story_kind: feature
   story_points: 3
+  uat_coverage: pass
 ---
 
 ## Story
