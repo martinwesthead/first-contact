@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: Services-grid three-col variant renders three columns at and above the md breakpoint
 created_by: xgd
 created_at: '2026-06-25T01:11:35.637708+00:00'
-updated_at: '2026-06-25T01:11:35.637708+00:00'
+updated_at: '2026-06-28T20:58:03.466881+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-f1e061ba
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
