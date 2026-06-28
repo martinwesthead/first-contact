@@ -6,9 +6,9 @@ title: Chat-driven site builder SPA with live preview, AI tool validation, and A
   proxy
 created_by: xgd
 created_at: '2026-06-25T01:58:41.731250+00:00'
-updated_at: '2026-06-28T21:14:44.472745+00:00'
+updated_at: '2026-06-28T21:17:05.845896+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
@@ -51,6 +51,7 @@ In scope:
 - A two-panel SPA shell with a chat panel on the left, an iframe preview on the right, and a draggable splitter between them.
 - The chat panel collapses to a 32px restore rail that appears on the **left** edge of the preview (where the chat was), and restores to its remembered width on click. Both panel width and collapsed/expanded state are persisted across reload.
 - The preview iframe fills its panel's height (does not collapse to a default 150px), and supports three viewport presets — mobile (375px), tablet (768px), and desktop (100% of the pane).
+- The preview panel toolbar carries a **Reset** button (right-aligned, after the viewport-preset buttons). Clicking it asks for confirmation ("Reset the site to the 1stcontact baseline? Edits will be lost."); on confirm it clears the persisted working-site key from localStorage and reloads, so the builder cold-loads the bundled baseline starter site; on cancel nothing changes. This is a dev affordance for iterating on the convert flow without hand-clearing localStorage.
 - The eight state-edit AI tools — `set_module_content`, `set_module_dial`, `set_module_variant`, `add_module`, `remove_module`, `reorder_modules`, `set_theme_token`, `set_site_config` — live in the `OPERATOR_ACTIONS` registry with `category: 'state_edit'`, `plan_tier: 'trial'`, and `ui_route: null` (chat-driven only). `POST /api/chat` constructs the Anthropic tool list by filtering this registry through the session's `plan_tier`, so a trial-plan session receives the eight state-edit tools while a paid-plan session additionally receives paid-tier system-action tools such as `publish_stub`. There is no separate static `TOOL_DEFINITIONS` constant: the registry is the single source of truth.
 - Four-layer validation contract: every AI-returned tool call is checked against the framework catalog (module type, version, variants, dials, theme-token names) and the site schema before being applied to the store. Accepted tool calls move the working site forward; rejected tool calls leave state unchanged and append a structured error message (path, expected enum, got, message) to the chat log.
 - localStorage persistence of the working site definition and the chat-turn history; on reboot, a previously-edited site survives and chat history is preserved across store re-instantiation.
@@ -85,6 +86,7 @@ Out of scope (deferred per the source ticket):
 - **Multi-turn loop (REQ-13)**: the chat handler loops up to `MAX_TOOL_TURNS = 8`. State-edit calls advance an in-handler working copy of the site (`applyToolCall`) and the success `summary` describes what landed (e.g. `"set dial 'spacingTop' to 'lg' on hero-1"`); the system prompt is rebuilt each turn from that working copy, so continuation accuracy holds across long sessions. `get_site_definition` is dispatched as a system action and its payload is surfaced to the AI via the legacy no-`kind` path (`applied.data`), while any system action returning a `payload.kind` string surfaces `applied.data` + `applied.kind` on `body.toolCalls` for the FE dispatcher.
 - **Markdown rendering (REQ-13)**: assistant messages go through `marked` (v14, GFM on, a custom link renderer adding `target="_blank" rel="noopener noreferrer"`) then `DOMPurify.sanitize`; user/system messages use `textContent`. The chat input is a TipTap editor (`StarterKit` + `tiptap-markdown` with `html: false`), serializing back to markdown on submit.
 - **Chat-input styling (BUG-1)**: `apps/control-app/public/builder.html` styles the TipTap editor DOM introduced by REQ-13 so the input is visible and correctly laid out — `.fc-chat__editor` (`flex: 1 1 auto`, `min-width: 0`, dark background, border, `:focus-within` highlight) wraps `.fc-chat__editor-content` (min/max height, padding, text colour, `outline: none`) inside a `.fc-chat__input` flex row with the Send button pinned compact on the right. The stale `.fc-chat__textarea` rule from the pre-REQ-13 plain-textarea input is removed; without these rules the editor wrapper collapsed to zero size and the Send button took over the row.
+- **Preview-panel Reset button (REQ-31)**: `createPreviewPanel` renders a Reset button in the toolbar only when an `onReset` callback is supplied; `bootBuilder` wires it to confirm via `window.confirm`, then `localStorage.removeItem('1stcontact_builder_site_v1')` and `location.reload()`. The confirm prompt, the reload primitive, and the storage key are injectable (`resetPrompt`, `reloadPage`, `storageKey`) so UATs exercise the flow without reloading jsdom. A `window.confirm` prompt (not a styled chat-card modal) is intentional for this dev affordance.
 - **ChatCard + dispatcher (REQ-13)**: implemented as the vanilla-DOM `createChatCard` factory and a `kind → renderer` registry (`registerToolResultRenderer` / `renderToolResult`), not the React `<ChatCard>`/`react-markdown` the source ticket named. The user-visible behaviours (card shell + tones + collapse, markdown fallback, danger card on failure, per-kind routing) are framework-agnostic — the matrix documents what the user sees, not the framework choice (consistent with the divergence note above).
 
 ## Dependencies
