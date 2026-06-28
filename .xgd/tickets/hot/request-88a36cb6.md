@@ -14,7 +14,7 @@ fields:
   needs_review: false
   priority: medium
   commits:
-  - 749ef9b91363871fafce849612fb3c3ca2b71036
+  - c67a3b6162829e4847c69a69dadf6368bb6752ea
   version: 0.14.1236
   story_points: 1
   bundled_in: bundle-d4ce3987
