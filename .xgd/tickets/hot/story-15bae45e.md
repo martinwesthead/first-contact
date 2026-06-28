@@ -5,10 +5,10 @@ type: story
 title: Analyze a reference URL into an interactive Digest Report in the builder chat
 created_by: xgd
 created_at: '2026-06-27T01:25:03.197100+00:00'
-updated_at: '2026-06-28T19:57:30.733732+00:00'
+updated_at: '2026-06-28T19:58:47.392409+00:00'
 completed_at: null
-last_field_updated: story_kind
-status: reconciling
+last_field_updated: status
+status: updated
 fields:
   intent_uid: bundle-bbb1bd9c
   capability_uid: capability-9395ee51
