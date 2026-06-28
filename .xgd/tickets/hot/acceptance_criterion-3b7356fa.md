@@ -2,13 +2,13 @@
 uid: acceptance_criterion-3b7356fa
 id: AC-662
 type: acceptance_criterion
-title: Convert confirmation card renders with destructive prompt, ownership checkbox,
-  and Confirm/Cancel actions
+title: No convert_confirmation renderer is registered; that kind falls back to the
+  plain summary card
 created_by: xgd
 created_at: '2026-06-28T20:55:15.982353+00:00'
-updated_at: '2026-06-28T23:31:47.175624+00:00'
+updated_at: '2026-06-28T23:33:11.683239+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-2524a1ae
