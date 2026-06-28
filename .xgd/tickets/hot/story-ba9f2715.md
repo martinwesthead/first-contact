@@ -6,9 +6,9 @@ title: Chat-driven site builder SPA with live preview, AI tool validation, and A
   proxy
 created_by: xgd
 created_at: '2026-06-25T01:58:41.731250+00:00'
-updated_at: '2026-06-28T21:04:25.357255+00:00'
+updated_at: '2026-06-28T21:04:25.485197+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: updated_by
 status: updated
 fields:
   intent_uid: bundle-94e1d1b6
@@ -17,6 +17,7 @@ fields:
   story_points: 3
   updated_by:
   - bundle-bbb1bd9c
+  - bundle-24c4d23c
 ---
 
 ## Story
