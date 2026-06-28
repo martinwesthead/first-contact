@@ -6,10 +6,10 @@ title: 'Convert flow chat cards: confirm a destructive conversion and watch tran
   progress'
 created_by: xgd
 created_at: '2026-06-28T20:54:56.677695+00:00'
-updated_at: '2026-06-28T23:33:30.691518+00:00'
+updated_at: '2026-06-28T23:36:56.549759+00:00'
 completed_at: null
-last_field_updated: updated_by
-status: updated
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-24c4d23c
   capability_uid: capability-e343131c
