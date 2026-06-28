@@ -5,14 +5,15 @@ type: acceptance_criterion
 title: All identifiers align to the 1stcontact slug
 created_by: xgd
 created_at: '2026-06-25T00:28:48.983614+00:00'
-updated_at: '2026-06-25T00:28:48.983614+00:00'
+updated_at: '2026-06-28T21:55:17.957834+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-067dc2f8
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
