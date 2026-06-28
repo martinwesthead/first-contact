@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-5 (BUG-4/BUG-3/BUG-5/BUG-7/REQ-32/REQ-33/REQ-34/REQ-35/BUG-10/REQ-14)'
 created_by: xgd
 created_at: '2026-06-28T22:07:18.547683+00:00'
-updated_at: '2026-06-28T22:34:19.220066+00:00'
+updated_at: '2026-06-28T22:55:15.273228+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -124,7 +124,7 @@ fields:
       new capability bucket (the body-copy lingua franca) rather than an extension
       of an existing one, so it is a feature. It threads through schema/renderer/extractor/generate
       but introduces a new content shape that no current story documents.
-    story_uid: null
+    story_uid: story-ddc928fd
   - index: 5
     component: Convert flow — orchestration
     item_type: upgrade
