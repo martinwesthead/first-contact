@@ -6,14 +6,15 @@ title: Partial token input fills unspecified slots from the published defaults w
   dropping siblings
 created_by: xgd
 created_at: '2026-06-25T00:49:14.451824+00:00'
-updated_at: '2026-06-25T00:49:14.451824+00:00'
+updated_at: '2026-06-28T21:25:03.894735+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-e53ba4cf
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
