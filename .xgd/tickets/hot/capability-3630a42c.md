@@ -5,12 +5,13 @@ type: capability
 title: Framework Module Catalog
 created_by: xgd
 created_at: '2026-06-25T00:55:42.900949+00:00'
-updated_at: '2026-06-25T00:55:42.900949+00:00'
+updated_at: '2026-06-28T21:09:25.105101+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: active
 fields:
   name: Framework Module Catalog
+  uat_coverage: pass
 ---
 
 The framework module catalog is the typed registry of renderable site modules. Each module conforms to a common contract (id, version, variants, dials, contentSchema) and ships an Astro component plus scoped CSS that references theme tokens only.
