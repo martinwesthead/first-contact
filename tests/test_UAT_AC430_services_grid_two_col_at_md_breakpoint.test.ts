@@ -4,9 +4,6 @@ import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
 import ServicesGrid from "../packages/framework/src/modules/services-grid/index.astro";
 
-// Astro's container renderer doesn't ship scoped <style> blocks, so we
-// verify the media-query rule against the source file and verify the
-// rendered DOM carries the variant marker that the media-query CSS targets.
 const modulePath = fileURLToPath(
   new URL(
     "../packages/framework/src/modules/services-grid/index.astro",
@@ -15,14 +12,27 @@ const modulePath = fileURLToPath(
 );
 const source = readFileSync(modulePath, "utf8");
 
+function sliceMediaBlock(src: string, openerMatch: string): string {
+  const start = src.indexOf(openerMatch);
+  if (start < 0) return "";
+  let depth = 0;
+  let i = src.indexOf("{", start);
+  if (i < 0) return "";
+  for (; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return src.slice(start, i + 1);
+    }
+  }
+  return "";
+}
+
 describe("UAT AC-430: services-grid two-col variant renders two columns at md+", () => {
   it("test_UAT_AC430_services_grid_two_col_at_md_breakpoint", async () => {
-    // CSS source: at >=768px, two-col variant uses repeat(2, 1fr).
-    expect(source).toMatch(
-      /@media\s*\(\s*min-width:\s*768px\s*\)[\s\S]*?\.fc-services-grid--variant-two-col[\s\S]*?grid-template-columns:\s*repeat\(\s*2\s*,\s*1fr\s*\)/,
-    );
-
-    // Rendered markup carries the two-col variant marker so the media-query CSS targets it.
+    // Real entry-point execution: the two-col variant renders the list and
+    // carries the variant marker that the responsive CSS targets.
     const container = await AstroContainer.create();
     const html = await container.renderToString(ServicesGrid, {
       props: {
@@ -34,10 +44,27 @@ describe("UAT AC-430: services-grid two-col variant renders two columns at md+",
       },
     });
     expect(html).toMatch(/data-variant="two-col"/);
+    const listMatch = /<ul[^>]+class="([^"]*fc-services-grid__list[^"]*)"/.exec(
+      html,
+    );
+    expect(listMatch, "rendered output contains the grid list element").not.toBeNull();
+    // The variant marker that scopes the column rule is on the rendered root.
     expect(html).toMatch(/fc-services-grid--variant-two-col/);
 
-    // The rendered card count matches the supplied items.
-    const cards = html.match(/fc-services-grid__card/g) ?? [];
-    expect(cards.length).toBe(2);
+    // Column behaviour (the AC's actual claim) is proven from the scoped CSS,
+    // anchored to the rendered variant class — two columns ONLY at >=768px.
+    const mediaBlock = sliceMediaBlock(source, "@media (min-width: 768px)");
+    expect(mediaBlock.length, "min-width:768px media query exists").toBeGreaterThan(0);
+    // Inside the md media query, the two-col variant resolves to two equal columns.
+    expect(mediaBlock).toMatch(
+      /\.fc-services-grid--variant-two-col\s+\.fc-services-grid__list\s*\{[^}]*grid-template-columns:\s*repeat\(\s*2\s*,\s*1fr\s*\)/,
+    );
+
+    // Below md the same list is single-column: no two-col rule outside the media query.
+    const baseCss = source.replace(mediaBlock, "");
+    expect(baseCss).not.toMatch(/repeat\(\s*2\s*,\s*1fr\s*\)/);
+    expect(baseCss).toMatch(
+      /\.fc-services-grid__list\s*\{[^}]*grid-template-columns:\s*1fr\s*;/,
+    );
   });
 });
