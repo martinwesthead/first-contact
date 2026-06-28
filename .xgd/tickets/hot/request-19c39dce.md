@@ -5,10 +5,10 @@ type: request
 title: 'AI tool surface completion: nav editing, page management, duplicate_module'
 created_by: xgd
 created_at: '2026-06-16T22:12:07.916638+00:00'
-updated_at: '2026-06-20T21:18:16.142485+00:00'
+updated_at: '2026-06-28T21:47:10.698125+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   priority: medium
   story_points: 3
@@ -18,6 +18,7 @@ fields:
   - be61b26c107e2da068f0b5b8afaafb1516a5e5cd
   - c3f5924ac8433587c9dffa479bb8712d69a47696
   version: 0.14.1241
+  bundled_in: bundle-d4ce3987
 ---
 
 ## Scope
