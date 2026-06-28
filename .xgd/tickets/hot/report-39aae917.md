@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-5 (BUG-4/BUG-3/BUG-5/BUG-7/REQ-32/REQ-33/REQ-34/REQ-35/BUG-10/REQ-14)'
 created_by: xgd
 created_at: '2026-06-28T22:07:18.547683+00:00'
-updated_at: '2026-06-28T22:13:28.680062+00:00'
+updated_at: '2026-06-28T22:24:59.827160+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -72,7 +72,7 @@ fields:
         falls back to the first page.
       modify: []
       remove: []
-    story_uid: null
+    story_uid: story-ba9f2715
   - index: 3
     component: Deploy/build pipeline — dev tooling
     item_type: upgrade
