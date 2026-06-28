@@ -5,10 +5,10 @@ type: story
 title: 'Convert flow: mirror referenced site assets into platform storage'
 created_by: xgd
 created_at: '2026-06-28T20:39:44.803309+00:00'
-updated_at: '2026-06-28T20:39:44.803309+00:00'
+updated_at: '2026-06-28T20:44:05.560178+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-24c4d23c
   capability_uid: capability-e343131c
