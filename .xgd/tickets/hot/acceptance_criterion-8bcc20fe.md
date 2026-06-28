@@ -6,7 +6,7 @@ title: CI workflow runs the public-site generate step before tests and before th
   public-site dry-run deploy
 created_by: xgd
 created_at: '2026-06-25T01:36:01.375233+00:00'
-updated_at: '2026-06-28T20:08:34.619870+00:00'
+updated_at: '2026-06-28T20:15:17.433699+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: pending
