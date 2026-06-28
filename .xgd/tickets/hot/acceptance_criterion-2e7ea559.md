@@ -2,13 +2,13 @@
 uid: acceptance_criterion-2e7ea559
 id: AC-624
 type: acceptance_criterion
-title: After consent, conversion proceeds and returns only a mechanical completion
-  summary
+title: Convert proceeds immediately and returns the mechanical summary plus cleared
+  scaffold
 created_by: xgd
 created_at: '2026-06-28T20:10:19.255201+00:00'
-updated_at: '2026-06-28T23:09:22.100262+00:00'
+updated_at: '2026-06-28T23:10:59.246932+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-b3866352
