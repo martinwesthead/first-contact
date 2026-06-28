@@ -6,7 +6,7 @@ title: Public-site Worker declares the ASSETS binding in its production environm
   configuration
 created_by: xgd
 created_at: '2026-06-28T19:50:10.708327+00:00'
-updated_at: '2026-06-28T20:01:45.144284+00:00'
+updated_at: '2026-06-28T20:15:18.713052+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: pending
