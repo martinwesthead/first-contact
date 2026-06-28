@@ -5,7 +5,7 @@ type: acceptance_criterion
 title: GET /assets/theme.css returns 200 with the per-site theme token declarations
 created_by: xgd
 created_at: '2026-06-25T01:35:33.295237+00:00'
-updated_at: '2026-06-28T20:08:33.420314+00:00'
+updated_at: '2026-06-28T20:15:15.507244+00:00'
 completed_at: null
 last_field_updated: uat_coverage
 status: pending
