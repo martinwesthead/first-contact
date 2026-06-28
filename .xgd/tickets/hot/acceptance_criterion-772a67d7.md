@@ -6,14 +6,15 @@ title: Header collapses to a hamburger control below the md breakpoint and expan
   at and above it
 created_by: xgd
 created_at: '2026-06-25T00:57:00.584836+00:00'
-updated_at: '2026-06-25T00:57:00.584836+00:00'
+updated_at: '2026-06-28T21:09:02.526383+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-1d5b450f
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
