@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-5 (BUG-4/BUG-3/BUG-5/BUG-7/REQ-32/REQ-33/REQ-34/REQ-35/BUG-10/REQ-14)'
 created_by: xgd
 created_at: '2026-06-28T22:07:18.547683+00:00'
-updated_at: '2026-06-28T23:41:07.579942+00:00'
+updated_at: '2026-06-28T23:54:46.001449+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -281,7 +281,7 @@ fields:
       - Story scope no longer lists nav-entry editing and module duplication as out-of-scope;
         the AI editing tool surface now covers nav, page metadata, and duplication.
       remove: []
-    story_uid: null
+    story_uid: story-e893e643
 ---
 
 # Reconciliation Plan
