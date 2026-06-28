@@ -6,14 +6,15 @@ title: GET / returns 200 with the generated marketing HTML including module inst
   anchors
 created_by: xgd
 created_at: '2026-06-25T01:35:25.252740+00:00'
-updated_at: '2026-06-25T01:35:25.252740+00:00'
+updated_at: '2026-06-28T20:08:32.830901+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-f632db8a
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
