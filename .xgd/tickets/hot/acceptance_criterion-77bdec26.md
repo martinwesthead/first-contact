@@ -6,14 +6,15 @@ title: Submission with a malformed email is rejected with 400 INVALID_EMAIL and 
   no lead
 created_by: xgd
 created_at: '2026-06-25T01:47:36.570931+00:00'
-updated_at: '2026-06-25T01:47:36.570931+00:00'
+updated_at: '2026-06-28T19:39:02.460042+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-37572647
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
