@@ -6,14 +6,15 @@ title: Submission with the honeypot field populated returns a success response b
   writes no lead and sends no notification
 created_by: xgd
 created_at: '2026-06-25T01:47:06.949345+00:00'
-updated_at: '2026-06-25T01:47:06.949345+00:00'
+updated_at: '2026-06-28T19:39:00.001430+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: uat_coverage
 status: pending
 fields:
   story_uid: story-37572647
   kind: behavior
   regression_only: false
+  uat_coverage: pass
 ---
 
 ## Criterion
