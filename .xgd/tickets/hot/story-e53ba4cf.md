@@ -6,9 +6,9 @@ title: Theme tokens generate CSS custom properties with defaults, dark mode, and
   vetted fonts shortlist
 created_by: xgd
 created_at: '2026-06-25T00:48:48.787342+00:00'
-updated_at: '2026-06-29T23:54:12.709205+00:00'
+updated_at: '2026-06-29T23:54:12.810871+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: updated_by
 status: updated
 fields:
   intent_uid: bundle-94e1d1b6
@@ -16,6 +16,8 @@ fields:
   story_kind: upgrade
   story_points: 2
   uat_coverage: pass
+  updated_by:
+  - bundle-d3d73016
 ---
 
 ## Story
