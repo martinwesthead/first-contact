@@ -5,15 +5,18 @@ type: request
 title: 'App shell: top-bar tabs + avatar menu + per-tab chat panel'
 created_by: xgd
 created_at: '2026-06-16T23:20:25.421877+00:00'
-updated_at: '2026-06-16T23:20:25.421877+00:00'
+updated_at: '2026-06-29T23:56:09.206305+00:00'
 completed_at: null
-last_field_updated: created_at
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   story_points: 5
   priority: high
   auto_merge_back: true
   needs_review: false
+  commits:
+  - 98c668cdb6cb2c3bc61c93fb2816860fa4664530
+  version: 0.0.40
 ---
 
 # App shell: top-bar tabs + avatar menu + per-tab chat panel
