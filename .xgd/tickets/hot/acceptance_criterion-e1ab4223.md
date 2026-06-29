@@ -6,9 +6,9 @@ title: Chat input is a markdown-aware rich-text editor with markdown round-trip 
   send
 created_by: xgd
 created_at: '2026-06-27T00:55:18.522369+00:00'
-updated_at: '2026-06-29T22:01:14.442276+00:00'
+updated_at: '2026-06-29T22:02:16.162168+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-ba9f2715
