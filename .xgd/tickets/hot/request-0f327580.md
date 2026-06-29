@@ -5,10 +5,10 @@ type: request
 title: Robust transcription pipeline with error reporting
 created_by: xgd
 created_at: '2026-06-20T21:08:41.521098+00:00'
-updated_at: '2026-06-20T22:54:09.532605+00:00'
+updated_at: '2026-06-29T00:55:03.654040+00:00'
 completed_at: null
-last_field_updated: body
-status: ready_to_reconcile
+last_field_updated: status
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
@@ -17,6 +17,7 @@ fields:
   - e5cec1a8782609483c46747956de1b8eb3b3a5f8
   - a1ed6998efaae1601b8611e960723b6f8d5bc069
   version: 0.0.16
+  bundled_in: bundle-4e8020d6
 ---
 
 The `transcribe_site` + `read_transcription_digest` flow needs to surface failures at each stage rather than silently continuing. Specifically:

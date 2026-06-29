@@ -6,17 +6,17 @@ title: 'Convert flow: remove destructive-confirmation gate (defer copyright/robo
   concerns)'
 created_by: xgd
 created_at: '2026-06-20T18:25:57.452443+00:00'
-updated_at: '2026-06-28T21:47:10.503262+00:00'
-completed_at: null
+updated_at: '2026-06-29T00:54:31.408357+00:00'
+completed_at: '2026-06-29T00:54:31.408357+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: high
   story_points: 1
   auto_merge_back: true
   needs_review: false
   commits:
-  - a82d98b0c7710ea916d50022ad3e2b22f97f8e1d
+  - 58fce2bce264137fade6564aa1b0c73a993c2876
   version: 0.0.12
   bundled_in: bundle-d4ce3987
 ---

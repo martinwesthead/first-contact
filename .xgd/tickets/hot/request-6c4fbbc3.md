@@ -5,17 +5,17 @@ type: request
 title: 'Convert flow: clear existing draft to empty scaffold before AI reconstruction'
 created_by: xgd
 created_at: '2026-06-20T18:25:53.585952+00:00'
-updated_at: '2026-06-28T21:47:10.567730+00:00'
-completed_at: null
+updated_at: '2026-06-29T00:54:31.316884+00:00'
+completed_at: '2026-06-29T00:54:31.316884+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: high
   story_points: 2
   auto_merge_back: true
   needs_review: false
   commits:
-  - 160f42644686598285ed2e6c42823b50ac5d4a47
+  - c54359d6b6a24521b3345fb098acaaec4e55f661
   version: 0.0.13
   bundled_in: bundle-d4ce3987
 ---
