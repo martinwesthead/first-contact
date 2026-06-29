@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: BUNDLE-6 (BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-3
   + REQ-41)'
 created_by: xgd
 created_at: '2026-06-29T21:26:07.128346+00:00'
-updated_at: '2026-06-29T21:37:04.736823+00:00'
+updated_at: '2026-06-29T21:46:29.924579+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -94,7 +94,7 @@ fields:
       extend that existing read-back/summary surface in place — eviction, write-verification,
       a new not_ready status, and per-URL asset-failure reasons — without introducing
       a new capability bucket or a parallel digest path. Therefore upgrade, not feature.
-    story_uid: null
+    story_uid: story-f45a5e61
     target_story_ids:
     - story-f45a5e61
     acceptance_criteria_changes:
