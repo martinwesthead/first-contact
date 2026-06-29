@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: bundle-d3d73016 (split-section, testimonials, banne
   logo-strip, contrast, image-sizing)'
 created_by: xgd
 created_at: '2026-06-29T23:09:27.460545+00:00'
-updated_at: '2026-06-29T23:38:02.873566+00:00'
+updated_at: '2026-06-29T23:45:28.283224+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -99,7 +99,7 @@ fields:
     justification: No existing story covers logo-strip. STORY-42 does not include
       it; new module capability (trust-badge / logo strip) in CAP-34 — uncovered,
       new feature story.
-    story_uid: null
+    story_uid: story-24c2b820
   - index: 5
     component: Framework Theme Tokens & CSS Generation — WCAG contrast warnings
     item_type: upgrade
