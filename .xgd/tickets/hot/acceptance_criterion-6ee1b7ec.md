@@ -2,12 +2,13 @@
 uid: acceptance_criterion-6ee1b7ec
 id: AC-676
 type: acceptance_criterion
-title: Send button resets to 'Send' and re-enables after the turn resolves or rejects
+title: Turn settle restores Send and hides Stop on resolve or reject; Stop aborts
+  via the per-turn AbortController
 created_by: xgd
 created_at: '2026-06-28T22:13:04.515352+00:00'
-updated_at: '2026-06-29T22:01:13.857560+00:00'
+updated_at: '2026-06-29T22:02:15.592069+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-ba9f2715
