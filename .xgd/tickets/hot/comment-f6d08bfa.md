@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-19
 created_by: xgd
 created_at: '2026-06-29T20:58:47.694537+00:00'
-updated_at: '2026-06-29T21:05:35.948968+00:00'
+updated_at: '2026-06-29T21:15:56.188590+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -119,5 +119,125 @@ Prime suspect: a **stale compiled build**. The source says `1e9`, but if `dist/`
 <!-- xgd-chat role="user" ts="2026-06-29T21:05:09.511Z" -->
 #### You
 I'm not asking you to pull screen shots that is a cut and past of a chat session showing that the Claude is unable to do what I am asking because it is hitting budget constraints
+
+<!-- xgd-turn id="ceacdda6-56f6-47d3-a04b-4866201c6af1-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-29T21:15:56.155Z" -->
+#### Claude
+Now I have the smoking gun — and it's not what I first guessed. Look:
+
+```
+=== compiled dist default (what actually runs) ===
+sessionMaxSeconds: 50,
+dayMaxSeconds: 200,
+```
+
+The **source** says `1e9` (commit `ed5168a3` raised it), but the **compiled `dist/browser-budget.js` that the worker actually runs still has the old `50s` session / `200s` day caps.** The build was never regenerated after BUG-17. That is *exactly* "the webbuilder is not respecting the configured limit" — it's enforcing stale compiled values. Your evidence (analyze_page/preview hitting "budget exhausted" mid-session) is precisely a 50-second session cap getting chewed up by a few page renders.
+
+So I was wrong earlier to lead with `MAX_TOOL_TURNS` — that wasn't your blocker. The real fix is to make the build match the source. Let me confirm whether `dist/` is tracked (so I know if the fix is "rebuild + commit" or just "rebuild").
+
+`dist/` is gitignored and — importantly — the package's `exports`/`main` resolve to **`src/index.ts`**, not `dist/`. So a *fresh* build of the worker should pull the `1e9` source value, and the stale `dist` is only a runtime factor if something resolves to it. That means your live builder is almost certainly running a **deployment built before the `1e9` fix (`ed5168a3`) landed** — the source is fixed on this branch, but the running worker still enforces `50s/200s`.
+
+Let me confirm there's no low override hiding in the source path and check how the worker resolves the package — this decides whether the fix is "redeploy" vs "there's still a `50` in the code."
+
+Now it's fully resolved. The chain:
+
+- Import is `@gendev/web-fetch-safety` → workspace resolves to **`src/index.ts`** (`1e9`), and there is **no low override anywhere in source**.
+- The `1e9` fix (`ed5168a3`) **is on `xgd-working` but has *not* reached `main`** — so it was **never reconciled or deployed**.
+
+**Conclusion:** the webbuilder you're testing is running a build from *before* the fix — it still enforces the old `50s` session cap. The source is already correct; the running instance is stale. So "set the budget to a huge number" is, in source, **already done** — it just hasn't shipped. The misleading `dist/` showing `50` is a leftover artifact (gitignored, not the resolution path).
+
+That means your two asks resolve to:
+1. **Session reset button** — a genuine new feature I'll build now (free-coded).
+2. **Budget never trips** — *no new source change needed*; the fix exists, it needs to **reach `main` + redeploy** (or, if you test locally, just restart the builder so it rebuilds from `src`). I'll also rebuild the stale `dist` so nothing reads `50` again.
+
+Let me confirm how you run the builder (so I give you the exact restart/redeploy step) and read the files I'll edit for the reset button.
+
+Rebuilt `dist` now emits `1e9` ✅. And critically — the builder runs as a **long-lived `wrangler dev`** (`pnpm dev`, port 8788). Its bundler watches the app's own `src`, but a change inside the **workspace dependency** (`packages/web-fetch-safety`) typically doesn't trigger a re-bundle. So your running dev server is still serving a bundle compiled *before* the `1e9` fix — that's why you keep hitting `50s`.
+
+**So the budget fix for you is: restart `pnpm dev` in `apps/control-app`.** That rebundles from current `src` (1e9), and it never trips again. (For the deployed worker, the fix needs to reach `main` + `pnpm deploy`.) Bonus: the **reset button** you want also mints a *new* `sessionId`, which resets the per-session budget counter — so it doubles as a budget-reset even within a stuck session.
+
+Let me correct the ticket to the real root cause, then build the button.
+
+Now let me read the files I'll edit for the reset button, plus existing tests to match style.
+
+Good — I understand the architecture. The chat panel is created in `main.ts` and `createChatPanel` builds the DOM. The `preview-panel` already has the exact "Reset button + onReset callback" pattern I'll mirror. Let me read the store's session-reset method and the `createSession` API to wire it correctly.
+
+Let me locate the test files and the store's `setActiveSession` exact signature.
+
+No tests in builder-ui yet? Let me find where this repo's tests live and the runner.
+
+Tests live in `/tests/`, vitest, jsdom-style DOM tests. Let me read a couple of existing chat/preview DOM tests to copy the harness exactly.
+
+There's a `createMockChatApi` helper — perfect for my UAT. Let me read it.
+
+I now have the full test harness (`createMockChatApi` + `bootBuilder`). Time to implement. Let me read the rest of `chat-panel.ts` (handle return + event wiring + destroy) so I match the existing listener pattern.
+
+Now I have everything. Implementing the feature. **Edit 1** — add the header + "New session" button to `chat-panel.ts`:
+
+Now wire the click handler and expose the button. Adding the listener near the other button listeners, and to the interfaces + return object:
+
+Now the interface declarations:
+
+**Edit 2** — wire it in `main.ts`. First extract a reusable id generator:
+
+Now make `sessionId` mutable and add `startNewSession` + wire it into `createChatPanel`:
+
+Now add styling for the header bar in `builder.html`. Let me see the existing chat CSS to match the theme.
+
+Now add the matching CSS (dark slate theme) right after the `.fc-chat` block:
+
+Now the UAT test. Writing `tests/test_UAT_FC_BUG-19_*`:
+
+Now run the new UAT (and a quick typecheck of the builder-ui package):
+
+The workspace package isn't resolving. Let me check whether this is pre-existing (run an existing builder-ui test) or something I introduced.
+
+Confirmed — this is a **pre-existing workspace-link issue**, not my change (an untouched test fails identically). This matches my memory note: relink with `pnpm install --offline`.
+
+It's prompting to purge/reinstall `node_modules`. Let me run it non-interactively (CI mode auto-confirms):
+
+Relinked. Now run the UAT:
+
+Both pass. Now run the full suite to confirm I broke nothing (interface change to `createChatPanel`/`bootBuilder` could ripple):
+
+All **711 tests pass** (271 files). The stderr noise is an intentional boot-error test, unrelated. My interface changes ripple cleanly.
+
+Let me run lint/typecheck before committing.
+
+Clean (tsc on builder-ui produced no errors; no separate lint scripts here). Let me check the free-coding gate's version-bump requirement before committing.
+
+Version-bump script is still an unimplemented **stub** — per CLAUDE.md it blocks the free-coded *gate transition* (`move-to-free-coded`), but committing is fine. Let me commit the work with `[FREE-CODED]` first (I'm on `xgd-working`, the correct branch for free-coded changes), then handle the status transition.
+
+Committed. Now record the commit on the ticket and attempt the free-coded transition.
+
+The gate needs `--version` and the commit SHAs, and it runs the version-bump check — which is the unimplemented stub. Let me see exactly how it fails and find the project's version source.
+
+The gate accepted it — **BUG-19 is now `free_coded`**. (Note: the version-bump check is advisory here because `bin/project/xgd_version_bump` is still an unimplemented stub — more on that below.) Let me verify the final ticket state.
+
+Everything is consistent — `free_coded`, commit recorded, `[FREE-CODED]` tagged. Let me save the non-obvious budget-drift insight to memory (you'll likely hit it again until the dev server restarts), then summarize.
+
+Done. Here's where things land — and the satisfying part is that you were fighting a **phantom**, not a real budget you needed to defeat.
+
+## What was actually happening
+You kept hitting "Browser Rendering budget exhausted" because your running builder was serving a **stale bundle**. The budget was already raised to effectively infinite (`1e9` seconds) in source back in `ed5168a3`/BUG-17 — but:
+- Your long-lived `pnpm dev` doesn't re-bundle changes inside the `web-fetch-safety` workspace package, so it kept enforcing the old **50s** cap.
+- That fix also never reached `main`, so any deployed worker still runs 50s/200s.
+
+So there was no over-engineered config to wrestle — just a build that hadn't caught up.
+
+## What I shipped (BUG-19, `free_coded`)
+1. **"New session" button** at the top of the builder chat panel — one click = blank page, fresh session. Non-destructive (the old conversation stays in the session list). As a bonus it mints a new operator session id, which **resets the per-session browser budget** — so it doubles as your "unstick me now" button mid-test.
+2. No budget *code* change was needed — the source value is already huge.
+
+- Commit `b8480f0d` `[FREE-CODED]`, 1 UAT (`test_UAT_FC_BUG-19_*`), **full suite green (711 tests)**.
+
+## What you need to do
+- **To stop hitting the 50s budget now:** restart `pnpm dev` in `apps/control-app` (rebundles from current src → `1e9`). The new button helps within a stuck session too.
+- **For production:** the budget fix needs to land on `main` + redeploy (it's currently only on `xgd-working`).
+
+## Two honest caveats
+- The session **reset button** is the builder *product* chat, which is what your pasted evidence shows you testing. If you actually meant a reset button on the **XGD operator dashboard** (the tool you're typing to me in — separate codebase, not this repo), say so and I'll redirect.
+- `bin/project/xgd_version_bump` is still an unimplemented stub, so the "every commit bumps version" gate is only advisory right now. Not blocking you — but worth implementing at some point so reconcile's version checks have teeth. Want me to file that as its own ticket?
 
 <!-- xgd-chat-end -->
