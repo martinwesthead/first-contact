@@ -5,9 +5,9 @@ type: bundle
 title: BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-38 + 1 more
 created_by: xgd
 created_at: '2026-06-29T00:55:03.360302+00:00'
-updated_at: '2026-06-29T23:03:46.623292+00:00'
+updated_at: '2026-06-29T23:03:48.792223+00:00'
 completed_at: '2026-06-29T23:03:46.623292+00:00'
-last_field_updated: status
+last_field_updated: result
 status: free_and_reconciled
 fields:
   commits:
@@ -17,6 +17,7 @@ fields:
   skipped_commits:
   - e5cec1a8782609483c46747956de1b8eb3b3a5f8
   merged_at_commit: abcf74b74e0ce0dc0573336c90dd5d990a4c16c9
+result: pass
 ---
 
 # Bundle
