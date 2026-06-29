@@ -7,7 +7,15 @@ import {
 } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
+import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
 
+/**
+ * AC-585: chat-turn history is persisted to browser storage after every
+ * turn (user message + assistant turn, including the structured outcome of
+ * accepted/rejected tool calls) and restored when the builder is re-mounted
+ * against the same storage. REQ-36 switched /api/chat to SSE, so the driver
+ * is exercised with streamed (token/tool_call/tool_result/done) responses.
+ */
 describe("UAT AC-585: chat-turn history is persisted to browser storage and restored on builder re-mount", () => {
   afterEach(() => {
     document.body.innerHTML = "";
@@ -29,41 +37,31 @@ describe("UAT AC-585: chat-turn history is persisted to browser storage and rest
       { storage },
     );
 
-    // Turn 1 — accepted set_theme_token.
-    // Turn 2 — rejected set_module_dial (value outside the declared enum).
+    // Turn 1 — accepted set_theme_token. Turn 2 — rejected set_module_dial
+    // (value outside the declared enum). Both delivered as SSE.
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            text: "Primary set to pink.",
-            toolCalls: [
-              {
-                name: "set_theme_token",
-                input: { name: "palette.primary", value: "#ff0099" },
-              },
-            ],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
+        makeChatSSEResponse({
+          text: "Primary set to pink.",
+          toolCalls: [
+            {
+              name: "set_theme_token",
+              input: { name: "palette.primary", value: "#ff0099" },
+            },
+          ],
+        }),
       )
       .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            text: "Trying to make the hero huge.",
-            toolCalls: [
-              {
-                name: "set_module_dial",
-                input: {
-                  instance_id: heroInstance.id,
-                  dial: "size",
-                  value: "huge",
-                },
-              },
-            ],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
+        makeChatSSEResponse({
+          text: "Trying to make the hero huge.",
+          toolCalls: [
+            {
+              name: "set_module_dial",
+              input: { instance_id: heroInstance.id, dial: "size", value: "huge" },
+            },
+          ],
+        }),
       );
 
     await runChatTurn("make the primary color pink", {
@@ -77,8 +75,7 @@ describe("UAT AC-585: chat-turn history is persisted to browser storage and rest
       fetch: fetchMock as unknown as typeof fetch,
     });
 
-    // Working chat log has four turns: user, assistant(accepted), user,
-    // assistant(rejected).
+    // Working chat log has four turns.
     const liveHistory = first.getState().chatHistory;
     expect(liveHistory).toHaveLength(4);
     expect(liveHistory.map((m) => m.role)).toEqual([
@@ -93,16 +90,12 @@ describe("UAT AC-585: chat-turn history is persisted to browser storage and rest
     // Storage now holds a serialised chat-turn history under the chat key.
     const persistedChat = storage.getItem("1stcontact_builder_site_v1_chat");
     expect(persistedChat).toBeTruthy();
-    const parsedChat = JSON.parse(persistedChat!) as Array<{
-      role: string;
-      content: string;
-      toolCalls?: Array<{ accepted: boolean; error?: string }>;
-    }>;
+    const parsedChat = JSON.parse(persistedChat!) as Array<unknown>;
     expect(parsedChat).toHaveLength(4);
 
     // Discard the builder; mount a fresh one against the same storage with an
-    // empty initial chat history. It must hydrate the chat log from storage —
-    // not start empty — preserving order and the accepted/rejected outcomes.
+    // empty initial chat history. It hydrates from storage — not empty —
+    // preserving order and accepted/rejected outcomes.
     const reloaded = new BuilderStore(
       { siteDefinition: load1stContactSite(), chatHistory: [] },
       { storage },
@@ -118,10 +111,8 @@ describe("UAT AC-585: chat-turn history is persisted to browser storage and rest
     ]);
     expect(restored[0].content).toBe("make the primary color pink");
     expect(restored[2].content).toBe("make the hero huge");
-    // Accepted tool-call entry survives the round-trip.
     expect(restored[1].toolCalls?.[0].accepted).toBe(true);
     expect(restored[1].toolCalls?.[0].name).toBe("set_theme_token");
-    // Rejected tool-call entry survives with its structured error.
     expect(restored[3].toolCalls?.[0].accepted).toBe(false);
     expect(restored[3].toolCalls?.[0].error ?? "").toContain("size");
     expect(restored[3].toolCalls?.[0].error ?? "").toContain("huge");

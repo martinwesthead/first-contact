@@ -3,13 +3,19 @@ import { afterEach, describe, expect, it } from "vitest";
 import { BuilderStore, createChatPanel } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
-describe("UAT AC-581: assistant messages render as sanitized markdown; user and system messages stay plaintext", () => {
+/**
+ * AC-581 (widened by REQ-36): BOTH assistant and user chat messages render
+ * as sanitized markdown (headers/lists/fenced code → DOM elements; links open
+ * in a new tab with rel noopener noreferrer; injected <script> and on*=
+ * handlers are stripped). Only system-role messages stay verbatim plaintext.
+ */
+describe("UAT AC-581: assistant and user messages render as sanitized markdown; system messages stay plaintext", () => {
   afterEach(() => {
     document.body.innerHTML = "";
   });
 
-  it("test_UAT_AC581_assistant_markdown_sanitized_user_plaintext", () => {
-    const userMarkdown = "## not a heading\n\n- not a list";
+  it("test_UAT_AC581_assistant_and_user_markdown_sanitized_system_plaintext", () => {
+    const systemMarkdown = "## not a heading\n\n- not a list";
     const store = new BuilderStore({
       siteDefinition: load1stContactSite(),
       chatHistory: [
@@ -20,16 +26,17 @@ describe("UAT AC-581: assistant messages render as sanitized markdown; user and 
             "[docs](https://example.com)\n\n" +
             '<script>alert(1)</script>\n<img src=x onerror="alert(2)">',
         },
-        { role: "user", content: userMarkdown },
+        { role: "user", content: "# Title\n\nSome **bold** text." },
+        { role: "system", content: systemMarkdown },
       ],
     });
 
     const panel = createChatPanel(document.body, { store, onSend: async () => {} });
 
+    // --- Assistant: markdown structures become DOM elements ---------------
     const assistant = panel.messageList.querySelector(
       '[data-fc-chat-role="assistant"]',
     )!;
-    // Markdown structures become their corresponding DOM elements.
     expect(assistant.querySelector("h2")?.textContent).toBe("Heading");
     expect(assistant.querySelectorAll("ul li")).toHaveLength(1);
     expect(assistant.querySelector("pre code")).not.toBeNull();
@@ -45,10 +52,20 @@ describe("UAT AC-581: assistant messages render as sanitized markdown; user and 
     expect(assistant.innerHTML).not.toContain("onerror=");
     expect(assistant.innerHTML).not.toContain("onload=");
 
-    // User-role messages are NOT markdown-rendered — verbatim plaintext.
+    // --- User: markdown ALSO renders formatted (REQ-36 widening) ----------
     const user = panel.messageList.querySelector('[data-fc-chat-role="user"]')!;
-    expect(user.querySelector("h2")).toBeNull();
-    expect(user.querySelector("li")).toBeNull();
-    expect(user.textContent).toContain(userMarkdown);
+    expect(user.querySelector("h1")?.textContent).toBe("Title");
+    expect(user.querySelector("strong")?.textContent).toBe("bold");
+    // The literal markdown punctuation is gone — it rendered, not echoed.
+    expect(user.textContent).not.toContain("**");
+    expect(user.querySelector(".fc-chat__message-text")!.textContent).not.toContain(
+      "# Title",
+    );
+
+    // --- System: NOT markdown-rendered — verbatim plaintext ---------------
+    const system = panel.messageList.querySelector('[data-fc-chat-role="system"]')!;
+    expect(system.querySelector("h2")).toBeNull();
+    expect(system.querySelector("li")).toBeNull();
+    expect(system.textContent).toContain(systemMarkdown);
   });
 });

@@ -9,16 +9,20 @@ import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BUILDER_HTML = resolve(HERE, "../apps/control-app/public/builder.html");
 
+/**
+ * AC-671 (post REQ-36): the chat input renders as a visible text-entry editor
+ * with the round Send button sitting at the right edge of the editor capsule
+ * (absolute-positioned inside it). The editor is never collapsed and Send
+ * never takes over the row. The shipped stylesheet defines .fc-chat__editor /
+ * .fc-chat__editor-content and no longer references the removed
+ * .fc-chat__textarea selector.
+ */
 describe("UAT AC-671: builder chat input editor renders visibly with Send positioned to its right", () => {
   afterEach(() => {
     document.body.innerHTML = "";
   });
 
-  it("test_UAT_AC671_chat_input_visible_and_positioned", () => {
-    // --- DOM boundary: render the real chat panel component ---------------
-    // REQ-13 swapped the chat input from <textarea> to a TipTap editor mounted
-    // into <div class=fc-chat__editor data-fc-chat-input>. BUG-1 restored the
-    // CSS so the editor renders as a visible field with Send to its right.
+  it("test_UAT_AC671_chat_input_visible_with_send_to_right", () => {
     const store = new BuilderStore({
       siteDefinition: load1stContactSite(),
       chatHistory: [],
@@ -26,74 +30,48 @@ describe("UAT AC-671: builder chat input editor renders visibly with Send positi
     const onSend = vi.fn(async (_text: string) => {});
     const panel = createChatPanel(document.body, { store, onSend });
 
-    // The editor element exists at the AC's documented selector and is a real
-    // text-entry surface (TipTap mounts .fc-chat__editor-content inside it),
-    // never collapsed to an empty wrapper.
-    const editor = document.body.querySelector<HTMLElement>(
-      "[data-fc-chat-input]",
-    );
+    // The editor element exists at the AC's documented selector and mounts a
+    // real text-entry content surface (never collapsed to an empty wrapper).
+    const editor = document.body.querySelector<HTMLElement>("[data-fc-chat-input]");
     expect(editor, "[data-fc-chat-input] editor must render").not.toBeNull();
     expect(
       editor!.querySelector('[data-fc-chat-editor="content"]'),
       "editor must mount a content surface, not an empty wrapper",
     ).not.toBeNull();
 
-    // The Send button exists, stays a compact <button> (it does not take over
-    // the row in place of the input), and labels itself "Send".
-    const send = document.body.querySelector<HTMLButtonElement>(
-      "[data-fc-chat-send]",
-    );
+    // The Send button exists, is a compact <button>, and lives inside the
+    // editor capsule (so it renders at the editor's right edge, not as a
+    // row-filling sibling that takes the input's place).
+    const send = document.body.querySelector<HTMLButtonElement>("[data-fc-chat-send]");
     expect(send, "[data-fc-chat-send] button must render").not.toBeNull();
     expect(send!.tagName).toBe("BUTTON");
-    expect(send!.textContent).toBe("Send");
-
-    // Both live in the same .fc-chat__input row and the editor comes BEFORE the
-    // send button in document order — i.e. the visual layout is [ editor ][ Send ].
-    const inputRow = editor!.closest(".fc-chat__input");
-    expect(inputRow, "editor and send share the .fc-chat__input row").not.toBeNull();
-    expect(inputRow!.contains(send!)).toBe(true);
-    const editorFollowedBySend =
-      editor!.compareDocumentPosition(send!) &
-      Node.DOCUMENT_POSITION_FOLLOWING;
-    expect(
-      Boolean(editorFollowedBySend),
-      "Send must sit to the right of the editor (editor precedes Send)",
-    ).toBe(true);
+    expect(editor!.contains(send!)).toBe(true);
 
     panel.destroy();
 
-    // --- CSS contract: builder.html ships the rules that give the editor -----
-    // --- non-zero rendered size and keep Send compact on the right ----------
+    // --- CSS contract: builder.html ships the editor rules ----------------
     const css = readFileSync(BUILDER_HTML, "utf8");
 
-    // .fc-chat__editor grows to fill the row → non-zero rendered width.
-    const editorRule = extractRule(css, ".fc-chat__editor");
-    expect(editorRule, ".fc-chat__editor rule must exist").not.toBeNull();
-    expect(editorRule).toMatch(/flex\s*:\s*1\s+1\s+auto/);
-
-    // .fc-chat__editor-content has min-height + padding → non-zero rendered
-    // height and a visible, non-collapsed field.
+    // .fc-chat__editor and .fc-chat__editor-content rules exist (the editor is
+    // a visible, sized field) and the dead .fc-chat__textarea selector is gone.
+    expect(extractRule(css, ".fc-chat__editor"), ".fc-chat__editor rule").not.toBeNull();
     const contentRule = extractRule(css, ".fc-chat__editor-content");
-    expect(contentRule, ".fc-chat__editor-content rule must exist").not.toBeNull();
+    expect(contentRule, ".fc-chat__editor-content rule").not.toBeNull();
     expect(contentRule).toMatch(/min-height\s*:/);
-    expect(contentRule).toMatch(/padding\s*:/);
-
-    // The dead .fc-chat__textarea selector is gone (the element no longer exists).
     expect(extractRule(css, ".fc-chat__textarea")).toBeNull();
+    expect(css).not.toContain(".fc-chat__textarea");
 
-    // .fc-chat__input is a row-direction flex container (not row-reverse), so the
-    // [editor][Send] DOM order renders left-to-right and Send stays on the right.
-    const inputRule = extractRule(css, ".fc-chat__input");
-    expect(inputRule, ".fc-chat__input rule must exist").not.toBeNull();
-    expect(inputRule).toMatch(/display\s*:\s*flex/);
-    expect(inputRule).not.toMatch(/flex-direction\s*:\s*row-reverse/);
+    // Send is absolutely positioned inside the capsule and pinned to the right
+    // edge (so it renders to the right of the editor, not as a row sibling).
+    expect(css).toMatch(
+      /\.fc-chat__send\s*,\s*\.fc-chat__stop\s*\{[^}]*position\s*:\s*absolute/,
+    );
+    expect(css).toMatch(
+      /\.fc-chat__send\s*,\s*\.fc-chat__stop\s*\{[^}]*right\s*:/,
+    );
   });
 });
 
-/**
- * Extract the body of the first CSS rule whose selector exactly matches
- * `selector` (no descendant / pseudo variants). Returns null if absent.
- */
 function extractRule(css: string, selector: string): string | null {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`);

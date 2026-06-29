@@ -1,9 +1,21 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import {
+  consumeChatSSE,
+  makeAnthropicStreamingFetch,
+} from "./_helpers_REQ-36_chat_sse.js";
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+/**
+ * AC-486 (redefined by REQ-36): POST /api/chat now runs the multi-turn
+ * Anthropic tool loop and re-emits the turn to the browser as a
+ * Server-Sent Events stream (token / tool_call / tool_result / done /
+ * error) — NOT a single JSON block. The tool surface is derived from the
+ * OPERATOR_ACTIONS registry filtered by plan tier (default trial), the
+ * upstream request carries `stream: true`, and the system-prompt site
+ * snapshot is recomputed each turn from the working definition.
+ */
 
 const REQUIRED_TOOL_NAMES = [
   "set_module_content",
@@ -16,31 +28,18 @@ const REQUIRED_TOOL_NAMES = [
   "set_site_config",
 ];
 
-interface AnthropicBlock {
+interface MsgBlock {
   type: string;
-  text?: string;
-  id?: string;
-  name?: string;
-  input?: Record<string, unknown>;
   tool_use_id?: string;
   content?: unknown;
   is_error?: boolean;
 }
-interface AnthropicMessage {
+interface Msg {
   role: string;
-  content: string | AnthropicBlock[];
+  content: string | MsgBlock[];
 }
 
-function anthropicResponse(content: AnthropicBlock[]): Response {
-  return new Response(JSON.stringify({ id: "msg_test", content }), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
-}
-
-/** Locate the single `tool_result` block on the message list (the loop pushes
- *  it as a user-role turn after executing a tool_use). */
-function findToolResult(messages: AnthropicMessage[]): AnthropicBlock {
+function findToolResult(messages: Msg[]): MsgBlock {
   for (const m of messages) {
     if (!Array.isArray(m.content)) continue;
     const block = m.content.find((b) => b.type === "tool_result");
@@ -49,80 +48,27 @@ function findToolResult(messages: AnthropicMessage[]): AnthropicBlock {
   throw new Error("no tool_result block found on the message list");
 }
 
-describe("UAT AC-486: POST /api/chat runs the multi-turn Anthropic tool loop, executes tool_use blocks server-side, and returns extracted text and tool calls", () => {
-  it("test_UAT_AC486_chat_endpoint_forwards_to_anthropic_and_extracts_text_and_tool_use_blocks", async () => {
-    let turn = 0;
-    const upstreamFetch = vi.fn(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const current = turn++;
-
-        // --- Forwarding contract: identical on every turn. ---
-        expect(String(input)).toBe(ANTHROPIC_URL);
-        expect(init?.method).toBe("POST");
-        const headers = new Headers(init?.headers);
-        expect(headers.get("x-api-key")).toBe("test-key-abc");
-        expect(headers.get("anthropic-version")).toBe("2023-06-01");
-        expect(headers.get("content-type")).toBe("application/json");
-
-        const reqBody = JSON.parse(String(init?.body));
-        expect(reqBody.model).toBe("claude-sonnet-4-6");
-
-        // Tool surface derived from the registry, filtered by plan tier
-        // (default trial) — the full eight state-edit tools are visible.
-        expect(Array.isArray(reqBody.tools)).toBe(true);
-        const toolNames = reqBody.tools.map((t: { name: string }) => t.name);
-        for (const required of REQUIRED_TOOL_NAMES) {
-          expect(toolNames).toContain(required);
-        }
-
-        // System prompt embeds the catalog (module id@version + token name).
-        expect(typeof reqBody.system).toBe("string");
-        expect(reqBody.system).toContain("hero@v1");
-        expect(reqBody.system).toContain("palette.primary");
-
-        if (current === 0) {
-          // History filtered to user/assistant only — the rogue 'system'
-          // role from the inbound history is dropped.
-          expect(reqBody.messages).toEqual([
-            { role: "user", content: "Make the primary color pink." },
-            { role: "assistant", content: "On it." },
-          ]);
-          // First turn sees the ORIGINAL working site (primary #2563eb).
-          expect(reqBody.system).toContain("#2563eb");
-
-          // Model asks to set the primary theme token.
-          return anthropicResponse([
-            {
-              type: "tool_use",
-              id: "toolu_1",
-              name: "set_theme_token",
-              input: { name: "palette.primary", value: "#ff0099" },
-            },
-          ]);
-        }
-
-        // --- Second turn: the executed tool_result is on the message list. ---
-        const toolResult = findToolResult(reqBody.messages as AnthropicMessage[]);
-        expect(toolResult.tool_use_id).toBe("toolu_1");
-        const parsed = JSON.parse(String(toolResult.content)) as {
-          ok: boolean;
-          applied?: { summary?: unknown };
-        };
-        expect(parsed.ok).toBe(true);
-        expect(typeof parsed.applied?.summary).toBe("string");
-        expect((parsed.applied?.summary as string).length).toBeGreaterThan(0);
-
-        // State recomputed: the post-edit site (primary #ff0099) is reflected
-        // in this turn's system prompt, and the original value is gone.
-        expect(reqBody.system).toContain("#ff0099");
-        expect(reqBody.system).not.toContain("#2563eb");
-
-        // Model finishes with a text-only turn → the loop terminates.
-        return anthropicResponse([
-          { type: "text", text: "Updated the primary color." },
-        ]);
+describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser as Server-Sent Events", () => {
+  it("test_UAT_AC486_chat_endpoint_streams_sse_token_tool_call_tool_result_done", async () => {
+    // Upstream streams a tool_use (a valid state-edit) then a terminating
+    // text turn. The handler executes the tool server-side and re-emits SSE.
+    const { fetch: stubFetch, calls } = makeAnthropicStreamingFetch([
+      {
+        id: "msg_1",
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_1",
+            name: "set_theme_token",
+            input: { name: "palette.primary", value: "#ff0099" },
+          },
+        ],
       },
-    );
+      {
+        id: "msg_2",
+        content: [{ type: "text", text: "Updated the primary color." }],
+      },
+    ]);
 
     const request = new Request("https://app.1stcontact.io/api/chat", {
       method: "POST",
@@ -131,7 +77,7 @@ describe("UAT AC-486: POST /api/chat runs the multi-turn Anthropic tool loop, ex
         history: [
           { role: "user", content: "Make the primary color pink." },
           { role: "assistant", content: "On it." },
-          // Should be filtered out of the upstream request.
+          // Filtered out of the upstream request (only user/assistant kept).
           { role: "system", content: "internal note" },
         ],
         siteDefinition: load1stContactSite(),
@@ -142,85 +88,95 @@ describe("UAT AC-486: POST /api/chat runs the multi-turn Anthropic tool loop, ex
     const response = await handleChatRequest(
       request,
       { CLAUDE_API_KEY: "test-key-abc" },
-      { fetch: upstreamFetch as unknown as typeof fetch },
+      { fetch: stubFetch },
     );
 
+    // (2) The response is an SSE stream, not a JSON block.
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      text: string;
-      toolCalls: Array<{
-        name: string;
-        input: Record<string, unknown>;
-        result: {
-          ok: boolean;
-          applied?: { tool: string; args: Record<string, unknown>; summary: string };
-        };
-      }>;
-    };
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
 
-    // text is joined from the text content blocks across turns.
-    expect(body.text).toBe("Updated the primary color.");
+    const consumed = await consumeChatSSE(response);
 
-    // toolCalls carries the executed call WITH its structured result.
-    expect(body.toolCalls).toHaveLength(1);
-    const call = body.toolCalls[0];
-    expect(call.name).toBe("set_theme_token");
-    expect(call.input).toEqual({ name: "palette.primary", value: "#ff0099" });
-    expect(call.result.ok).toBe(true);
-    expect(call.result.applied?.tool).toBe("set_theme_token");
-    expect(call.result.applied?.args).toEqual({
+    // (1) The first upstream request carries stream:true, the registry-derived
+    //     tool list (default trial → the eight state-edit tools), and a system
+    //     prompt embedding the catalog (module id@version + theme-token name).
+    expect(calls).toHaveLength(2);
+    const first = calls[0]!.body;
+    expect(first.stream).toBe(true);
+    const toolNames = (first.tools as Array<{ name: string }>).map(
+      (t) => t.name,
+    );
+    for (const required of REQUIRED_TOOL_NAMES) {
+      expect(toolNames).toContain(required);
+    }
+    expect(first.system).toContain("hero@v1");
+    expect(first.system).toContain("palette.primary");
+    // First turn sees the ORIGINAL working site (primary #2563eb).
+    expect(first.system).toContain("#2563eb");
+    // History filtered to user/assistant only (the 'system' note is dropped).
+    expect(first.messages).toEqual([
+      { role: "user", content: "Make the primary color pink." },
+      { role: "assistant", content: "On it." },
+    ]);
+
+    // (2) token events for the text deltas, a tool_call event for the call,
+    //     and a tool_result event with ok:true and a non-empty summary.
+    expect(consumed.text).toBe("Updated the primary color.");
+    expect(consumed.tokenDeltas.length).toBeGreaterThan(0);
+    expect(consumed.toolCallEvents).toHaveLength(1);
+    expect(consumed.toolCallEvents[0]!.name).toBe("set_theme_token");
+    expect(consumed.toolResultEvents).toHaveLength(1);
+    const tr = consumed.toolResultEvents[0]!;
+    expect(tr.name).toBe("set_theme_token");
+    expect(tr.result.ok).toBe(true);
+    if (tr.result.ok) {
+      expect(typeof tr.result.applied.summary).toBe("string");
+      expect(tr.result.applied.summary.length).toBeGreaterThan(0);
+    }
+
+    // (3) The second upstream request carries the tool_result block and a
+    //     system prompt recomputed from the POST-edit working site.
+    const second = calls[1]!.body;
+    const toolResultBlock = findToolResult(second.messages as Msg[]);
+    expect(toolResultBlock.tool_use_id).toBe("toolu_1");
+    expect(second.system).toContain("#ff0099");
+    expect(second.system).not.toContain("#2563eb");
+
+    // (4) A final done event carries the joined text and the executed call
+    //     with its structured result.
+    expect(consumed.done).not.toBeNull();
+    expect(consumed.done!.text).toBe("Updated the primary color.");
+    expect(consumed.done!.toolCalls).toHaveLength(1);
+    const doneCall = consumed.done!.toolCalls[0]!;
+    expect(doneCall.name).toBe("set_theme_token");
+    expect(doneCall.input).toEqual({
       name: "palette.primary",
       value: "#ff0099",
     });
-    expect(call.result.applied?.summary).toBe(
-      "set theme token 'palette.primary' to '#ff0099'",
-    );
-
-    // Two upstream calls: the tool turn and the terminating text turn.
-    expect(upstreamFetch).toHaveBeenCalledTimes(2);
+    expect(doneCall.result.ok).toBe(true);
+    // The tool_result block fed back to Anthropic carries the structured result.
+    expect(String(toolResultBlock.content)).toContain("ok");
   });
 
   it("test_UAT_AC486_rejected_tool_call_is_flagged_is_error_and_leaves_working_site_unchanged", async () => {
-    let turn = 0;
-    const upstreamFetch = vi.fn(
-      async (_input: RequestInfo | URL, init?: RequestInit) => {
-        const current = turn++;
-        const reqBody = JSON.parse(String(init?.body));
-
-        if (current === 0) {
-          expect(reqBody.system).toContain("#2563eb");
-          // A token name that is NOT in the catalog contract → rejected.
-          return anthropicResponse([
-            {
-              type: "tool_use",
-              id: "toolu_bad",
-              name: "set_theme_token",
-              input: { name: "palette.__nonexistent__", value: "#000000" },
-            },
-          ]);
-        }
-
-        // The rejected tool_result is flagged is_error on the Anthropic block
-        // and carries ok:false; the working site is untouched.
-        const toolResult = findToolResult(reqBody.messages as AnthropicMessage[]);
-        expect(toolResult.is_error).toBe(true);
-        const parsed = JSON.parse(String(toolResult.content)) as {
-          ok: boolean;
-          error?: { tool?: string };
-        };
-        expect(parsed.ok).toBe(false);
-        expect(parsed.error?.tool).toBe("set_theme_token");
-
-        // Working site unchanged: original primary still present, the rejected
-        // value never landed.
-        expect(reqBody.system).toContain("#2563eb");
-        expect(reqBody.system).not.toContain("#000000");
-
-        return anthropicResponse([
-          { type: "text", text: "That theme token isn't available." },
-        ]);
+    const { fetch: stubFetch, calls } = makeAnthropicStreamingFetch([
+      {
+        id: "msg_bad",
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_bad",
+            name: "set_theme_token",
+            // A token name NOT in the catalog contract → rejected.
+            input: { name: "palette.__nonexistent__", value: "#000000" },
+          },
+        ],
       },
-    );
+      {
+        id: "msg_done",
+        content: [{ type: "text", text: "That theme token isn't available." }],
+      },
+    ]);
 
     const request = new Request("https://app.1stcontact.io/api/chat", {
       method: "POST",
@@ -235,20 +191,24 @@ describe("UAT AC-486: POST /api/chat runs the multi-turn Anthropic tool loop, ex
     const response = await handleChatRequest(
       request,
       { CLAUDE_API_KEY: "test-key-abc" },
-      { fetch: upstreamFetch as unknown as typeof fetch },
+      { fetch: stubFetch },
     );
-
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      toolCalls: Array<{
-        name: string;
-        result: { ok: boolean; error?: { tool?: string } };
-      }>;
-    };
-    expect(body.toolCalls).toHaveLength(1);
-    expect(body.toolCalls[0].name).toBe("set_theme_token");
-    expect(body.toolCalls[0].result.ok).toBe(false);
-    expect(body.toolCalls[0].result.error?.tool).toBe("set_theme_token");
-    expect(upstreamFetch).toHaveBeenCalledTimes(2);
+    const consumed = await consumeChatSSE(response);
+
+    // A rejected tool call produces a tool_result event with ok:false.
+    expect(consumed.toolResultEvents).toHaveLength(1);
+    expect(consumed.toolResultEvents[0]!.result.ok).toBe(false);
+
+    // The block returned to Anthropic is flagged is_error and the working
+    // site is unchanged (original primary present, rejected value never lands).
+    expect(calls).toHaveLength(2);
+    const second = calls[1]!.body;
+    const toolResultBlock = findToolResult(second.messages as Msg[]);
+    expect(toolResultBlock.is_error).toBe(true);
+    expect(second.system).toContain("#2563eb");
+    expect(second.system).not.toContain("#000000");
+
+    expect(consumed.done!.toolCalls[0]!.result.ok).toBe(false);
   });
 });

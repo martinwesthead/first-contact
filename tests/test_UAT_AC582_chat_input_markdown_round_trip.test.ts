@@ -3,6 +3,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BuilderStore, createChatPanel } from "@1stcontact/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 
+const flush = async (): Promise<void> => {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+};
+
+/**
+ * AC-582: the chat input is a markdown-aware rich-text editor (not a plain
+ * <textarea>). Pasting markdown renders formatted; sending (via the round
+ * Send button) serializes the editor content back to a markdown string —
+ * that markdown is the /api/chat payload. The editor clears after a
+ * successful send and empty submissions are ignored.
+ */
 describe("UAT AC-582: chat input is a markdown-aware rich-text editor with markdown round-trip on send", () => {
   afterEach(() => {
     document.body.innerHTML = "";
@@ -25,23 +38,16 @@ describe("UAT AC-582: chat input is a markdown-aware rich-text editor with markd
     expect(editorContent.querySelector("h1")?.textContent).toBe("Title");
     expect(editorContent.querySelector("strong")?.textContent).toBe("bold");
 
-    // On submission the editor serializes back to markdown — the payload is a
-    // markdown string, not HTML.
+    // The serialized content is markdown, not HTML.
     const md = panel.getInputMarkdown();
     expect(md).toContain("# Title");
     expect(md).toContain("**bold**");
     expect(md).not.toContain("<h1>");
     expect(md).not.toContain("<strong>");
 
-    // Cmd/Ctrl+Enter sends, and onSend receives the markdown string.
-    panel.editorRoot.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Enter",
-        metaKey: true,
-        bubbles: true,
-      }),
-    );
-    await new Promise((r) => setTimeout(r, 0));
+    // Sending via the round Send button delivers the markdown string.
+    panel.sendButton.click();
+    await flush();
     expect(onSend).toHaveBeenCalledTimes(1);
     const sent = onSend.mock.calls[0]![0];
     expect(sent).toContain("# Title");
@@ -52,14 +58,8 @@ describe("UAT AC-582: chat input is a markdown-aware rich-text editor with markd
     expect(panel.getInputMarkdown()).toBe("");
 
     // Empty submissions are ignored — onSend is not invoked again.
-    panel.editorRoot.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Enter",
-        metaKey: true,
-        bubbles: true,
-      }),
-    );
-    await new Promise((r) => setTimeout(r, 0));
+    panel.sendButton.click();
+    await flush();
     expect(onSend).toHaveBeenCalledTimes(1);
   });
 });
