@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: bundle-d3d73016 (split-section, testimonials, banne
   logo-strip, contrast, image-sizing)'
 created_by: xgd
 created_at: '2026-06-29T23:09:27.460545+00:00'
-updated_at: '2026-06-29T23:21:39.073017+00:00'
+updated_at: '2026-06-29T23:38:02.873566+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -76,7 +76,7 @@ fields:
     justification: No existing story covers banner. STORY-42's content-module enumeration
       does not include banner; new module capability (announcement/CTA strip) in CAP-34
       — uncovered, new feature story.
-    story_uid: null
+    story_uid: story-69fa1c75
   - index: 4
     component: Framework Module Catalog — logo-strip@v1 (filed as icon-row)
     item_type: feature
