@@ -2,13 +2,13 @@
 uid: acceptance_criterion-e1b325f2
 id: AC-581
 type: acceptance_criterion
-title: Assistant messages render as sanitized markdown; user and system messages stay
+title: Assistant and user messages render as sanitized markdown; system messages stay
   plaintext
 created_by: xgd
 created_at: '2026-06-27T00:55:15.849037+00:00'
-updated_at: '2026-06-29T22:01:12.683305+00:00'
+updated_at: '2026-06-29T22:02:14.442796+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-ba9f2715
