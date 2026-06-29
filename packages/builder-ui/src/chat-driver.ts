@@ -9,7 +9,12 @@ import type {
   ChatToolResultRecord,
   PendingToolFailure,
 } from "./store.js";
-import { applyToolCall, type ToolApplyError, type ToolName } from "./tools.js";
+import {
+  applyToolCall,
+  isStateEditTool,
+  type ToolApplyError,
+  type ToolName,
+} from "./tools.js";
 
 export type ChatToolResult = ChatToolResultRecord;
 
@@ -259,6 +264,21 @@ export async function runChatTurn(
             accepted: true,
             result: serverResult,
           });
+        } else if (!isStateEditTool(ev.name)) {
+          // system_action tools (analyze_page, transcribe_site,
+          // read_transcription_digest, …) executed server-side only. They never
+          // touch the browser preview dispatcher — running them through
+          // applyToolCall would wrongly reject them as `unknown tool`. Record
+          // accepted/rejected straight from the server result.
+          toolCallSummaries.push({
+            name: ev.name,
+            input: ev.input,
+            accepted: serverResult.ok,
+            ...(serverResult.ok
+              ? {}
+              : { error: serverResultError(serverResult) }),
+            result: serverResult,
+          });
         } else {
           const applyResult = applyToolCall(workingSite, options.catalog, {
             name: ev.name as ToolName,
@@ -376,6 +396,26 @@ function extractClearedSite(
   if (!data || data.clearedSiteDefinition === undefined) return null;
   const validation = validateSite(data.clearedSiteDefinition);
   return validation.ok ? validation.value : null;
+}
+
+/**
+ * Extract a human-readable message from a rejected server tool result. The
+ * server wraps the reason as `error.validation`, which for system_action tools
+ * is `{ message: string }`. Falls back to the tool name when absent.
+ */
+function serverResultError(
+  result: Extract<ChatToolResultRecord, { ok: false }>,
+): string {
+  const validation = result.error.validation;
+  if (
+    typeof validation === "object" &&
+    validation !== null &&
+    "message" in validation &&
+    typeof (validation as { message: unknown }).message === "string"
+  ) {
+    return (validation as { message: string }).message;
+  }
+  return `tool '${result.error.tool}' rejected`;
 }
 
 function formatError(error: ToolApplyError): string {

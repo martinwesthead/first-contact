@@ -31,6 +31,37 @@ export interface ToolCall {
   readonly input: Record<string, unknown>;
 }
 
+/**
+ * Runtime set of the browser-side state-edit (preview-mutation) tools — the
+ * tools `applyToolCall` knows how to dispatch. Mirrors the `ToolName` union and
+ * the server's `state_edit` action category. Server-only `system_action` tools
+ * (analyze_page, transcribe_site, read_transcription_digest, …) are NOT in this
+ * set: they execute server-side and must never be passed to `applyToolCall`,
+ * which would reject them as `unknown tool`.
+ */
+export const STATE_EDIT_TOOL_NAMES: ReadonlySet<ToolName> = new Set<ToolName>([
+  "set_module_content",
+  "set_module_dial",
+  "set_module_variant",
+  "add_module",
+  "remove_module",
+  "reorder_modules",
+  "duplicate_module",
+  "set_theme_token",
+  "set_site_config",
+  "add_page",
+  "remove_page",
+  "reorder_pages",
+  "set_page_metadata",
+  "set_nav_pattern",
+  "set_nav_entries",
+]);
+
+/** True when `name` is a browser-side state-edit tool dispatchable by `applyToolCall`. */
+export function isStateEditTool(name: string): name is ToolName {
+  return STATE_EDIT_TOOL_NAMES.has(name as ToolName);
+}
+
 export type ApplyResult =
   | { readonly ok: true; readonly next: Site }
   | { readonly ok: false; readonly error: ToolApplyError };
