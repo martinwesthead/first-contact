@@ -6,15 +6,18 @@ title: 'Builder chat: system_action tool results mis-routed to browser dispatche
   → ''unknown tool'''
 created_by: xgd
 created_at: '2026-06-29T23:07:49.108959+00:00'
-updated_at: '2026-06-29T23:10:23.410128+00:00'
+updated_at: '2026-06-29T23:18:14.403080+00:00'
 completed_at: null
-last_field_updated: severity
-status: draft
+last_field_updated: status
+status: free_coded
 fields:
   auto_merge_back: true
   needs_review: false
   priority: medium
   severity: high
+  commits:
+  - f8800207890cf2abdbe17008390763f1bb4b13a4
+  version: 0.0.42
 ---
 
 ## Symptom
