@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: bundle-d3d73016 (split-section, testimonials, banne
   logo-strip, contrast, image-sizing)'
 created_by: xgd
 created_at: '2026-06-29T23:09:27.460545+00:00'
-updated_at: '2026-06-29T23:13:35.632919+00:00'
+updated_at: '2026-06-29T23:21:39.073017+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -56,7 +56,7 @@ fields:
       content modules and does not include testimonials; this is a new module capability
       (client-quote display) in the CAP-34 catalog bucket — uncovered, new feature
       story.
-    story_uid: null
+    story_uid: story-28887b36
   - index: 3
     component: Framework Module Catalog — banner@v1
     item_type: feature
