@@ -29,6 +29,8 @@ export interface ChatPanelHandle {
   readonly editorRoot: HTMLElement;
   readonly sendButton: HTMLButtonElement;
   readonly stopButton: HTMLButtonElement;
+  /** BUG-19: top-bar control that starts a fresh, blank chat session. */
+  readonly newSessionButton: HTMLButtonElement;
   readonly toolHeader: HTMLElement;
   readonly toolPane: HTMLElement;
   readonly toolPaneBody: HTMLElement;
@@ -67,6 +69,11 @@ export interface ChatPanelOptions {
   onSend: (text: string) => void | Promise<void>;
   /** Optional abort handler called when the operator clicks Stop. */
   onStop?: () => void;
+  /**
+   * BUG-19: handler for the top-bar "New session" control. The wiring layer
+   * mints a fresh session and resets the in-view history to blank.
+   */
+  onNewSession?: () => void | Promise<void>;
   /**
    * REQ-25: optional infinite-scroll handler. When omitted, scrolling to
    * the top is a no-op (tests without a backing API don't need it).
@@ -114,6 +121,29 @@ export function createChatPanel(
   const root = doc.createElement("div");
   root.className = "fc-chat";
   root.setAttribute("data-fc-chat", "");
+
+  // BUG-19: chat header bar pinned to the top of the panel. Holds the
+  // "New session" control — one click starts a fresh, blank chat session
+  // (and a fresh operator session id, which resets per-session server
+  // budgets). Non-destructive: the prior session is kept server-side.
+  const header = doc.createElement("div");
+  header.className = "fc-chat__header";
+  header.setAttribute("data-fc-chat-header", "");
+
+  const headerTitle = doc.createElement("span");
+  headerTitle.className = "fc-chat__header-title";
+  headerTitle.textContent = "Chat";
+
+  const newSessionButton = doc.createElement("button");
+  newSessionButton.type = "button";
+  newSessionButton.className = "fc-chat__new-session";
+  newSessionButton.setAttribute("data-fc-chat-new-session", "");
+  newSessionButton.setAttribute("aria-label", "New session");
+  newSessionButton.setAttribute("title", "Start a new session (blank chat)");
+  newSessionButton.textContent = "＋ New session";
+
+  header.appendChild(headerTitle);
+  header.appendChild(newSessionButton);
 
   // Tool-use pane (collapsible). Sits above the message list — XGD parity.
   // Hidden by default; clicking the header toggles visible and flips the
@@ -197,6 +227,7 @@ export function createChatPanel(
   editorRoot.appendChild(stopButton);
   inputRow.appendChild(editorRoot);
 
+  root.appendChild(header);
   root.appendChild(toolHeader);
   root.appendChild(toolPane);
   root.appendChild(failurePanel);
@@ -501,6 +532,12 @@ export function createChatPanel(
 
   sendButton.addEventListener("click", () => runSubmit());
   stopButton.addEventListener("click", onStopClick);
+  // BUG-19: New session — delegate to the wiring layer, which mints a fresh
+  // session and blanks the view. No confirm: the prior session is preserved
+  // server-side, so this is non-destructive.
+  newSessionButton.addEventListener("click", () => {
+    void options.onNewSession?.();
+  });
 
   return {
     root,
@@ -508,6 +545,7 @@ export function createChatPanel(
     editorRoot,
     sendButton,
     stopButton,
+    newSessionButton,
     toolHeader,
     toolPane,
     toolPaneBody,

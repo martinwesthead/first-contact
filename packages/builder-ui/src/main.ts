@@ -65,6 +65,13 @@ const ACTIVE_CHAT_SESSION_KEY_PREFIX = "fc.builder.activeChatSession.";
 /** REQ-25: page size for tail-load and infinite scroll. */
 const TAIL_LIMIT = 50;
 
+/** Mint a fresh per-tab operator session id (UUID when available). */
+function generateSessionId(): string {
+  return typeof globalThis.crypto?.randomUUID === "function"
+    ? globalThis.crypto.randomUUID()
+    : `sess-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
 function resolveSessionId(
   explicit: string | undefined,
   store: Storage | null,
@@ -74,10 +81,7 @@ function resolveSessionId(
     const existing = store.getItem(SESSION_ID_STORAGE_KEY);
     if (typeof existing === "string" && existing.length > 0) return existing;
   }
-  const fresh =
-    typeof globalThis.crypto?.randomUUID === "function"
-      ? globalThis.crypto.randomUUID()
-      : `sess-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  const fresh = generateSessionId();
   if (store) store.setItem(SESSION_ID_STORAGE_KEY, fresh);
   return fresh;
 }
@@ -154,7 +158,10 @@ export function bootBuilder(options: BootBuilderOptions): {
     options.sessionStorageFacility !== undefined
       ? options.sessionStorageFacility
       : (globalThis.sessionStorage ?? null);
-  const sessionId = resolveSessionId(options.sessionId, sessionStorageFacility);
+  // BUG-19: mutable so the "New session" control can mint a fresh operator
+  // session id mid-tab. onSend reads this at call time, so later turns pick up
+  // the new id (and its fresh per-session server budgets).
+  let sessionId = resolveSessionId(options.sessionId, sessionStorageFacility);
   // BUG-8: the browser's `fetch` is a Window method and the spec requires
   // `this === Window` at call time. Capturing the bare reference and calling
   // it later (as a free function or as an instance field) throws TypeError.
@@ -218,8 +225,33 @@ export function bootBuilder(options: BootBuilderOptions): {
   type ChatPanelHandle = ReturnType<typeof createChatPanel>;
   let chat: ChatPanelHandle | null = null;
 
+  // BUG-19: start a fresh, blank chat session. Mints a new per-tab operator
+  // session id (resetting per-session server budgets), creates a new chat
+  // session server-side, and blanks the in-view history. Non-destructive: the
+  // previous session is retained in the per-site session list. Any in-flight
+  // turn is aborted first.
+  const startNewSession = async (): Promise<void> => {
+    abortController?.abort();
+    abortController = null;
+    sessionId = generateSessionId();
+    sessionStorageFacility?.setItem(SESSION_ID_STORAGE_KEY, sessionId);
+    try {
+      const created = await chatsApi.createSession(siteId);
+      store.setActiveSession(created.id, {
+        chatHistory: [],
+        loadedFromOrd: null,
+        hasMoreOlder: false,
+      });
+      if (storage) storage.setItem(activeChatStorageKey(siteId), created.id);
+      chat?.clearToolEvents();
+    } catch (err) {
+      appendBootErrorMessage(store, siteId, err);
+    }
+  };
+
   const chat_ = createChatPanel(layout.chatPanel, {
     store,
+    onNewSession: startNewSession,
     onSend: async (text: string) => {
       // REQ-25 (second pass): the boot promise always ensures a session
       // exists. If onSend fires before boot finishes (unlikely — the
