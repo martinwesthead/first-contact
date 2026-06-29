@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-19
 created_by: xgd
 created_at: '2026-06-29T20:58:47.694537+00:00'
-updated_at: '2026-06-29T21:04:12.814791+00:00'
+updated_at: '2026-06-29T21:04:24.346804+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -103,5 +103,15 @@ Let me check the analysis digest to see what was captured.Unfortunately no — h
 - Once the budget is gone, screenshot-based tools return structural data only — no actual rendered screenshots
   
   This is the webbuilder - it is not respecting the configured limit...
+
+<!-- xgd-turn id="20575f99-84b5-4823-9150-ed8f74aa4d10-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-29T21:04:24.311Z" -->
+#### Claude
+That's the key signal — "the webbuilder is not respecting the configured limit." That reframes the bug: the browser-rendering budget *is* tripping at runtime even though the source default is `1e9`. That's drift between the configured value and what's actually enforced. Let me chase it.
+
+First, on your direct question: **no, I can't pull screenshots myself** — `analyze_page` / `transcribe_site` are the *product's* tools (running inside the builder worker), not tools I have here. Those "unknown tool" failures are exactly that: they aren't in my toolset. So I can't screenshot the site for you; what I *can* do is fix why the builder's budget is exhausting.
+
+Prime suspect: a **stale compiled build**. The source says `1e9`, but if `dist/` wasn't rebuilt after BUG-17, the running worker still enforces the old `50s`. Let me verify.
 
 <!-- xgd-chat-end -->
