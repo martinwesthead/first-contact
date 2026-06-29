@@ -39,5 +39,9 @@ describe("UAT AC-683: control-app dev command runs the bundle watcher alongside 
     expect(dev).toContain("build:bundle:watch");
     expect(dev).toContain("wrangler dev");
     expect(dev).toContain("concurrently");
+    // The process runner must tear both processes down together when either
+    // exits — concurrently's `-k` (--kill-others) flag. Without it a crashed
+    // bundler would leave wrangler running orphaned (and vice versa).
+    expect(dev).toMatch(/(?:^|\s)(?:-k|--kill-others)(?:\s|$)/);
   });
 });
