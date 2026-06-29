@@ -5,10 +5,10 @@ type: bundle
 title: BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-38 + 1 more
 created_by: xgd
 created_at: '2026-06-29T00:55:03.360302+00:00'
-updated_at: '2026-06-29T00:55:03.360302+00:00'
+updated_at: '2026-06-29T00:55:05.638788+00:00'
 completed_at: null
-last_field_updated: created_at
-status: ready_to_reconcile
+last_field_updated: status
+status: reconciling
 fields:
   commits:
   - a59e985971b5e1af30128b83ad8e2a88f368c3a7
