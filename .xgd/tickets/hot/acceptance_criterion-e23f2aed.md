@@ -2,13 +2,12 @@
 uid: acceptance_criterion-e23f2aed
 id: AC-673
 type: acceptance_criterion
-title: Send button is disabled with a CSS-only spinner and aria-busy while a turn
-  is in flight
+title: In-flight affordance is a round Send->Stop swap (no CSS spinner)
 created_by: xgd
 created_at: '2026-06-28T22:12:50.035094+00:00'
-updated_at: '2026-06-29T22:01:13.283410+00:00'
+updated_at: '2026-06-29T22:02:15.009527+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-ba9f2715
