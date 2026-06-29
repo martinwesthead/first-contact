@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-19
 created_by: xgd
 created_at: '2026-06-29T20:58:47.694537+00:00'
-updated_at: '2026-06-29T22:37:41.656365+00:00'
+updated_at: '2026-06-29T22:43:05.627393+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -280,5 +280,71 @@ Want me to file the `pnpm dev` workspace-rebuild fix as a separate ticket and ta
 <!-- xgd-chat role="user" ts="2026-06-29T22:35:16.527Z" -->
 #### You
 yes fix it so it always rebuilds
+
+<!-- xgd-turn id="828a8720-8109-4b5b-9c7e-66bc46af053e-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-29T22:43:05.597Z" -->
+#### Claude
+You explicitly OK'd a separate ticket, so I'll create one and take it on. Let me first confirm the exact backend workspace deps the worker bundles (so the watcher covers the right packages and excludes the front-end-only `builder-ui`), then create the ticket.
+
+The worker bundles **all five** workspace deps — including `builder-ui` (imported by `chat.ts`/`transcribe-site.ts`), so I won't exclude it. The cleanest fix: watch every workspace dep's `src/` and "touch" the worker entry on change, which nudges wrangler's existing rebuild path (proven to emit `1e9`) — no restart, port + miniflare state preserved.
+
+Creating the ticket:
+
+BUG-20 created. Now the watcher script:
+
+Now wire it into the `dev` script:
+
+Now the UAT test for BUG-20:
+
+Both pass. Let me smoke-test the script actually starts and lists the watched dirs (run it briefly, then it self-terminates via timeout):
+
+Watcher covers all five workspace src dirs. Now the real end-to-end proof: with the watcher running, a change in a workspace package should bump the worker entry's mtime.
+
+E2E didn't fire — need to debug whether `fs.watch` saw the event at all (macOS FSEvents can be slow to arm). Let me re-run with the full log and longer waits.
+
+End-to-end **PASS** — the first failure was just FSEvents arming latency. With proper timing: editing `web-fetch-safety/src` fired the watcher → touched the worker entry → mtime bumped (`...432` → `...857`), which is exactly what makes wrangler re-bundle.
+
+Let me run the full suite to confirm nothing regressed, then commit under BUG-20.
+
+126 *files* failed to collect but 388 tests passed and **0 tests failed** — that's a collection/resolution error, not logic. Let me see the actual error.
+
+Same workspace-delink flake as before — `node_modules/@gendev/` symlinks vanished again (not caused by my change; it's the environment's known link fragility). Relinking and re-running:
+
+All **272 files / 715 tests pass** (711 + 4 new BUG-20 tests). The delink was the environment flake; relinking fixed it. Now commit under BUG-20:
+
+BUG-20 done — committed `e9ef73da`, moved to `free_coded`. Let me update the memory note so the workaround knowledge reflects the actual fix:
+
+Done. Here's the wrap-up.
+
+## BUG-20 — `pnpm dev` now always rebuilds the worker on workspace changes ✅
+
+**Root cause:** `wrangler dev` re-bundles the worker when its *own* entry changes, but never watches the source of linked workspace packages (`node_modules/@gendev/* → packages/*`). That's the exact reason your budget fix sat stale for days.
+
+**The fix:** a small dev-only watcher (`apps/control-app/scripts/dev-worker-rebuild.mjs`) wired into `pnpm dev`. It watches the `src/` of **all five** workspace deps the worker bundles (`builder-ui`, `extractor`, `framework`, `site-schema`, `web-fetch-safety`) and, on any source change, bumps the worker entry's mtime — which nudges wrangler to re-bundle the full graph. **No restart, no lost port/state** — just a fast re-bundle.
+
+**Verified end-to-end:** with the watcher running, I edited a file under `packages/web-fetch-safety/src` and watched `src/index.ts` get touched and the log print `→ re-bundling worker`.
+
+- Commit `e9ef73da` `[FREE-CODED]`, 4 UATs (`test_UAT_FC_BUG-20_*`), **full suite green (715 tests / 272 files)**, ticket `free_coded`.
+
+### ⚠️ One action for you
+The change is to the `dev` script itself, so your **currently-running `pnpm dev` doesn't have the watcher yet**. Restart it **once**:
+
+```
+# Ctrl-C the running pnpm dev, then:
+pnpm --filter @gendev/control-app dev    # (or: cd apps/control-app && pnpm dev)
+```
+
+After that restart, every edit to a shared package auto-rebuilds the worker — no more "is it rebuilding?" guesswork.
+
+### Status of both tickets this session
+| Ticket | What | Status |
+|--------|------|--------|
+| **BUG-19** | "New session" button (blank chat + resets per-session budget) | `free_coded` (`b8480f0d`) |
+| **BUG-20** | `pnpm dev` auto-rebuilds worker on workspace-dep changes | `free_coded` (`e9ef73da`) |
+
+Both are on `xgd-working`. They'll reach production on the next reconcile to `main` + deploy — which is also what finally ships the `1e9` budget value to the deployed worker.
+
+One heads-up I'll repeat since it bit us mid-task: the workspace `@gendev/*` symlinks dropped twice during this session (a known environment flake) — `CI=true pnpm install --offline` relinks them if your tests suddenly can't resolve `@gendev/*`.
 
 <!-- xgd-chat-end -->
