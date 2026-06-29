@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-2
 created_by: xgd
 created_at: '2026-06-29T20:46:00.428143+00:00'
-updated_at: '2026-06-29T20:46:45.496165+00:00'
+updated_at: '2026-06-29T20:49:30.169904+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -88,5 +88,13 @@ This purged and rebuilt `node_modules`, relinking everything against your local 
 You should be able to run `pnpm dev` now. Want me to start it and confirm it comes up clean?
 
 Note: no ticket needed here — this was an environment/dependency repair, not a code or config change to the repo.
+
+<!-- xgd-turn id="b1d73512-2ffa-42d4-bb5b-e0a184bfcbf8-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-29T20:49:02.770Z" -->
+#### You
+The reconcile run should not be modifying any content on the working branch - it should not have the permissions to do this. Do you agree? Or is this necessary?
+
+Node_modules on the reconcile branch points to the worktree for dependencies is there a way to isolate that from code that is in the project?
 
 <!-- xgd-chat-end -->
