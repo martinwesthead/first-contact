@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-19
 created_by: xgd
 created_at: '2026-06-29T20:58:47.694537+00:00'
-updated_at: '2026-06-29T21:15:56.188590+00:00'
+updated_at: '2026-06-29T21:16:47.383092+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -239,5 +239,11 @@ So there was no over-engineered config to wrestle — just a build that hadn't c
 ## Two honest caveats
 - The session **reset button** is the builder *product* chat, which is what your pasted evidence shows you testing. If you actually meant a reset button on the **XGD operator dashboard** (the tool you're typing to me in — separate codebase, not this repo), say so and I'll redirect.
 - `bin/project/xgd_version_bump` is still an unimplemented stub, so the "every commit bumps version" gate is only advisory right now. Not blocking you — but worth implementing at some point so reconcile's version checks have teeth. Want me to file that as its own ticket?
+
+<!-- xgd-turn id="8f7c6c6c-c991-4c13-80e6-8dcd1c8b9df3-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-29T21:16:26.648Z" -->
+#### You
+I have been running pnpm dev in apps/control-app it has not been rebuilding
 
 <!-- xgd-chat-end -->
