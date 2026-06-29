@@ -5,10 +5,10 @@ type: story
 title: 'Reconstruction blueprint: deterministic transcription digest and read-back'
 created_by: xgd
 created_at: '2026-06-28T20:28:56.679925+00:00'
-updated_at: '2026-06-29T21:45:36.917166+00:00'
+updated_at: '2026-06-29T21:46:29.713408+00:00'
 completed_at: null
-last_field_updated: story_kind
-status: reconciling
+last_field_updated: status
+status: updated
 fields:
   intent_uid: bundle-24c4d23c
   capability_uid: capability-e343131c
