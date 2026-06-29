@@ -2,13 +2,13 @@
 uid: acceptance_criterion-88cbfc9e
 id: AC-486
 type: acceptance_criterion
-title: POST /api/chat proxies the Anthropic Messages API and returns extracted text
-  and tool_use blocks
+title: POST /api/chat streams the Anthropic turn to the browser as Server-Sent Events
+  (token/tool_call/tool_result/done/error)
 created_by: xgd
 created_at: '2026-06-25T02:00:41.742571+00:00'
-updated_at: '2026-06-29T22:01:12.087668+00:00'
+updated_at: '2026-06-29T22:02:13.867578+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-ba9f2715
