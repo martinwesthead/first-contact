@@ -6,9 +6,9 @@ title: 'Reconciliation Plan: BUNDLE-6 (BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-3
   + REQ-41)'
 created_by: xgd
 created_at: '2026-06-29T21:26:07.128346+00:00'
-updated_at: '2026-06-29T21:26:07.128346+00:00'
+updated_at: '2026-06-29T21:29:33.511839+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: items
 fields:
   report_kind: reconciliation_plan
   subject_uid: bundle-4e8020d6
@@ -38,7 +38,7 @@ fields:
       ground truth: 8 UAT files / 53 tests already exercise apply-clean, reversibility,
       slug validation (valid/invalid/reserved/suggestions), the UNIQUE slug constraint,
       and the seeded definition validating against validateSite.'
-    story_uid: null
+    story_uid: story-a3283461
   - index: 2
     component: External Fetch Safety (web-fetch-safety package)
     item_type: upgrade
