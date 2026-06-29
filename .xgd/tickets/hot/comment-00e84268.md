@@ -5,9 +5,9 @@ type: comment
 title: Comment on bug BUG-21
 created_by: xgd
 created_at: '2026-06-29T23:08:30.434852+00:00'
-updated_at: '2026-06-29T23:08:30.434852+00:00'
+updated_at: '2026-06-29T23:10:34.408548+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: null
 fields:
   subject_uid: bug-aab9abd2
@@ -49,5 +49,73 @@ set theme token 'palette.accent' to '#ff8c42'
 [system] The previous turn produced 4 failed tool calls. Review the errors and retry where appropriate: - analyze_page({"url":"http://gigabytealchemy.ai"}) → unknown tool: analyze_page - analyze_page({"url":"https://gigabytealchemy.ai"}) → unknown tool: analyze_page - transcribe_site({"digestId":"https://gigabytealchemy.ai/"}) → unknown tool: transcribe_site - read_transcription_digest({"siteId":"anonymous"}) → unknown tool: read_transcription_digest
 
 This is from the webbuilder chat transcript it is facing tooling problems
+
+<!-- xgd-turn id="20d7dbc6-e946-4f3e-86e7-c9c4f33a2a14-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-29T23:10:34.381Z" -->
+#### Claude
+I'll investigate the actual tooling problem before drafting the ticket. Let me read the current ticket and dig into the webbuilder tool wiring in parallel.
+
+Both "unknown tool" emitters found. The transcript shows the telling detail: `transcribe_site`/`read_transcription_digest` **worked** in one turn, then returned `unknown tool:` (with colon — the browser-side emitter at `tools.ts:93`) in the next. Let me see how tool calls get routed between the server and browser surfaces.
+
+`tools.ts` is purely the browser-side preview-mutation dispatcher — it has no cases for `analyze_page`/`transcribe_site`/`read_transcription_digest`, so any of those falling into it hit the default `unknown tool:` branch. The routing decision lives in the chat-driver. Let me read it and the server chat handler.
+
+Found it. The bug is in the `tool_result` handler at `chat-driver.ts:241-296`. Let me confirm the server-side operator tool set to make sure I scope the fix correctly.
+
+The picture is now clear. Let me confirm how the server categorizes tools (state_edit vs system_action), since the fix hinges on the client mirroring that distinction.
+
+Investigation complete. I've found the root cause. Here's the diagnosis before I draft the ticket.
+
+## What's happening
+
+The webbuilder chat has **two tool-execution surfaces**:
+
+- **Server-side** (`apps/control-app/src/chat.ts` + `operator/registry.ts`) — every tool is categorized `state_edit` or `system_action`. The `system_action` tools (`analyze_page`, `transcribe_site`, `read_transcription_digest`, etc.) execute *only* on the server.
+- **Browser-side** (`packages/builder-ui/src/tools.ts` → `applyToolCall`) — knows *only* the `state_edit` preview-mutation tools (`set_theme_token`, `add_module`, …). Its default branch emits `unknown tool: <name>`.
+
+The bug is in the client chat-driver. In the `tool_result` handler (`chat-driver.ts:241-296`), after the server has already executed a tool, the driver re-runs **every** result (except the special `transcribe_site_done` cleared-site case) through `applyToolCall` to mirror it onto the preview:
+
+```ts
+} else {
+  const applyResult = applyToolCall(workingSite, options.catalog, {
+    name: ev.name as ToolName,   // ← but ev.name might be a system_action tool
+    input: ev.input,
+  });
+```
+
+For a `system_action` tool, `applyToolCall` doesn't recognize the name → `unknown tool: analyze_page`. That gets:
+1. Recorded as a **rejected** tool call (so the tool pane shows ✗ even though the server succeeded), then
+2. Pushed into `pendingToolFailures` and **reinjected next turn** as the `[system] … → unknown tool: analyze_page` note — which actively tells the model its real server tools don't exist, derailing the convert/analyze flow.
+
+This perfectly explains the transcript: `transcribe_site` returning a cleared site worked (handled by `extractClearedSite`); the same tools in other states fell through to `applyToolCall` and came back "unknown tool."
+
+## The fix
+
+The client must mirror the server's category split: only run **`state_edit`** tools through `applyToolCall`. `system_action` results are already executed server-side and render via result cards — the driver should record them as accepted/rejected per the server result and never touch the browser dispatcher.
+
+Let me check one detail — whether the server result carries enough to tell the client the category, or whether the client needs its own state-edit tool-name set.
+
+Confirmed — the `state_edit` action names are exactly the `ToolName` union in `tools.ts`. The clean fix is a runtime state-edit-tool set the driver gates on before calling `applyToolCall`.
+
+I have everything needed to scope BUG-21. Drafting the ticket now:
+
+BUG-21 is drafted. Summary of what I found and recorded:
+
+**The bug:** The builder chat driver mis-routes server-only tool results to the browser preview dispatcher.
+
+- Server-side, tools are split into `state_edit` (preview mutations like `set_theme_token`) and `system_action` (server-only: `analyze_page`, `transcribe_site`, `read_transcription_digest`).
+- The client driver (`chat-driver.ts:241-296`) re-runs **every** tool result through `applyToolCall` (browser-side, `tools.ts`) to mirror it onto the preview — but `applyToolCall` only knows `state_edit` tools. `system_action` results hit its default branch → `unknown tool: <name>`.
+- Those get marked **rejected** (✗ in the tool pane despite server success) and reinjected next turn as the `[system] … → unknown tool: analyze_page` note, gaslighting the model into thinking its real tools don't exist — breaking the convert/analyze flow.
+
+The only reason `transcribe_site` *sometimes* worked is the special `transcribe_site_done` cleared-site path (`extractClearedSite`), which bypasses `applyToolCall`.
+
+**The fix (scoped, not yet coded):** Have the client mirror the server's split — only `state_edit` tools go through `applyToolCall`; `system_action` results are recorded accepted/rejected from the server result with no local apply. Cleanest implementation: export a runtime state-edit-tool-name set from `tools.ts` and gate the driver's `applyToolCall` branch on it.
+
+The ticket is at `draft`. Two things before I'd write code:
+
+1. **Confirm the scope** above looks right to you — particularly that `system_action` results should *never* touch the browser dispatcher (they only render via result cards).
+2. This is a genuine code change under `packages/builder-ui/`, so it follows the full free-coding flow (UAT tests `test_UAT_FC_BUG-21_*`, `[FREE-CODED]` commit, version bump, `move-to-free-coded`).
+
+Want me to proceed with the implementation?
 
 <!-- xgd-chat-end -->
