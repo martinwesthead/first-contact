@@ -5,9 +5,9 @@ type: request
 title: 'App shell: top-bar tabs + avatar menu + per-tab chat panel'
 created_by: xgd
 created_at: '2026-06-16T23:20:25.421877+00:00'
-updated_at: '2026-06-29T23:56:09.206305+00:00'
+updated_at: '2026-06-29T23:56:50.533522+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   story_points: 5
@@ -123,3 +123,51 @@ These excerpts came from the asset-management design conversation. The shell dec
 - Persistent chat sessions, cross-session transcripts, and the `get_visible_context()` tool → **REQ-CHAT-CONTEXT** (discussed CHAT-9, not yet drafted).
 - Highlight-to-floating-button "send to chat" affordance → **REQ-CHAT-HIGHLIGHT** (discussed CHAT-9, not yet drafted).
 - Magic-link auth wiring for the avatar `Sign out` and `Account` items → **REQ-AUTH** (not yet drafted).
+
+
+## Implementation notes (as built — REQ-17 free-code)
+
+The implementation follows the scope above. Specifics worth recording before reconcile:
+
+- **Shell component**: `packages/builder-ui/src/components/app-shell.ts` —
+  `createAppShell(parent, options)` + `registerTab(id, {label, defaultChatOpen, factory})`.
+  Exported from the package index and via the `./app-shell` subpath. The shell
+  knows a fixed ordered slot set (Builder | Settings | Assets | Revisions |
+  Leads); a slot is a disabled button until a factory registers for it.
+  Revisions/Leads ship disabled. Unknown ids → console.warn + no-op (AC9).
+- **Chat state**: per-`(site, tab)` open/collapsed in `localStorage`
+  (`1stcontact_app_chat_state_v1`, keys `"<site>::<tab>"`). Falls back to the
+  tab's `defaultChatOpen` when no entry exists. One shared chat-panel frame;
+  each tab gets its own content + chatSlot, shown/hidden on switch.
+- **Routing**: `pushState`/`popstate`, first activation uses `replaceState`.
+- **Builder migration**: `bootBuilder` gained optional `previewHost`/`chatHost`.
+  When both are supplied (the shell case) it mounts preview + chat into them
+  instead of creating its own two-panel layout. `/builder` standalone keeps its
+  own layout. The Builder tab's factory boots the builder into the shell hosts.
+- **Settings/Assets**: registered as placeholder tabs (content arrives in
+  REQ-UI-SETTINGS / REQ-16). Chat defaults: Builder + Assets open, Settings
+  collapsed (AC7).
+- **Worker routes** (`apps/control-app/src/index.ts`): `/app` + `/app/<site>`
+  302-redirect to the default builder tab; `/app/<site>/<tab>` serves
+  `app.html` with `data-site`/`data-tab` injected on `#fc-app-root` via
+  `HTMLRewriter`. Default site = `1stcontact`.
+- **Static Assets config**: `wrangler.toml` sets `[assets] html_handling = "none"`
+  (and the production block). Default clean-URL handling served `/app` directly
+  from `app.html` and 307-redirected `/app.html` → `/app`, both bypassing the
+  worker's shell routing. "none" makes the worker authoritative; `/builder`
+  (which also fetches its `.html` directly) is unaffected.
+- **Bundles**: `build-builder-bundle.mjs` now emits both `builder.js` and
+  `app.js` (new `app-entry.ts`).
+- **Version tooling**: implemented `bin/project/xgd_version_bump` (was a stub)
+  against the root `package.json` as the monorepo version anchor.
+
+### Tests (as built)
+
+Consolidated to one suite per component (per project test-org guidance) rather
+than one file per scenario:
+
+- `tests/test_UAT_FC_REQ-17_app_shell.test.ts` (jsdom) — tab switch + URL,
+  back/forward, chat defaults, per-(site,tab) chat persistence, avatar menu
+  open/close, unknown-id no-op.
+- `tests/test_UAT_FC_REQ-17_app_routes.test.ts` (miniflare) — `/app` redirect,
+  `/app/<site>` redirect, data-attr injection on `/app/<site>/<tab>`.
