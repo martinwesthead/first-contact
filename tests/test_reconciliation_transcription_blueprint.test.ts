@@ -26,7 +26,8 @@ const HOWTO_PATH = resolve(
 // Story story-f45a5e61 — Reconstruction blueprint: deterministic transcription
 // digest and read-back. These UATs prove the deterministic building blocks
 // (theme-token derivation, per-page plan, asset inventory, module-type
-// heuristic) and the read-back action against the existing implementation.
+// heuristic), the read-back action, and the REQ-37 digest freshness /
+// write-integrity guarantees against the existing implementation.
 
 const EMPTY_MIRROR: TranscriptionDigestMirrorSummary = {
   mirrored: 0,
@@ -382,7 +383,7 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
     expect(logoEntry.r2Key as string).toMatch(/\.jpg$/);
   });
 
-  it("test_UAT_AC641_unmirrored_assets_excluded_recorded_in_mirror_summary", async () => {
+  it("test_UAT_AC641_unmirrored_assets_excluded_and_recorded_in_both_summary_and_assetfailures", async () => {
     const h = makeTranscribeHarness({ accountId: "acct-ac641" });
     const good = "https://assets.test/good.png";
     const bad = "https://assets.test/bad.png";
@@ -406,19 +407,35 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
       },
     } as Partial<ReferenceDigest>);
 
-    await h.invokeTranscribe({ digestId: "https://acme.test/" });
+    const result = await h.invokeTranscribe({ digestId: "https://acme.test/" });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
 
+    // (2) The convert action's tool-return payload surfaces the same per-URL
+    //     failures as summary.assetFailures, alongside aggregate counts.
+    const summary = (result.payload as Record<string, unknown>).summary as Record<
+      string,
+      unknown
+    >;
+    expect(summary.mirrored).toBe(1);
+    expect(summary.mirrorFailures).toBe(1);
+    const assetFailures = summary.assetFailures as Array<Record<string, unknown>>;
+    expect(Array.isArray(assetFailures)).toBe(true);
+    expect(assetFailures).toHaveLength(1);
+    expect(assetFailures[0].url).toBe(bad);
+    expect(typeof assetFailures[0].reason).toBe("string");
+    expect((assetFailures[0].reason as string).length).toBeGreaterThan(0);
+
+    // (1) The blueprint's inventory lists only the successfully hosted asset,
+    //     and its mirror summary records the failure per-URL with a reason.
     const obj = await h.env.ASSETS_BUCKET.get(
       "sites/acct-ac641/transcription/digest.json",
     );
     const blueprint = JSON.parse(await obj!.text()) as Record<string, unknown>;
-
-    // Inventory lists only the successfully hosted asset.
     const inv = blueprint.assetInventory as Array<Record<string, unknown>>;
     expect(inv).toHaveLength(1);
     expect(inv[0].sourceUrl).toBe(good);
 
-    // Mirror summary records mirrored=1 / failed=1 and one failure record.
     const mirror = blueprint.mirrorSummary as Record<string, unknown>;
     expect(mirror.mirrored).toBe(1);
     expect(mirror.failed).toBe(1);
@@ -500,15 +517,26 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
     expect(digest.sourceUrl).toBe("https://acme.test/");
   });
 
-  it("test_UAT_AC643_read_back_reports_not_found_when_no_digest_exists", async () => {
+  it("test_UAT_AC643_read_back_reports_not_ready_status_when_no_digest_exists", async () => {
+    // REQ-37 supersedes the prior digest_not_found failure contract: a missing
+    // digest is an expected polling state, surfaced as a non-error not-ready
+    // status so the AI can poll while a convert is mid-flight.
     const h = makeTranscribeHarness({ accountId: "acct-ac643" });
     const action = findAction("read_transcription_digest")!;
 
     const result = await action.handler!({ siteId: "acct-ac643" }, h.ctx);
-    expect(result.status).toBe("failed");
-    if (result.status !== "failed") return;
-    expect(result.error).toMatch(/digest_not_found/);
-    expect("payload" in result).toBe(false);
+
+    // Success result (not a failure) with the distinct not-ready kind.
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    const payload = result.payload as Record<string, unknown>;
+    expect(payload.kind).toBe("transcription_digest_not_ready");
+    // Carries the expected digest key the convert will eventually write to.
+    expect(payload.digestKey).toBe(
+      "sites/acct-ac643/transcription/digest.json",
+    );
+    // No blueprint contents are returned.
+    expect("digest" in payload).toBe(false);
   });
 
   it("test_UAT_AC644_read_back_rejects_request_lacking_site_identifier", async () => {
@@ -519,6 +547,112 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
     expect(result.status).toBe("failed");
     // No blueprint contents are returned on a rejected request.
     expect("payload" in result).toBe(false);
+  });
+
+  // ── Digest freshness & write integrity (REQ-37) ──────────────────────────
+
+  it("test_UAT_AC728_convert_evicts_prior_digest_before_mechanical_work", async () => {
+    const h = makeTranscribeHarness({ accountId: "acct-ac728" });
+    const digestKey = "sites/acct-ac728/transcription/digest.json";
+
+    // A previous convert's digest is sitting at the key.
+    await h.env.ASSETS_BUCKET.put(
+      digestKey,
+      JSON.stringify({
+        siteId: "acct-ac728",
+        sourceUrl: "https://stale.example/",
+        capturedAt: "1999-01-01T00:00:00.000Z",
+        perPagePlan: [],
+        assetInventory: [],
+        themeTokens: {},
+        mirrorSummary: { mirrored: 0, failed: 0, failures: [] },
+      }),
+      { httpMetadata: { contentType: "application/json" } },
+    );
+
+    // Observe eviction: record the event-stream position at which the prior
+    // digest is deleted, and capture a mid-flight read-back at that moment.
+    const action = findAction("read_transcription_digest")!;
+    let evictionIndex = -1;
+    let midFlightReadKind: unknown;
+    const realDelete = h.env.ASSETS_BUCKET.delete.bind(h.env.ASSETS_BUCKET);
+    h.env.ASSETS_BUCKET.delete = (async (key: string) => {
+      const out = await realDelete(key);
+      if (key === digestKey && evictionIndex < 0) {
+        evictionIndex = h.events.length;
+        const read = await action.handler!({ siteId: "acct-ac728" }, h.ctx);
+        midFlightReadKind =
+          read.status === "ok"
+            ? (read.payload as Record<string, unknown>).kind
+            : `failed`;
+      }
+      return out;
+    }) as typeof h.env.ASSETS_BUCKET.delete;
+
+    await h.seedDigest("https://acme.test/");
+    const result = await h.invokeTranscribe({ digestId: "https://acme.test/" });
+    expect(result.status).toBe("ok");
+
+    // Eviction fired, and up-front — before the new digest is written (stage 3).
+    expect(evictionIndex).toBeGreaterThanOrEqual(0);
+    const stage3Completed = h.events.findIndex(
+      (e) =>
+        e.data.tool === "transcribe_site" &&
+        e.data.stage === 3 &&
+        e.data.status === "completed",
+    );
+    expect(stage3Completed).toBeGreaterThan(evictionIndex);
+
+    // Mid-flight, a read-back reports the not-ready status (prior digest gone).
+    expect(midFlightReadKind).toBe("transcription_digest_not_ready");
+
+    // The stale digest is gone; the key now holds the fresh convert's digest.
+    const obj = await h.env.ASSETS_BUCKET.get(digestKey);
+    expect(obj).not.toBeNull();
+    const parsed = JSON.parse(await obj!.text()) as Record<string, unknown>;
+    expect(parsed.sourceUrl).toBe("https://acme.test/");
+    expect(parsed.capturedAt).not.toBe("1999-01-01T00:00:00.000Z");
+  });
+
+  it("test_UAT_AC729_digest_write_verified_by_readback_or_fails_digest_write_unverified", async () => {
+    // Negative: post-write read-back returns a digest whose capturedAt does not
+    // match what was written (a racing writer / stale read) → the convert fails
+    // with an error identifying digest_write_unverified.
+    const drift = makeTranscribeHarness({ accountId: "acct-ac729-drift" });
+    await drift.seedDigest("https://acme.test/");
+    const driftKey = "sites/acct-ac729-drift/transcription/digest.json";
+    const realPut = drift.env.ASSETS_BUCKET.put.bind(drift.env.ASSETS_BUCKET);
+    drift.env.ASSETS_BUCKET.put = (async (
+      ...args: Parameters<R2Bucket["put"]>
+    ) => {
+      const out = await realPut(...args);
+      if (args[0] === driftKey) {
+        await realPut(
+          driftKey,
+          JSON.stringify({
+            siteId: "acct-ac729-drift",
+            capturedAt: "1999-01-01T00:00:00.000Z",
+          }),
+          { httpMetadata: { contentType: "application/json" } },
+        );
+      }
+      return out;
+    }) as typeof drift.env.ASSETS_BUCKET.put;
+
+    const driftResult = await drift.invokeTranscribe({
+      digestId: "https://acme.test/",
+    });
+    expect(driftResult.status).toBe("failed");
+    if (driftResult.status === "failed") {
+      expect(driftResult.error).toMatch(/digest_write_unverified/);
+    }
+
+    // Positive: a healthy write whose read-back returns a matching capturedAt
+    // lets the convert report success.
+    const ok = makeTranscribeHarness({ accountId: "acct-ac729-ok" });
+    await ok.seedDigest("https://acme.test/");
+    const okResult = await ok.invokeTranscribe({ digestId: "https://acme.test/" });
+    expect(okResult.status).toBe("ok");
   });
 
   // ── Reproduction how-to consumption contract (BUG-5) ─────────────────────
