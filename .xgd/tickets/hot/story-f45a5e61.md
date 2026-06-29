@@ -5,9 +5,9 @@ type: story
 title: 'Reconstruction blueprint: deterministic transcription digest and read-back'
 created_by: xgd
 created_at: '2026-06-28T20:28:56.679925+00:00'
-updated_at: '2026-06-29T21:54:39.007659+00:00'
+updated_at: '2026-06-29T22:41:57.926452+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-24c4d23c
@@ -52,6 +52,7 @@ Out of scope (other stories): the four-stage orchestration *mechanics* — stagi
   - The digest-shape acceptance criteria are observable on the persisted digest artifact, which in the running system is produced by the orchestration story; the *contract and derivation* are owned here.
   - **Precomputed image AssetRef (BUG-5).** Each `assetInventory` entry now carries a precomputed `assetRef` object `{ id: r2Key, src: "/assets/<r2Key>", alt: altText ?? "" }`, composed in `buildTranscriptionDigest` and shaped to validate against the framework's image `AssetRef` schema (`id`/`src`/`alt`). This makes the source-image→content-field mapping mechanical: the AI passes the precomputed object verbatim into an image content field rather than composing one (or, per the prior bug, passing a bare `/assets/{r2Key}` string the validator and renderer both reject, yielding empty `<img>` tags).
   - **How-to consumption contract (BUG-5).** The convert-flow reproduction guidance — `docs/llm-context/reproducing-a-website.md` and its inlined mirror in `apps/control-app/src/llm-context.ts` — instructs the AI to set image content fields to the entry's precomputed `assetRef` object (with a worked example), explicitly warning that a bare path string is rejected. This corrects the doc that previously instructed a string path. This is the consumption guidance for *this story's* digest asset-inventory contract; it does not change which how-to documents are wired into the chat system prompt (that wiring remains out of scope here).
+  - **How-to names image-gallery for sequential images (REQ-41).** The same reproduction guidance (`docs/llm-context/reproducing-a-website.md` and its byte-for-byte inlined mirror in `apps/control-app/src/llm-context.ts`) extends the visual-proximity matching guidance to name `image-gallery` as the catalog target for sequential image content (largest image → hero; sequential images → `image-gallery`; small square images → service icons), and documents that `image-gallery` populates its `items[]` one entry per asset, each entry being `{ image: <assetRef>, caption?: <string> }`, with captions pulled from `extractedContent` when present and otherwise left unset rather than fabricated. This is consumption guidance for how the AI maps this story's digest asset inventory onto the `image-gallery` module (added by the framework module catalog story); it adds no new digest behaviour and does not change the chat system-prompt wiring (still out of scope here).
 
 ## Dependencies
 
