@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-21
 created_by: xgd
 created_at: '2026-06-29T23:08:30.434852+00:00'
-updated_at: '2026-06-29T23:10:34.408548+00:00'
+updated_at: '2026-06-29T23:13:38.294568+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -117,5 +117,11 @@ The ticket is at `draft`. Two things before I'd write code:
 2. This is a genuine code change under `packages/builder-ui/`, so it follows the full free-coding flow (UAT tests `test_UAT_FC_BUG-21_*`, `[FREE-CODED]` commit, version bump, `move-to-free-coded`).
 
 Want me to proceed with the implementation?
+
+<!-- xgd-turn id="af38aaf6-8810-417a-9a0d-6498f4182d6d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-29T23:13:32.130Z" -->
+#### You
+yes
 
 <!-- xgd-chat-end -->
