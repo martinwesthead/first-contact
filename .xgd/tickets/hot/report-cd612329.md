@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: BUNDLE-6 (BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-3
   + REQ-41)'
 created_by: xgd
 created_at: '2026-06-29T21:26:07.128346+00:00'
-updated_at: '2026-06-29T21:29:33.511839+00:00'
+updated_at: '2026-06-29T21:37:04.736823+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -59,7 +59,7 @@ fields:
       surface is unchanged at runtime. Captured as an upgrade adding a single consumer-build-hygiene
       AC; the FC test test_UAT_FC_BUG-11_web_fetch_safety_consumer_builds asserts
       both the type-import presence and that extractor builds.
-    story_uid: null
+    story_uid: story-a0482aed
     target_story_ids:
     - story-a0482aed
     acceptance_criteria_changes:
