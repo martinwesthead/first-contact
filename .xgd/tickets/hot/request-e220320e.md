@@ -5,10 +5,10 @@ type: request
 title: Module:banner@v1
 created_by: xgd
 created_at: '2026-06-20T21:13:40.699509+00:00'
-updated_at: '2026-06-26T00:24:20.644217+00:00'
+updated_at: '2026-06-29T23:03:56.418882+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
@@ -17,6 +17,7 @@ fields:
   - c17574475fcf37288855a13b945afa886c1a7237
   - 2443b5239c2f33949d407132b7701ab671622d50
   version: 0.0.22
+  bundled_in: bundle-d3d73016
 ---
 
 A full-width strip with a bold statement and optional CTA. Used for announcements, section dividers, or calls to action between content sections.

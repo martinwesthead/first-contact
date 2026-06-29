@@ -5,10 +5,10 @@ type: request
 title: Image Sizing & Controls
 created_by: xgd
 created_at: '2026-06-20T22:50:00.074796+00:00'
-updated_at: '2026-06-20T23:45:07.098968+00:00'
+updated_at: '2026-06-29T23:03:56.612856+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
@@ -17,6 +17,7 @@ fields:
   - 394bbfbe86a48ea271b85a3ccb45af3bea1fa5ac
   - c91aabdab780c1a5645656313ce8a534e5bdfd50
   version: 0.0.24
+  bundled_in: bundle-d3d73016
 ---
 
 **Type:** Framework + Instructions
