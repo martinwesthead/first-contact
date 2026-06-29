@@ -1,0 +1,186 @@
+---
+uid: report-4e1e9b34
+id: REPORT-802
+type: report
+title: 'Regression quality: pass (0 tests, 0 failed)'
+created_by: xgd
+created_at: '2026-06-29T22:46:27.718899+00:00'
+updated_at: '2026-06-29T22:46:27.718899+00:00'
+completed_at: null
+last_field_updated: created_at
+result: pass
+fields:
+  report_kind: quality
+  subject_uid: report-31f7acfd
+  commit: 55b270cdeb38dee0fd8311a41b36ff51203541db
+---
+
+{
+  "timestamp": "2026-06-29T22:46:22.247483Z",
+  "lint": {
+    "status": "success",
+    "exit_code": 0,
+    "duration_seconds": 0.00010608416050672531,
+    "errors": 0,
+    "warnings": 0,
+    "error_list": [],
+    "warning_list": []
+  },
+  "build": {
+    "status": "success",
+    "exit_code": 0,
+    "duration_seconds": 0.0,
+    "errors": 0,
+    "error_list": []
+  },
+  "preflight": {
+    "status": "pass",
+    "violations": []
+  },
+  "suites": {
+    "javascript-vitest": {
+      "suite_name": "javascript-vitest",
+      "status": "success",
+      "exit_code": 1,
+      "duration_seconds": 0.8254511659033597,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "total": 0,
+      "deselected": 0,
+      "test_filter": [
+        "test_UAT_AC425",
+        "test_UAT_AC426",
+        "test_UAT_AC427",
+        "test_UAT_AC428",
+        "test_UAT_AC429",
+        "test_UAT_AC430",
+        "test_UAT_AC431",
+        "test_UAT_AC432",
+        "test_UAT_AC433",
+        "test_UAT_AC434",
+        "test_UAT_AC435",
+        "test_UAT_AC436",
+        "test_UAT_AC437",
+        "test_UAT_AC438",
+        "test_UAT_AC439",
+        "test_UAT_AC440",
+        "test_UAT_AC441",
+        "test_UAT_AC442",
+        "test_UAT_AC477",
+        "test_UAT_AC478",
+        "test_UAT_AC479",
+        "test_UAT_AC480",
+        "test_UAT_AC481",
+        "test_UAT_AC482",
+        "test_UAT_AC483",
+        "test_UAT_AC484",
+        "test_UAT_AC485",
+        "test_UAT_AC486",
+        "test_UAT_AC487",
+        "test_UAT_AC553",
+        "test_UAT_AC554",
+        "test_UAT_AC555",
+        "test_UAT_AC556",
+        "test_UAT_AC557",
+        "test_UAT_AC558",
+        "test_UAT_AC559",
+        "test_UAT_AC560",
+        "test_UAT_AC561",
+        "test_UAT_AC562",
+        "test_UAT_AC563",
+        "test_UAT_AC564",
+        "test_UAT_AC565",
+        "test_UAT_AC566",
+        "test_UAT_AC567",
+        "test_UAT_AC568",
+        "test_UAT_AC569",
+        "test_UAT_AC570",
+        "test_UAT_AC571",
+        "test_UAT_AC572",
+        "test_UAT_AC573",
+        "test_UAT_AC580",
+        "test_UAT_AC581",
+        "test_UAT_AC582",
+        "test_UAT_AC583",
+        "test_UAT_AC584",
+        "test_UAT_AC585",
+        "test_UAT_AC586",
+        "test_UAT_AC635",
+        "test_UAT_AC636",
+        "test_UAT_AC637",
+        "test_UAT_AC638",
+        "test_UAT_AC639",
+        "test_UAT_AC640",
+        "test_UAT_AC641",
+        "test_UAT_AC642",
+        "test_UAT_AC643",
+        "test_UAT_AC644",
+        "test_UAT_AC671",
+        "test_UAT_AC672",
+        "test_UAT_AC673",
+        "test_UAT_AC674",
+        "test_UAT_AC675",
+        "test_UAT_AC676",
+        "test_UAT_AC677",
+        "test_UAT_AC678",
+        "test_UAT_AC679",
+        "test_UAT_AC680",
+        "test_UAT_AC703",
+        "test_UAT_AC704",
+        "test_UAT_AC718",
+        "test_UAT_AC719",
+        "test_UAT_AC720",
+        "test_UAT_AC721",
+        "test_UAT_AC722",
+        "test_UAT_AC723",
+        "test_UAT_AC724",
+        "test_UAT_AC725",
+        "test_UAT_AC726",
+        "test_UAT_AC727",
+        "test_UAT_AC728",
+        "test_UAT_AC729",
+        "test_UAT_AC730",
+        "test_UAT_AC731",
+        "test_UAT_AC732",
+        "test_UAT_AC733",
+        "test_UAT_AC734",
+        "test_UAT_AC735",
+        "test_UAT_AC736",
+        "test_UAT_AC737",
+        "test_UAT_AC738",
+        "test_UAT_AC739",
+        "test_UAT_AC740",
+        "test_UAT_AC741",
+        "test_UAT_FC_BUG_11",
+        "test_UAT_FC_BUNDLE_6",
+        "test_UAT_FC_REQ_10",
+        "test_UAT_FC_REQ_36",
+        "test_UAT_FC_REQ_37",
+        "test_UAT_FC_REQ_38",
+        "test_UAT_FC_REQ_41"
+      ],
+      "coverage": null,
+      "lines_covered": 0,
+      "lines_total": 0,
+      "files_covered": [],
+      "junit_xml_path": null,
+      "stdout": "15:46:23 [WARN] Missing pages directory: src/pages\n\n RUN  v2.1.9 /Users/martin/.xgd/worktrees/https___github.com_gendevlabs_1stcontact.git/reconcile-BUNDLE-6\n\nfilter:  ai.gendevlabs.swift_xctest_open\ninclude: tests/**/*.test.ts\nexclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*\n\nNo test files found, exiting with code 1\n",
+      "stderr": "",
+      "tests": [],
+      "hung_test": null,
+      "timeout_reason": null,
+      "partial_results": false,
+      "no_test_files": true,
+      "failures": []
+    }
+  },
+  "overall": {
+    "status": "success",
+    "issues": []
+  },
+  "validation": {
+    "anomalies": []
+  }
+}
