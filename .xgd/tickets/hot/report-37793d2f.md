@@ -6,9 +6,9 @@ title: 'Reconciliation Plan: bundle-d3d73016 (split-section, testimonials, banne
   logo-strip, contrast, image-sizing)'
 created_by: xgd
 created_at: '2026-06-29T23:09:27.460545+00:00'
-updated_at: '2026-06-29T23:09:27.460545+00:00'
+updated_at: '2026-06-29T23:13:35.632919+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: items
 fields:
   report_kind: reconciliation_plan
   subject_uid: bundle-d3d73016
@@ -35,7 +35,7 @@ fields:
       within the catalog bucket — uncovered, so a new feature story documents it.
       Sizing: ~6 ACs ≈ 2 pts; combining all four new modules into one story would
       exceed 3 pts.'
-    story_uid: null
+    story_uid: story-c4943d39
   - index: 2
     component: Framework Module Catalog — testimonials@v1
     item_type: feature
