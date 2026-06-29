@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-19
 created_by: xgd
 created_at: '2026-06-29T20:58:47.694537+00:00'
-updated_at: '2026-06-29T21:16:47.383092+00:00'
+updated_at: '2026-06-29T21:19:32.170207+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -245,5 +245,34 @@ So there was no over-engineered config to wrestle — just a build that hadn't c
 <!-- xgd-chat role="user" ts="2026-06-29T21:16:26.648Z" -->
 #### You
 I have been running pnpm dev in apps/control-app it has not been rebuilding
+
+<!-- xgd-turn id="8f7c6c6c-c991-4c13-80e6-8dcd1c8b9df3-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-29T21:19:32.136Z" -->
+#### Claude
+Let me stop theorizing and look at exactly how `pnpm dev` builds and what the worker actually serves — there may be a cached artifact in the path that a restart doesn't regenerate.
+
+`wrangler dev` builds the **worker** from `main = "src/index.ts"` — and the budget code lives in the worker (via `web-fetch-safety`), *not* in the `build:bundle` step (that one only bundles the front-end chat UI). So the budget value comes from whatever wrangler bundles. Let me get ground truth: build the actual worker bundle wrangler would serve and grep it for the budget value.
+
+**Ground truth: a freshly-built worker bundle contains `sessionMaxSeconds: 1e9`.** So the build is correct — the problem is your *running* `wrangler dev` is serving a **stale bundle** and not picking up the rebuild. The usual culprits: an orphaned `wrangler`/`workerd` process still holding the port (so a "restart" never actually replaces it), and/or a stale `.wrangler` build cache. Let me check.
+
+This is the answer. There's a long-running dev server (`concurrency` 16810 → `wrangler dev` 16817 → `workerd` 16857 holding port 8788). Let me prove the *running* bundle is stale by checking what wrangler actually wrote to its live tmp dir:
+
+Found it — and the good news is **your running server is already fixed**. Here's the hard evidence:
+
+**The live `wrangler dev` bundle now contains `sessionMaxSeconds: 1e9`** — I grepped what wrangler actually wrote to `.wrangler/tmp/` (the bundle workerd is serving on :8788). There is **no `50` anywhere** in the live bundle. The `workerd` process holding port 8788 **started today at 14:03:56**, and that restart re-bundled from current source (the `1e9` fix has been in source since Jun 25).
+
+So why did it feel like "it never rebuilds"? You diagnosed it correctly — **`wrangler dev` does not reliably re-bundle changes inside a workspace dependency** (`../../packages/web-fetch-safety`). It watches your app's own `src`, but a source change in a *linked package* doesn't trigger a re-bundle. So even though the fix landed Jun 25, your long-lived dev server kept serving the old `50s` bundle for days. It only picked up `1e9` when the process fully restarted at 14:03 (my `pnpm install` reinstall at ~14:12 and the restart around then forced a clean bundle).
+
+**So: just re-test at `localhost:8788` right now.** The cap is `1e9` — you won't hit it. If you *still* see "budget exhausted":
+1. You're testing the **deployed** Cloudflare worker, not localhost — that still runs the old `50s` because the fix (`ed5168a3`) is on `xgd-working` but **not on `main`**, so it was never deployed. Fix = land it on main + `pnpm deploy`.
+2. Or a stale per-session KV counter — but with cap `1e9` that's mathematically harmless (a few hundred charged seconds vs a billion), so it can't trip.
+
+Two things worth deciding:
+
+- **The real recurring annoyance** is that `wrangler dev` silently serves stale workspace-dep bundles. I can make `pnpm dev` reliably rebuild on `packages/*` changes (e.g. add the workspace srcs to the watch / a nodemon-style restart-on-dep-change). Want me to? It'd save you this exact "is it rebuilding?" confusion every time you touch a shared package. That'd be its own ticket.
+- **Your new "New session" button** ships in the *front-end* bundle (`build-builder-bundle.mjs --watch`), which is running — but if it doesn't appear after a hard refresh, same class of issue; tell me and I'll check that bundle too.
+
+Want me to file the `pnpm dev` workspace-rebuild fix as a separate ticket and take it on?
 
 <!-- xgd-chat-end -->
