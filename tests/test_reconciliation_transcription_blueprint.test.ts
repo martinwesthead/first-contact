@@ -684,4 +684,37 @@ describe("Story story-f45a5e61: transcription blueprint derivation + read-back",
       expect(src, name).not.toMatch(/value:\s*["'`]?\/assets\//);
     }
   });
+
+  it("test_UAT_AC741_reproduction_howto_names_image_gallery_for_sequential_images", () => {
+    const fromDisk = readFileSync(HOWTO_PATH, "utf-8");
+    // Both guidance artifacts: the on-disk how-to and its byte-for-byte inlined
+    // mirror. The hint must live in both so it cannot drift out of either.
+    const artifacts: ReadonlyArray<readonly [string, string]> = [
+      ["docs/llm-context/reproducing-a-website.md", fromDisk],
+      [
+        "apps/control-app/src/llm-context.ts (REPRODUCING_A_WEBSITE_DOC)",
+        REPRODUCING_A_WEBSITE_DOC,
+      ],
+    ];
+
+    for (const [name, src] of artifacts) {
+      // Names image-gallery as the catalog target for sequential image content
+      // during visual-proximity matching.
+      expect(src, name).toMatch(/image-gallery/);
+      expect(src, name).toMatch(/sequential images[\s\S]{0,40}image-gallery/i);
+      // Documents the visual-proximity mapping it sits within (largest → hero;
+      // sequential → image-gallery; small square → service icons).
+      expect(src, name).toMatch(/largest image[\s\S]{0,40}hero/i);
+      expect(src, name).toMatch(/service icons/i);
+      // Documents the per-asset items[] entry shape: an `image` AssetRef plus an
+      // optional `caption`.
+      expect(src, name).toMatch(/items\[\]/);
+      expect(src, name).toContain("{ image: <assetRef>, caption?: <string> }");
+      // Captions are pulled from extractedContent when present, otherwise left
+      // unset rather than fabricated.
+      expect(src, name).toMatch(/extractedContent/);
+      expect(src, name).toMatch(/leave\s+`?caption`?\s+unset/i);
+      expect(src, name).toMatch(/fabricat/i);
+    }
+  });
 });
