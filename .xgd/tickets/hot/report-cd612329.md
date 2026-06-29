@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: BUNDLE-6 (BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-3
   + REQ-41)'
 created_by: xgd
 created_at: '2026-06-29T21:26:07.128346+00:00'
-updated_at: '2026-06-29T21:46:29.924579+00:00'
+updated_at: '2026-06-29T22:02:39.575325+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -140,7 +140,7 @@ fields:
       Send/Stop replaces the spinner; user markdown; Enter-to-send) and adds the tool-use
       pane. This is an in-place evolution of the same capability bucket with no parallel
       chat surface, so upgrade.
-    story_uid: null
+    story_uid: story-ba9f2715
     target_story_ids:
     - story-ba9f2715
     acceptance_criteria_changes:
