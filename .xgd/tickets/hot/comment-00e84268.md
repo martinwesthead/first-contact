@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-21
 created_by: xgd
 created_at: '2026-06-29T23:08:30.434852+00:00'
-updated_at: '2026-06-29T23:13:38.294568+00:00'
+updated_at: '2026-06-29T23:18:31.276251+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -123,5 +123,84 @@ Want me to proceed with the implementation?
 <!-- xgd-chat role="user" ts="2026-06-29T23:13:32.130Z" -->
 #### You
 yes
+
+<!-- xgd-turn id="af38aaf6-8810-417a-9a0d-6498f4182d6d-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-29T23:18:30.909Z" -->
+#### Claude
+Let me implement. First the runtime state-edit tool set in `tools.ts`:
+
+Now gate the driver. Let me look at the `ChatToolResultRecord` type to record server results correctly for `system_action`:
+
+Now update the driver. First the import:
+
+Now the `tool_result` handler. I'll add a `system_action` branch that records from the server result instead of re-dispatching locally:
+
+Now add the `serverResultError` helper near `formatError`:
+
+Now let me look at an existing chat-driver test to match the mocked-SSE style for my UATs:
+
+The pattern is clear. Let me verify the theme-token branch in my fix works with the test catalog, then write the UAT. Writing the test:
+
+Now run the new test:
+
+The whole package import fails — let me check whether this is pre-existing (build needed) by running an existing driver test, and confirm the package's export surface:
+
+Both fail identically — this is a pre-existing resolution issue, not my change. The package likely needs building. Let me check the export wiring and build setup:
+
+The package maps directly to `src` (no build). The resolution failure points to a missing workspace symlink — exactly the relink issue from memory. Let me check and relink:
+
+It wants to purge and reinstall. Let me confirm non-interactively:
+
+Workspace relinked. Now run the BUG-21 test:
+
+All 3 pass. Now run the related regression suites (chat-driver, tools, transcribe/digest flows):
+
+All green. Now typecheck/lint the changed package to make sure the TS is clean:
+
+Typecheck clean. Let me run the full test suite to be sure nothing else regressed:
+
+The earlier `cd` changed the working dir. Running from repo root:
+
+All 718 tests pass. Now the free-coding commit flow. Let me check the version-bump requirement and quality gate:
+
+Version bump isn't enforced in this repo (stub exits 0). I'm on `xgd-working` (the correct operator branch for free-coded changes). Committing:
+
+Now set the ticket to `free_coded` with the commit sha:
+
+There's a dedicated gate command. Let me use it:
+
+`--version` is required. Let me see what prior free-coded tickets used and whether the gate's version-bump check is satisfiable with this no-op stub:
+
+There's a project version sequence (BUG-20 = 0.0.41). The next is 0.0.42. Let me find where that version lives and bump it:
+
+No version file — the version is an operator-supplied monotonic counter recorded on the ticket (BUG-20 = 0.0.41, so mine is 0.0.42). Running the gate:
+
+BUG-21 moved to `free_coded`. Let me verify the final ticket state:
+
+Done. BUG-21 is fixed, tested, committed, and recorded.
+
+## What was wrong
+
+The builder chat driver (`runChatTurn`) re-ran **every** server tool result through `applyToolCall` — the browser-side dispatcher that only knows `state_edit` preview-mutation tools. Server-only `system_action` tools (`analyze_page`, `transcribe_site`, `read_transcription_digest`, …) hit its default branch → `unknown tool: <name>`, got marked **rejected** despite server success, and were reinjected into the next turn as the `[system] … → unknown tool` note — gaslighting the model into thinking its real tools didn't exist and derailing the convert/analyze flow. The only reason `transcribe_site` *sometimes* worked was the special `transcribe_site_done` cleared-site bypass.
+
+## The fix
+
+Mirror the server's category split on the client:
+- `packages/builder-ui/src/tools.ts` — added a runtime `STATE_EDIT_TOOL_NAMES` set and `isStateEditTool()` (matching the `ToolName` union / server `state_edit` category).
+- `packages/builder-ui/src/chat-driver.ts` — the `tool_result` handler now only runs `state_edit` tools through `applyToolCall`. `system_action` results are recorded accepted/rejected straight from the server result (with the real server error message on rejection), never touching the browser dispatcher.
+
+## Verification
+
+- 3 new UATs in `test_UAT_FC_BUG-21_system_action_results_not_misrouted.test.ts` cover: accepted system_action (no `unknown tool`, no pending failure), rejected system_action surfacing the real server message, and state_edit still mirroring to the preview.
+- Full suite: **718 tests / 273 files pass**; `tsc --noEmit` clean.
+
+## Free-coding flow
+
+- Ticket scoped first (symptom / root cause / fix / test plan), `severity: high`.
+- Commit `f8800207` with `[FREE-CODED]`.
+- Ticket → `free_coded`, `commits=[f8800207…]`, `version=0.0.42`.
+
+One housekeeping note: the workspace `@gendev/*` symlinks were missing, so I ran `pnpm install --offline` to relink before tests could resolve the package — the [[reconcile-worktree-node-modules-relink]] symptom, but it surfaced in the main working tree this time rather than a worktree.
 
 <!-- xgd-chat-end -->
