@@ -13,8 +13,9 @@ import * as esbuild from "esbuild";
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
 const builderUiEntry = resolve(repoRoot, "packages/builder-ui/src/spa.ts");
+// REQ-17: the app shell (app.html) boots its own SPA entry.
+const appShellEntry = resolve(repoRoot, "packages/builder-ui/src/app-entry.ts");
 const outDir = resolve(here, "..", "public", "_assets");
-const outFile = resolve(outDir, "builder.js");
 const siteSource = resolve(repoRoot, "sites/1stcontact/site.json");
 const starterSitesDir = resolve(here, "..", "public", "starter-sites");
 const starterSiteTarget = resolve(starterSitesDir, "1stcontact.json");
@@ -27,9 +28,13 @@ mkdirSync(starterSitesDir, { recursive: true });
 // Keep the bundled starter site in lockstep with the source of truth.
 copyFileSync(siteSource, starterSiteTarget);
 
+// Two browser bundles: builder.js (/builder standalone) and app.js (/app shell).
 const buildOptions = {
-  entryPoints: [builderUiEntry],
-  outfile: outFile,
+  entryPoints: [
+    { in: builderUiEntry, out: "builder" },
+    { in: appShellEntry, out: "app" },
+  ],
+  outdir: outDir,
   bundle: true,
   format: "esm",
   platform: "browser",
@@ -42,8 +47,8 @@ const buildOptions = {
 if (watch) {
   const ctx = await esbuild.context(buildOptions);
   await ctx.watch();
-  console.log(`Watching ${builderUiEntry} → ${outFile}`);
+  console.log(`Watching builder-ui entries → ${outDir}/{builder,app}.js`);
 } else {
   await esbuild.build(buildOptions);
-  console.log(`Built ${outFile}`);
+  console.log(`Built ${outDir}/{builder,app}.js`);
 }

@@ -55,6 +55,15 @@ export interface BootBuilderOptions {
    * underlying chat-driver). Defaults to globalThis.fetch.
    */
   fetch?: typeof fetch;
+  /**
+   * REQ-17: when both are provided, the builder mounts its preview into
+   * `previewHost` and its chat into `chatHost` instead of creating its own
+   * standalone two-panel layout. The app shell uses this to dock the builder
+   * into a tab (content area) and the shell's chat panel. When omitted (the
+   * standalone `/builder` route), the builder creates its own layout.
+   */
+  previewHost?: HTMLElement;
+  chatHost?: HTMLElement;
 }
 
 export const SESSION_ID_STORAGE_KEY = "fc.builder.sessionId";
@@ -179,8 +188,22 @@ export function bootBuilder(options: BootBuilderOptions): {
 
   const chatsApi = new ChatsApi({ fetch: fetchImpl });
 
-  const layout = createBuilderLayout(options.root, { storage });
-  const preview = createPreviewPanel(layout.previewPanel, {
+  // REQ-17: dock into shell-provided hosts when given, else create the
+  // standalone two-panel layout used by the /builder route.
+  let previewHost: HTMLElement;
+  let chatHost: HTMLElement;
+  let layoutDestroy: () => void;
+  if (options.previewHost && options.chatHost) {
+    previewHost = options.previewHost;
+    chatHost = options.chatHost;
+    layoutDestroy = () => {};
+  } else {
+    const layout = createBuilderLayout(options.root, { storage });
+    previewHost = layout.previewPanel;
+    chatHost = layout.chatPanel;
+    layoutDestroy = layout.destroy;
+  }
+  const preview = createPreviewPanel(previewHost, {
     onReset: () => {
       if (
         !resetPrompt(
@@ -249,7 +272,7 @@ export function bootBuilder(options: BootBuilderOptions): {
     }
   };
 
-  const chat_ = createChatPanel(layout.chatPanel, {
+  const chat_ = createChatPanel(chatHost, {
     store,
     onNewSession: startNewSession,
     onSend: async (text: string) => {
@@ -337,7 +360,7 @@ export function bootBuilder(options: BootBuilderOptions): {
     destroy: () => {
       unsubscribe();
       chat?.destroy();
-      layout.destroy();
+      layoutDestroy();
     },
   };
 }

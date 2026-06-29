@@ -8,6 +8,13 @@ workers_dev = true
 [assets]
 directory = "public"
 binding = "ASSETS"
+# REQ-17: disable Static Assets clean-URL handling. With the default
+# (auto-trailing-slash), `/app` is served directly from app.html and
+# `/app.html` 307-redirects to `/app` — both bypass the worker's /app shell
+# routing (redirect to default tab + data-attr injection). "none" makes the
+# worker authoritative: it fetches the literal `/app.html` (and `/builder.html`)
+# and serves the result.
+html_handling = "none"
 
 # Web-fetch safety layer: rate-limit, response, robots, and browser-rendering
 # budget counters (REQ-20). Real namespace IDs filled in at deploy time; in
@@ -67,6 +74,7 @@ routes = [
 [env.production.assets]
 directory = "public"
 binding = "ASSETS"
+html_handling = "none"
 
 [[env.production.kv_namespaces]]
 binding = "FETCH_RATE_KV"

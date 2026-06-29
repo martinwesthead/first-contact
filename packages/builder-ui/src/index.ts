@@ -42,6 +42,17 @@ export {
   type PanelState,
 } from "./components/builder-layout.js";
 export {
+  createAppShell,
+  CHAT_STATE_STORAGE_KEY,
+  DEFAULT_TAB_SLOTS,
+  type AppShellHandle,
+  type AppShellOptions,
+  type AvatarMenuItem,
+  type TabInstance,
+  type TabRegistration,
+  type TabSlot,
+} from "./components/app-shell.js";
+export {
   createPreviewPanel,
   VIEWPORT_PRESETS,
   type PreviewPanelHandle,
