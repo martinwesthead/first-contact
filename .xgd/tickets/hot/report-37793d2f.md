@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: bundle-d3d73016 (split-section, testimonials, banne
   logo-strip, contrast, image-sizing)'
 created_by: xgd
 created_at: '2026-06-29T23:09:27.460545+00:00'
-updated_at: '2026-06-29T23:45:28.283224+00:00'
+updated_at: '2026-06-29T23:54:12.905974+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -121,7 +121,7 @@ fields:
       contrast and emits warnings. No new capability bucket or parallel implementation
       is introduced (the contrast utility is wired into the existing CSS-emit path,
       not a separate generator). Therefore upgrade, not feature.
-    story_uid: null
+    story_uid: story-e53ba4cf
     target_story_ids:
     - story-e53ba4cf
     intent_delta_summary: STORY-40 currently documents token→CSS translation (defaults,
