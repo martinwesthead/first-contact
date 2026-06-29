@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: BUNDLE-6 (BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-3
   + REQ-41)'
 created_by: xgd
 created_at: '2026-06-29T21:26:07.128346+00:00'
-updated_at: '2026-06-29T22:35:03.672619+00:00'
+updated_at: '2026-06-29T22:42:33.931631+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -264,7 +264,7 @@ fields:
       guidance — not a new capability — so it is an upgrade adding one how-to AC,
       not a feature. The FC test test_UAT_FC_REQ-41_llm_context_doc_mentions_image_gallery
       guards the mention against silent drift, so it must be covered by a plan item.
-    story_uid: null
+    story_uid: story-f45a5e61
     target_story_ids:
     - story-f45a5e61
     acceptance_criteria_changes:
