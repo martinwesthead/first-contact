@@ -5,14 +5,14 @@ type: story
 title: External fetch safety contract
 created_by: xgd
 created_at: '2026-06-27T00:33:03.009061+00:00'
-updated_at: '2026-06-27T00:43:27.536784+00:00'
+updated_at: '2026-06-29T21:36:12.515707+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-bbb1bd9c
   capability_uid: capability-f446e94d
-  story_kind: feature
+  story_kind: upgrade
   story_points: 3
 ---
 
@@ -35,6 +35,7 @@ In scope:
 - Browser-rendering compute budget: 50 seconds per chat session, 200 seconds per account-day — exhaustion returns typed `budget_exhausted`
 - 60-second one-shot operator-intent tokens; chat dispatcher infers intent from operator messages containing a URL or a fetch-related keyword
 - Diagnostic `GET /api/_safety/health` endpoint reporting the calling account's rate-limit window state
+- Package consumption hygiene: the `@1stcontact/web-fetch-safety` library is self-contained at the type level — a downstream package that imports it compiles under `pnpm build` without having to declare `@cloudflare/workers-types` in its own tsconfig
 
 Out of scope:
 - The consuming operator actions themselves (each action REQ owns its own user-facing behavior)
@@ -50,6 +51,8 @@ Implemented as `packages/web-fetch-safety` (a pure library exporting `validateTa
 Per CHAT-13 turn 1 and DOC-9 §11 the safety contract is a non-negotiable architectural commitment. The "no AI fetch on its own initiative" decision is enforced by the operator-intent token requirement.
 
 The `account_id` used as the rate-limit and budget key is currently sourced from a stub `x-account-id` request header (defaulting to `"anonymous"`). REQ-10 (accounts + auth) will replace the resolver without changing the safety contract or KV key shape — existing default-keyed counters age out via TTL.
+
+The four library sources that touch KV (`browser-budget.ts`, `intent-token.ts`, `rate-limit.ts`, `types.ts`) reference `KVNamespace` via an `import type { KVNamespace } from "@cloudflare/workers-types"` rather than relying on it as a bare ambient global. This is a type-only import with zero runtime impact; it stops the package from leaking a `@cloudflare/workers-types` requirement onto consumers. Without it, any consumer whose tsconfig omits `@cloudflare/workers-types` from its `types[]` array (e.g. `packages/extractor`) failed `pnpm build` with nine `TS2304: Cannot find name 'KVNamespace'` errors. This was a pre-existing leak (reproduces under both old and new workers-types versions), not a consequence of the wrangler 4 bump.
 
 The first consumer is the `analyze_page` operator action (plan item 7 of this bundle). Future consumers include Browser Rendering (REQ-22), transcription (REQ-28), and search-references (REQ-29).
 
