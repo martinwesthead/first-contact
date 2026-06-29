@@ -5,10 +5,10 @@ type: request
 title: 'Module: testimonials@v1'
 created_by: xgd
 created_at: '2026-06-20T21:12:02.247298+00:00'
-updated_at: '2026-06-20T23:14:33.410108+00:00'
+updated_at: '2026-06-29T23:03:56.354318+00:00'
 completed_at: null
-last_field_updated: body
-status: ready_to_reconcile
+last_field_updated: status
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
@@ -17,6 +17,7 @@ fields:
   - 36d7728eaf1deb2c66ac8fc568dede51f4d7c5ea
   - 41bb985fc5a98996c891b29a59689c5b22b18934
   version: 0.0.21
+  bundled_in: bundle-d3d73016
 ---
 
 Single quotes or a carousel of client quotes. Very common on service businesses.
