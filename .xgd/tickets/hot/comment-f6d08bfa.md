@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-19
 created_by: xgd
 created_at: '2026-06-29T20:58:47.694537+00:00'
-updated_at: '2026-06-29T21:19:32.170207+00:00'
+updated_at: '2026-06-29T22:37:41.656365+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -274,5 +274,11 @@ Two things worth deciding:
 - **Your new "New session" button** ships in the *front-end* bundle (`build-builder-bundle.mjs --watch`), which is running — but if it doesn't appear after a hard refresh, same class of issue; tell me and I'll check that bundle too.
 
 Want me to file the `pnpm dev` workspace-rebuild fix as a separate ticket and take it on?
+
+<!-- xgd-turn id="828a8720-8109-4b5b-9c7e-66bc46af053e-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-29T22:35:16.527Z" -->
+#### You
+yes fix it so it always rebuilds
 
 <!-- xgd-chat-end -->
