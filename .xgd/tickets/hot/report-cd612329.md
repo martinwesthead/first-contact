@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: BUNDLE-6 (BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-3
   + REQ-41)'
 created_by: xgd
 created_at: '2026-06-29T21:26:07.128346+00:00'
-updated_at: '2026-06-29T22:02:39.575325+00:00'
+updated_at: '2026-06-29T22:27:34.218174+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -190,7 +190,7 @@ fields:
       path. REQ-38 explicitly attaches to the REQ-36 SSE structure, hence the dependency
       on item 4. Captured as upgrade with added ACs covering per-call survival and
       the failure panel/re-injection.
-    story_uid: null
+    story_uid: story-ba9f2715
     target_story_ids:
     - story-ba9f2715
     acceptance_criteria_changes:
