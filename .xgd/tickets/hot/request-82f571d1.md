@@ -5,9 +5,9 @@ type: request
 title: 'Assets tab: TipTap WYSIWYG markdown editor and image preview'
 created_by: xgd
 created_at: '2026-06-16T23:14:45.765175+00:00'
-updated_at: '2026-06-29T23:48:02.421799+00:00'
+updated_at: '2026-06-29T23:48:02.538645+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: in_progress
 fields:
   story_points: 3
@@ -157,3 +157,23 @@ Settled out of this REQ — see [[REQ-18]]. The cross-reference matters for the 
 ### Image manipulation — follow-up REQ
 
 Image crop / rotate / format-convert is out of scope here. See [[REQ-19]].
+
+
+---
+
+## Scoping decision — parallel execution alongside REQ-17 (2026-06-29)
+
+REQ-17 (the app shell, = "REQ-UI-APP-SHELL") is underway with **uncommitted** changes in the shared working tree, specifically in `apps/control-app/src/index.ts`, `packages/builder-ui/src/index.ts`, `packages/builder-ui/src/main.ts`, and `packages/builder-ui/package.json`. REQ-20 (the R2 storage contract this REQ consumes) is already `free_and_reconciled`.
+
+To free-code REQ-16 **independently** without entangling REQ-17's uncommitted work, this REQ's commit touches **only files REQ-17 has not modified**:
+
+- **NEW** `packages/builder-ui/src/components/split-layout.ts` — generic `createSplitLayout` (leftPanel/rightPanel splitter, persisted width, collapse/restore). The generalization called for in scope.
+- **MODIFIED (clean)** `packages/builder-ui/src/components/builder-layout.ts` — refactored to consume `createSplitLayout` as a thin adapter, preserving its existing public API (`chatPanel`/`previewPanel`/`getPanelState`/collapse) so existing REQ-8 layout tests keep passing.
+- **NEW** `packages/builder-ui/src/components/assets-tab.ts` — `createAssetsTab(parent, options)`: file list (GET /api/assets/list), upload (PUT /api/assets/put/<key>), per-row delete (DELETE /api/assets/delete/<key>), right-panel dispatch by content-type (TipTap markdown editor / image preview+metadata / no-preview download), dirty tracking, save-disabled-when-clean, and `getVisibleContext()`. TipTap loader and `confirm`/`fetch` are injectable for deterministic tests; `htmlToMarkdown` serializer and `pickPreviewKind` dispatch are pure exports.
+- **NEW** `tests/test_UAT_FC_REQ-16_*` — UATs mount `createAssetsTab` directly into a jsdom body with mocked fetch (same proof model as the REQ-8 splitter test), so REQ-16 is validated with no dependency on REQ-17's shell or any server route.
+
+**Deferred to avoid REQ-17 collision (not dropped):**
+- The **stub host route `/assets`** in `apps/control-app/src/index.ts` — that file currently holds REQ-17's uncommitted `/app/<site>/<tab>` routing. Rather than contaminate REQ-16's commit with REQ-17's hunks, the browser host is deferred: the tab is exercised via UATs now and will register into REQ-17's shell (`appShell.registerTab("assets", …)`) once the shell lands. No stub is needed because REQ-17 delivers the real host imminently in the same tree.
+- Public re-exports from `packages/builder-ui/src/index.ts` / `package.json` (also REQ-17-owned) are likewise deferred; UATs import the new components by relative source path, the established convention in this test suite.
+
+Net: REQ-16 lands as a self-contained, independently-tested bundle. The only integration step remaining at reconcile time is wiring `createAssetsTab` into the shell's tab registry — a one-line addition owned by whichever of REQ-16/REQ-17 reconciles second.
