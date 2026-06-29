@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: BUNDLE-6 (BUG-11 + REQ-10 + REQ-37 + REQ-36 + REQ-3
   + REQ-41)'
 created_by: xgd
 created_at: '2026-06-29T21:26:07.128346+00:00'
-updated_at: '2026-06-29T22:27:34.218174+00:00'
+updated_at: '2026-06-29T22:35:03.672619+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -226,7 +226,7 @@ fields:
       contract (variants/dials/content + validation bounds), not a new capability
       surface — so upgrade, extending the catalog membership/registry-resolution ACs
       rather than introducing a parallel module system.
-    story_uid: null
+    story_uid: story-f1e061ba
     target_story_ids:
     - story-f1e061ba
     acceptance_criteria_changes:
