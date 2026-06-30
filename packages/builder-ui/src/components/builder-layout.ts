@@ -1,3 +1,8 @@
+import {
+  createSplitLayout,
+  type SplitLayoutState,
+} from "./split-layout.js";
+
 export interface PanelState {
   chatWidthPx: number;
   collapsed: boolean;
@@ -32,11 +37,12 @@ const DEFAULT_MAX = 800;
 const DEFAULT_COLLAPSED_BAR = 32;
 
 /**
- * Vanilla DOM builder layout — mirrors the XGD #chat-list-panel pattern:
- * draggable splitter, chevron-collapse to a thin restore bar, persisted state.
- *
- * Returns an `HTMLElement` root containing the chat panel, splitter, and
- * preview panel, plus methods for programmatic collapse / restore.
+ * Chat-left / preview-right builder layout (REQ-8). A thin adapter over the
+ * generic {@link createSplitLayout}: it maps `leftPanel`/`rightPanel` to the
+ * builder's `chatPanel`/`previewPanel`, owns the legacy
+ * `1stcontact_builder_panels_v1` persistence shape (`{chatWidthPx, collapsed}`),
+ * and overlays the builder's CSS class names + data attributes so existing
+ * styles and selectors keep working.
  */
 export function createBuilderLayout(
   parent: HTMLElement,
@@ -44,154 +50,50 @@ export function createBuilderLayout(
 ): BuilderLayoutHandle {
   const storage = options.storage ?? null;
   const key = options.storageKey ?? DEFAULT_KEY;
-  const minWidth = options.minChatWidthPx ?? DEFAULT_MIN;
-  const maxWidth = options.maxChatWidthPx ?? DEFAULT_MAX;
-  const collapsedBar = options.collapsedBarWidthPx ?? DEFAULT_COLLAPSED_BAR;
-  const initial = loadPanelState(storage, key) ?? {
-    chatWidthPx: options.initialChatWidthPx ?? DEFAULT_WIDTH,
-    collapsed: false,
-  };
+  const initial = loadPanelState(storage, key);
 
-  let state: PanelState = clamp(initial, minWidth, maxWidth);
+  const split = createSplitLayout(parent, {
+    initialLeftWidthPx:
+      initial?.chatWidthPx ?? options.initialChatWidthPx ?? DEFAULT_WIDTH,
+    initialCollapsed: initial?.collapsed ?? false,
+    minLeftWidthPx: options.minChatWidthPx ?? DEFAULT_MIN,
+    maxLeftWidthPx: options.maxChatWidthPx ?? DEFAULT_MAX,
+    collapsedBarWidthPx: options.collapsedBarWidthPx ?? DEFAULT_COLLAPSED_BAR,
+    collapseLabel: "Collapse chat",
+    restoreLabel: "Restore chat",
+    onStateChange: (s) => persistPanelState(storage, key, toPanelState(s)),
+  });
 
-  const root = parent.ownerDocument.createElement("div");
-  root.className = "fc-builder";
-  root.setAttribute("data-fc-builder", "");
-
-  const chatPanel = parent.ownerDocument.createElement("div");
-  chatPanel.className = "fc-builder__chat";
-  chatPanel.setAttribute("data-fc-chat-panel", "");
-
-  const collapseButton = parent.ownerDocument.createElement("button");
-  collapseButton.type = "button";
-  collapseButton.className = "fc-builder__collapse";
-  collapseButton.setAttribute("data-fc-collapse", "");
-  collapseButton.setAttribute("aria-label", "Collapse chat");
-  collapseButton.textContent = "‹";
-  chatPanel.appendChild(collapseButton);
-
-  const splitter = parent.ownerDocument.createElement("div");
-  splitter.className = "fc-builder__splitter";
-  splitter.setAttribute("data-fc-splitter", "");
-  splitter.setAttribute("role", "separator");
-  splitter.setAttribute("aria-orientation", "vertical");
-
-  const previewPanel = parent.ownerDocument.createElement("div");
-  previewPanel.className = "fc-builder__preview";
-  previewPanel.setAttribute("data-fc-preview-panel", "");
-
-  const restoreBar = parent.ownerDocument.createElement("button");
-  restoreBar.type = "button";
-  restoreBar.className = "fc-builder__restore";
-  restoreBar.setAttribute("data-fc-restore", "");
-  restoreBar.setAttribute("aria-label", "Restore chat");
-  restoreBar.textContent = "›";
-  restoreBar.style.alignItems = "center";
-  restoreBar.style.justifyContent = "center";
-  restoreBar.style.height = "100%";
-  restoreBar.style.flexShrink = "0";
-
-  // Order matters: restoreBar must sit BEFORE previewPanel so the collapsed
-  // rail appears on the left edge (where the chat panel was), not the right.
-  root.appendChild(chatPanel);
-  root.appendChild(splitter);
-  root.appendChild(restoreBar);
-  root.appendChild(previewPanel);
-  parent.appendChild(root);
-
-  applyLayout();
-
-  // Drag-to-resize.
-  let dragOriginX = 0;
-  let dragOriginWidth = 0;
-
-  const onPointerMove = (event: PointerEvent): void => {
-    const delta = event.clientX - dragOriginX;
-    const next = clampWidth(dragOriginWidth + delta);
-    state = { ...state, chatWidthPx: next };
-    applyLayout();
-  };
-  const onPointerUp = (event: PointerEvent): void => {
-    splitter.releasePointerCapture(event.pointerId);
-    splitter.removeEventListener("pointermove", onPointerMove);
-    splitter.removeEventListener("pointerup", onPointerUp);
-    persist();
-  };
-  const onPointerDown = (event: PointerEvent): void => {
-    dragOriginX = event.clientX;
-    dragOriginWidth = state.chatWidthPx;
-    splitter.setPointerCapture(event.pointerId);
-    splitter.addEventListener("pointermove", onPointerMove);
-    splitter.addEventListener("pointerup", onPointerUp);
-  };
-  splitter.addEventListener("pointerdown", onPointerDown);
-
-  const onCollapse = (): void => collapseChat();
-  const onRestore = (): void => restoreChat();
-  collapseButton.addEventListener("click", onCollapse);
-  restoreBar.addEventListener("click", onRestore);
-
-  function clampWidth(n: number): number {
-    return Math.max(minWidth, Math.min(maxWidth, Math.round(n)));
-  }
-
-  function applyLayout(): void {
-    if (state.collapsed) {
-      chatPanel.style.display = "none";
-      splitter.style.display = "none";
-      restoreBar.style.display = "";
-      restoreBar.style.width = `${collapsedBar}px`;
-      previewPanel.style.flex = "1 1 auto";
-    } else {
-      chatPanel.style.display = "";
-      splitter.style.display = "";
-      restoreBar.style.display = "none";
-      chatPanel.style.width = `${state.chatWidthPx}px`;
-      chatPanel.style.flex = `0 0 ${state.chatWidthPx}px`;
-      previewPanel.style.flex = "1 1 auto";
-    }
-  }
-
-  function persist(): void {
-    if (!storage) return;
-    try {
-      storage.setItem(key, JSON.stringify(state));
-    } catch {
-      // ignore
-    }
-  }
-
-  function collapseChat(): void {
-    state = { ...state, collapsed: true };
-    applyLayout();
-    persist();
-  }
-
-  function restoreChat(): void {
-    state = { ...state, collapsed: false };
-    applyLayout();
-    persist();
-  }
-
-  function destroy(): void {
-    splitter.removeEventListener("pointerdown", onPointerDown);
-    collapseButton.removeEventListener("click", onCollapse);
-    restoreBar.removeEventListener("click", onRestore);
-    parent.removeChild(root);
-  }
+  // Overlay the builder's legacy class names + data attributes so existing CSS
+  // (`.fc-builder__*`) and any `[data-fc-*]` selectors continue to resolve.
+  decorate(split.root, "fc-builder", "data-fc-builder");
+  decorate(split.leftPanel, "fc-builder__chat", "data-fc-chat-panel");
+  decorate(split.splitter, "fc-builder__splitter", "data-fc-splitter");
+  decorate(split.restoreBar, "fc-builder__restore", "data-fc-restore");
+  decorate(split.rightPanel, "fc-builder__preview", "data-fc-preview-panel");
+  decorate(split.collapseButton, "fc-builder__collapse", "data-fc-collapse");
 
   return {
-    root,
-    chatPanel,
-    previewPanel,
-    splitter,
-    collapseButton,
-    restoreBar,
-    getPanelState: () => state,
-    collapseChat,
-    restoreChat,
-    destroy,
+    root: split.root,
+    chatPanel: split.leftPanel,
+    previewPanel: split.rightPanel,
+    splitter: split.splitter,
+    collapseButton: split.collapseButton,
+    restoreBar: split.restoreBar,
+    getPanelState: () => toPanelState(split.getState()),
+    collapseChat: split.collapse,
+    restoreChat: split.restore,
+    destroy: split.destroy,
   };
+}
+
+function decorate(el: HTMLElement, className: string, dataAttr: string): void {
+  el.className = className;
+  el.setAttribute(dataAttr, "");
+}
+
+function toPanelState(s: SplitLayoutState): PanelState {
+  return { chatWidthPx: s.leftWidthPx, collapsed: s.collapsed };
 }
 
 function loadPanelState(storage: Storage | null, key: string): PanelState | null {
@@ -212,9 +114,15 @@ function loadPanelState(storage: Storage | null, key: string): PanelState | null
   }
 }
 
-function clamp(state: PanelState, min: number, max: number): PanelState {
-  return {
-    ...state,
-    chatWidthPx: Math.max(min, Math.min(max, state.chatWidthPx)),
-  };
+function persistPanelState(
+  storage: Storage | null,
+  key: string,
+  state: PanelState,
+): void {
+  if (!storage) return;
+  try {
+    storage.setItem(key, JSON.stringify(state));
+  } catch {
+    // ignore quota / serialization failures
+  }
 }
