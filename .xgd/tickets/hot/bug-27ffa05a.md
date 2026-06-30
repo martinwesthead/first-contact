@@ -6,10 +6,10 @@ title: Preview screenshots don't render /assets/ images — breaks hero bg-image
   service card photos
 created_by: xgd
 created_at: '2026-06-25T00:14:27.595296+00:00'
-updated_at: '2026-06-30T05:59:25.321954+00:00'
-completed_at: null
+updated_at: '2026-06-30T07:09:03.313134+00:00'
+completed_at: '2026-06-30T07:09:03.313134+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   auto_merge_back: true
   needs_review: false
