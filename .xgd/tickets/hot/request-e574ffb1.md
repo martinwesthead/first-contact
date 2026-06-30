@@ -5,10 +5,10 @@ type: request
 title: 'Dev tool: AI can run xgd ticket create/list/get in this project'
 created_by: xgd
 created_at: '2026-06-20T22:48:10.354985+00:00'
-updated_at: '2026-06-25T18:45:30.389665+00:00'
+updated_at: '2026-06-30T00:40:19.039639+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
@@ -23,6 +23,7 @@ fields:
   - da05c3e097d695a25e5000c8bcccfd9dd150244d
   - ffeb76f7b3721df5a20c7aa7b71529c4bad8deed
   version: 0.0.30
+  bundled_in: bundle-30021526
 ---
 
 ## Intent
