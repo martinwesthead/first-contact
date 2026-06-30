@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-16
 created_by: xgd
 created_at: '2026-06-29T23:39:14.372099+00:00'
-updated_at: '2026-06-30T00:06:28.066348+00:00'
+updated_at: '2026-06-30T00:23:25.108115+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -196,5 +196,11 @@ Done. REQ-16 is implemented, tested, committed `[FREE-CODED]`, and moved to `fre
 2. **One follow-up remains** (documented in the ticket's as-built note): register the tab into the now-committed shell and export `createAssetsTab` from `builder-ui/src/index.ts` — a small additive change. I deferred it to keep this commit clean of REQ-17's just-landed entry files. Since REQ-17 is now real, I can do that wiring now if you'd like the tab actually reachable in the shell — say the word.
 
 Also: I hit the `node_modules/@gendev` symlink-purge flake twice (a full `vitest run` wipes the workspace links mid-suite, cascading into ~150 bogus "Failed to resolve" failures). `CI=true pnpm install --offline` relinks it; I've updated memory so it's not mistaken for a regression next time.
+
+<!-- xgd-turn id="fcc4be88-5b86-4917-8898-443a7ad74bbb-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-30T00:23:13.970Z" -->
+#### You
+please cmplete the changes
 
 <!-- xgd-chat-end -->
