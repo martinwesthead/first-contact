@@ -5,9 +5,9 @@ type: request
 title: 'Assets tab: TipTap WYSIWYG markdown editor and image preview'
 created_by: xgd
 created_at: '2026-06-16T23:14:45.765175+00:00'
-updated_at: '2026-06-30T00:25:35.922695+00:00'
+updated_at: '2026-06-30T00:25:48.161857+00:00'
 completed_at: null
-last_field_updated: version
+last_field_updated: body
 status: free_coded
 fields:
   story_points: 3
@@ -192,3 +192,10 @@ REQ-17 (app shell) was committed mid-session (`98c668cd … [FREE-CODED]`, ticke
 **Delivered:** `createSplitLayout` (generic splitter) + `builder-layout` refactored onto it (REQ-8 tests unchanged); `createAssetsTab` with list / upload / delete / content-type dispatch (TipTap editor, image preview+metadata, download fallback) / dirty-tracked save / `getVisibleContext()`; pure `htmlToMarkdown` + `pickPreviewKind`; 8 UAT/unit tests against a mock asset server. `builder-ui` typechecks; full suite 282/283 (the one failure, BUG-7, pre-exists and is REQ-17's build-script message, unrelated to REQ-16).
 
 **Remaining integration (follow-up, now unblocked by REQ-17):** register the tab into the shell — `appShell.registerTab("assets", { label: "Assets", defaultChatOpen: true, factory: (content) => createAssetsTab(content, { storage: localStorage }) })` — and export `createAssetsTab` from `packages/builder-ui/src/index.ts`. Deferred from this commit to keep the bundle free of REQ-17's just-landed entry files; it is a small additive change owned by whichever ticket reconciles second.
+
+
+---
+
+## Integration complete (2026-06-29)
+
+The follow-up integration from the as-built note is now done (commit `6cd6f9ea`, version 0.0.42): the Assets tab is registered into the REQ-17 shell in `app-entry.ts` (replacing the placeholder) and `createAssetsTab` / `createSplitLayout` are exported from `packages/builder-ui/src/index.ts`. An end-to-end UAT (`test_UAT_FC_REQ-16_tab_docks_into_app_shell`) mounts the shell, activates the Assets tab, and asserts the asset list renders in the shell content area. The `app.js` browser bundle builds with TipTap (exit 0). REQ-16 is now feature-complete and reachable in the running shell at `/app/<site>/assets`.
