@@ -5,9 +5,9 @@ type: story
 title: External fetch safety contract
 created_by: xgd
 created_at: '2026-06-27T00:33:03.009061+00:00'
-updated_at: '2026-06-29T21:41:54.556086+00:00'
+updated_at: '2026-06-30T06:33:23.671262+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-bbb1bd9c
@@ -34,7 +34,7 @@ In scope:
 - KV-backed response cache (1-hour TTL, keyed by method + URL + range)
 - robots.txt rules with longest-match precedence; per-chat operator override list (no global ignore, no per-account persistent override)
 - Per-account rate limits: 20/hour, 100/day, 10-per-60s burst — first hit returns typed `rate_limited` with `retryAfterSeconds`
-- Browser-rendering compute budget: 50 seconds per chat session, 200 seconds per account-day — exhaustion returns typed `budget_exhausted`
+- Browser-rendering compute budget: the per-call cap is configurable, but the DEFAULT is effectively infinite — `1e9` seconds for both the per-chat-session and per-account-day windows — so the cap never fires for production callers using defaults. A finite session/day ceiling is enforced only when an explicit per-call config override is supplied; exhaustion then returns typed `budget_exhausted`. The enforcement machinery (KV counters, `BROWSER_BUDGET_KV` binding, per-call config override) is unchanged.
 - 60-second one-shot operator-intent tokens; chat dispatcher infers intent from operator messages containing a URL or a fetch-related keyword
 - Diagnostic `GET /api/_safety/health` endpoint reporting the calling account's rate-limit window state
 - Package consumption hygiene: the `@1stcontact/web-fetch-safety` library is self-contained at the type level — a downstream package that imports it compiles under `pnpm build` without having to declare `@cloudflare/workers-types` in its own tsconfig
@@ -51,6 +51,8 @@ Out of scope:
 Implemented as `packages/web-fetch-safety` (a pure library exporting `validateTarget`, `safeFetch`, `RobotsTxtCache`, `checkRateLimit` + `getRateLimitState`, `checkBrowserBudget` + `chargeBrowserBudget`, `mintIntentToken` + `verifyIntentToken`, `operatorMessageImpliesIntent`) plus `apps/control-app/src/safety/{health,account}.ts` for the Worker surface. Persistence uses four KV bindings — `FETCH_RATE_KV` (rate-limit windows + intent tokens), `FETCH_CACHE_KV` (response cache), `FETCH_ROBOTS_KV` (parsed robots rules), `BROWSER_BUDGET_KV` (browser-rendering counters) — registered in `apps/control-app/wrangler.toml` under both default and `[env.production]`.
 
 Per CHAT-13 turn 1 and DOC-9 §11 the safety contract is a non-negotiable architectural commitment. The "no AI fetch on its own initiative" decision is enforced by the operator-intent token requirement.
+
+`DEFAULT_BROWSER_BUDGET` is `{ sessionMaxSeconds: 1_000_000_000, dayMaxSeconds: 1_000_000_000 }` (BUG-17). The original `{50s session, 200s day}` ceilings were raised to effectively infinite because the cap was tripping during normal test/dev flows where a single session accumulates seconds across many calls, leaving only static signals with no screenshots. The budget infrastructure is deliberately preserved: `checkBrowserBudget` / `chargeBrowserBudget` still merge a caller-supplied `config: { sessionMaxSeconds, dayMaxSeconds }` over the defaults, so re-tightening is a one-constant edit or a per-call override. Runaway browser-compute cost is still bounded by the separate `FETCH_RATE_KV` rate limiter. Tests exercise the cap mechanism by passing an explicit small `config` rather than relying on the (now huge) defaults.
 
 The `account_id` used as the rate-limit and budget key is currently sourced from a stub `x-account-id` request header (defaulting to `"anonymous"`). REQ-10 (accounts + auth) will replace the resolver without changing the safety contract or KV key shape — existing default-keyed counters age out via TTL.
 
