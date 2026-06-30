@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-16
 created_by: xgd
 created_at: '2026-06-29T23:39:14.372099+00:00'
-updated_at: '2026-06-30T00:30:10.274429+00:00'
+updated_at: '2026-06-30T00:32:06.838429+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -278,5 +278,13 @@ It captures:
 - **Acceptance** + references to the exact test/script lines, linked to `[[REQ-17]]` (cause) and `[[REQ-16]]` (where it surfaced).
 
 I've left it unscoped/unfixed per your request — just filed. Say the word if you want me to take it (it's a ~2-line change) or assign it to the REQ-17 reconcile.
+
+<!-- xgd-turn id="d1ce142a-cccf-4ae3-93be-e76939a95a45-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-30T00:31:47.112Z" -->
+#### You
+I am separately free coding bug 22
+
+Should I see a tab control at the top of the dashboard? I do not
 
 <!-- xgd-chat-end -->
