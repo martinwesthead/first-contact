@@ -6,10 +6,10 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-30T05:59:25.260390+00:00'
-completed_at: null
+updated_at: '2026-06-30T07:09:03.398101+00:00'
+completed_at: '2026-06-30T07:09:03.398101+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: high
   story_points: 5
