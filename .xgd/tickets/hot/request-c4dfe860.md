@@ -5,10 +5,10 @@ type: request
 title: '[split from REQ-22] straggler commits'
 created_by: xgd
 created_at: '2026-06-27T02:20:41.028977+00:00'
-updated_at: '2026-06-30T05:59:25.201916+00:00'
-completed_at: null
+updated_at: '2026-06-30T07:09:03.483788+00:00'
+completed_at: '2026-06-30T07:09:03.483788+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   commits:
   - 72effe61b59d4bbb4b360f13d4d59d08a8398c7d
