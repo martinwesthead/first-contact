@@ -41,13 +41,6 @@ export interface ActionContext {
    * proof when the URL was pasted in the same turn (REQ-20 §intent token).
    */
   readonly operatorLastMessage: string | null;
-  /**
-   * REQ-51 — origin of the inbound request (e.g. `https://app.1stcontact.io`).
-   * Used by `preview_generated_page` to construct an absolute URL the
-   * Browser Rendering binding can navigate to when the handler uploads
-   * draft HTML to `/assets/...`. `null` when no Host header was available.
-   */
-  readonly requestOrigin: string | null;
 }
 
 export type ActionHandler = (

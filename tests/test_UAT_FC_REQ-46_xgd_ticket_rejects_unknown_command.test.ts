@@ -11,7 +11,6 @@ function makeCtx(devToolsEnabled = true): ActionContext {
     emit: vi.fn(),
     siteDefinition: null,
     operatorLastMessage: null,
-    requestOrigin: null,
   };
 }
 

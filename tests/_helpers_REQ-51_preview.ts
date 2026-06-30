@@ -116,7 +116,6 @@ export function makePreviewHarness(opts?: {
   sessionId?: string;
   withBrowserBinding?: boolean;
   claudeApiKey?: string | null;
-  requestOrigin?: string | null;
 }): PreviewHarness {
   const env = {
     FETCH_CACHE_KV: makeMemKv(),
@@ -186,7 +185,6 @@ export function makePreviewHarness(opts?: {
     emit: vi.fn(),
     siteDefinition: site,
     operatorLastMessage: "show me what you made",
-    requestOrigin: opts?.requestOrigin === null ? null : (opts?.requestOrigin ?? "https://app.test"),
   };
 
   return {

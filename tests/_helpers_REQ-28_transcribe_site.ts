@@ -132,7 +132,6 @@ export function makeTranscribeHarness(opts?: {
     }),
     siteDefinition: null,
     operatorLastMessage: "please convert https://acme.test/",
-    requestOrigin: "https://app.test",
   };
 
   return {

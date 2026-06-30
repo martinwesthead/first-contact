@@ -64,7 +64,6 @@ export async function handleOperatorActionRequest(
       emit,
       siteDefinition: null,
       operatorLastMessage: null,
-      requestOrigin: safeOrigin(request),
     });
   } catch (err) {
     return jsonError(`action handler threw: ${String(err)}`, 500);
@@ -103,13 +102,5 @@ async function safeReadText(req: Request): Promise<string> {
     return await req.text();
   } catch {
     return "";
-  }
-}
-
-function safeOrigin(req: Request): string | null {
-  try {
-    return new URL(req.url).origin;
-  } catch {
-    return null;
   }
 }

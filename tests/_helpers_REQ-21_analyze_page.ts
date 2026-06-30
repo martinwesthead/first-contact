@@ -123,7 +123,6 @@ export function makeHarness(opts?: {
       opts?.operatorLastMessage === undefined
         ? "please analyze https://example.com"
         : opts.operatorLastMessage,
-    requestOrigin: "https://app.test",
   };
 
   return {

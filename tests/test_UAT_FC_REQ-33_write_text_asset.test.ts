@@ -16,7 +16,6 @@ function makeCtx(env: { ASSETS_BUCKET?: R2Bucket }): {
     }),
     siteDefinition: null,
     operatorLastMessage: null,
-    requestOrigin: null,
   };
   return { ctx, events };
 }
