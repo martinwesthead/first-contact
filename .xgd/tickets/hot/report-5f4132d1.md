@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-8 (REQ-44 + REQ-46 + BUG-13 + REQ-49)'
 created_by: xgd
 created_at: '2026-06-30T00:46:13.495951+00:00'
-updated_at: '2026-06-30T00:52:55.080235+00:00'
+updated_at: '2026-06-30T01:11:31.700892+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -88,7 +88,7 @@ fields:
       (a developer-only ticketing bridge), so it is a feature rather than an upgrade.
       The devToolsEnabled gate exists solely to serve this tool and is folded in here
       rather than split into a tiny STORY-51 upgrade.
-    story_uid: null
+    story_uid: story-d44dfd7c
   - index: 3
     component: Reference Digest Extraction — external-stylesheet backgrounds (static
       path)
