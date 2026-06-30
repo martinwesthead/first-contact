@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-23
 created_by: xgd
 created_at: '2026-06-30T00:36:00.443789+00:00'
-updated_at: '2026-06-30T00:36:39.752310+00:00'
+updated_at: '2026-06-30T00:39:00.284269+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -43,5 +43,16 @@ Here's what "assets" could refer to:
 Which one do you mean? My guess is **#1 (delete the unused `placeholder.png`)** or possibly **#2 (remove the Assets tab)** — but I don't want to assume.
 
 Also worth flagging: deleting `placeholder.png` is a documentation/file change, but if you mean #2 or #3, that's a code change requiring a scope ticket. This session is scoped to CHAT-23 (a chat ticket) — for code changes I'd create a properly-typed scope ticket first. Tell me which interpretation, and I'll proceed.
+
+<!-- xgd-turn id="4737f361-0fb6-4e7e-b6b6-716b8369fb96-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-30T00:38:52.234Z" -->
+#### You
+The assets tab shows me a long list of "assets":
+previews/anonymous/a42e8254345e6df7/home/page.html
+reference/...
+imports/...
+
+These were all downloaded from potential conversion websites. For testing I need a clean slate can you remove them please
 
 <!-- xgd-chat-end -->
