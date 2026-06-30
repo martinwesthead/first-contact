@@ -5,10 +5,10 @@ type: request
 title: 'Module: split-section@v1'
 created_by: xgd
 created_at: '2026-06-20T21:10:54.218719+00:00'
-updated_at: '2026-06-29T23:03:56.293782+00:00'
-completed_at: null
+updated_at: '2026-06-30T00:39:55.582364+00:00'
+completed_at: '2026-06-30T00:39:55.582364+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   auto_merge_back: true
   needs_review: false

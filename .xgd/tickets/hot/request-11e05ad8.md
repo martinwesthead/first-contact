@@ -5,10 +5,10 @@ type: request
 title: Text/Background Color Safety
 created_by: xgd
 created_at: '2026-06-20T22:50:45.359513+00:00'
-updated_at: '2026-06-29T23:03:56.542370+00:00'
-completed_at: null
+updated_at: '2026-06-30T00:39:55.250432+00:00'
+completed_at: '2026-06-30T00:39:55.250432+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   auto_merge_back: true
   needs_review: false
