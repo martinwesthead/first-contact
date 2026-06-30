@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-9 (REQ-23 + REQ-24 + REQ-25 + REQ-50 + BUG-8)'
 created_by: xgd
 created_at: '2026-06-30T04:03:56.300792+00:00'
-updated_at: '2026-06-30T04:08:10.709141+00:00'
+updated_at: '2026-06-30T04:17:32.641118+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -55,7 +55,7 @@ fields:
       the typed operator-action registry + SSE channel (/api/operator/*), a distinct
       namespace and dispatch pattern; these chat-session CRUD/pagination/reference-doc
       endpoints are a separate API surface. New capability gap => feature.
-    story_uid: null
+    story_uid: story-721e8feb
   - index: 3
     component: 'Builder chat handler: server-resident history + tail-prime + AI memory
       tools'
