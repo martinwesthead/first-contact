@@ -1,0 +1,166 @@
+---
+uid: report-3e9ea5b6
+id: REPORT-858
+type: report
+title: 'Regression quality: pass (0 tests, 0 failed)'
+created_by: xgd
+created_at: '2026-06-30T01:47:03.483274+00:00'
+updated_at: '2026-06-30T01:47:03.483274+00:00'
+completed_at: null
+last_field_updated: created_at
+result: pass
+fields:
+  report_kind: quality
+  subject_uid: report-294f0ef6
+  commit: 35a00904a165fbfb22baecda659f195a5bcca59f
+---
+
+{
+  "timestamp": "2026-06-30T01:46:55.975149Z",
+  "lint": {
+    "status": "success",
+    "exit_code": 0,
+    "duration_seconds": 0.00011974992230534554,
+    "errors": 0,
+    "warnings": 0,
+    "error_list": [],
+    "warning_list": []
+  },
+  "build": {
+    "status": "success",
+    "exit_code": 0,
+    "duration_seconds": 0.0,
+    "errors": 0,
+    "error_list": []
+  },
+  "preflight": {
+    "status": "pass",
+    "violations": []
+  },
+  "suites": {
+    "javascript-vitest": {
+      "suite_name": "javascript-vitest",
+      "status": "success",
+      "exit_code": 1,
+      "duration_seconds": 0.9969560829922557,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "total": 0,
+      "deselected": 0,
+      "test_filter": [
+        "test_UAT_AC425",
+        "test_UAT_AC426",
+        "test_UAT_AC427",
+        "test_UAT_AC428",
+        "test_UAT_AC429",
+        "test_UAT_AC430",
+        "test_UAT_AC431",
+        "test_UAT_AC432",
+        "test_UAT_AC433",
+        "test_UAT_AC434",
+        "test_UAT_AC435",
+        "test_UAT_AC436",
+        "test_UAT_AC437",
+        "test_UAT_AC438",
+        "test_UAT_AC439",
+        "test_UAT_AC440",
+        "test_UAT_AC441",
+        "test_UAT_AC442",
+        "test_UAT_AC587",
+        "test_UAT_AC588",
+        "test_UAT_AC589",
+        "test_UAT_AC590",
+        "test_UAT_AC591",
+        "test_UAT_AC592",
+        "test_UAT_AC593",
+        "test_UAT_AC594",
+        "test_UAT_AC595",
+        "test_UAT_AC596",
+        "test_UAT_AC597",
+        "test_UAT_AC610",
+        "test_UAT_AC611",
+        "test_UAT_AC612",
+        "test_UAT_AC613",
+        "test_UAT_AC614",
+        "test_UAT_AC624",
+        "test_UAT_AC628",
+        "test_UAT_AC629",
+        "test_UAT_AC630",
+        "test_UAT_AC631",
+        "test_UAT_AC632",
+        "test_UAT_AC633",
+        "test_UAT_AC634",
+        "test_UAT_AC635",
+        "test_UAT_AC636",
+        "test_UAT_AC637",
+        "test_UAT_AC638",
+        "test_UAT_AC639",
+        "test_UAT_AC640",
+        "test_UAT_AC641",
+        "test_UAT_AC642",
+        "test_UAT_AC643",
+        "test_UAT_AC644",
+        "test_UAT_AC698",
+        "test_UAT_AC699",
+        "test_UAT_AC700",
+        "test_UAT_AC703",
+        "test_UAT_AC704",
+        "test_UAT_AC728",
+        "test_UAT_AC729",
+        "test_UAT_AC736",
+        "test_UAT_AC737",
+        "test_UAT_AC738",
+        "test_UAT_AC739",
+        "test_UAT_AC740",
+        "test_UAT_AC741",
+        "test_UAT_AC773",
+        "test_UAT_AC774",
+        "test_UAT_AC775",
+        "test_UAT_AC776",
+        "test_UAT_AC777",
+        "test_UAT_AC778",
+        "test_UAT_AC779",
+        "test_UAT_AC780",
+        "test_UAT_AC781",
+        "test_UAT_AC782",
+        "test_UAT_AC783",
+        "test_UAT_AC784",
+        "test_UAT_AC785",
+        "test_UAT_AC786",
+        "test_UAT_AC787",
+        "test_UAT_AC788",
+        "test_UAT_AC789",
+        "test_UAT_AC790",
+        "test_UAT_AC791",
+        "test_UAT_AC792",
+        "test_UAT_FC_BUG_13",
+        "test_UAT_FC_BUNDLE_8",
+        "test_UAT_FC_REQ_44",
+        "test_UAT_FC_REQ_46",
+        "test_UAT_FC_REQ_49"
+      ],
+      "coverage": null,
+      "lines_covered": 0,
+      "lines_total": 0,
+      "files_covered": [],
+      "junit_xml_path": null,
+      "stdout": "18:46:57 [WARN] Missing pages directory: src/pages\n\n RUN  v2.1.9 /Users/martin/.xgd/worktrees/https___github.com_gendevlabs_1stcontact.git/reconcile-BUNDLE-8\n\nfilter:  ai.gendevlabs.swift_xctest_open\ninclude: tests/**/*.test.ts\nexclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*\n\nNo test files found, exiting with code 1\n",
+      "stderr": "",
+      "tests": [],
+      "hung_test": null,
+      "timeout_reason": null,
+      "partial_results": false,
+      "no_test_files": true,
+      "failures": []
+    }
+  },
+  "overall": {
+    "status": "success",
+    "issues": []
+  },
+  "validation": {
+    "anomalies": []
+  }
+}
