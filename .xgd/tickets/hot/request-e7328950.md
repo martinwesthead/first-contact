@@ -5,10 +5,10 @@ type: request
 title: 'Module: services-grid@v2 (upgrade existing)'
 created_by: xgd
 created_at: '2026-06-20T21:15:17.398197+00:00'
-updated_at: '2026-06-30T00:40:18.975450+00:00'
-completed_at: null
+updated_at: '2026-06-30T03:27:03.755341+00:00'
+completed_at: '2026-06-30T03:27:03.755341+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   auto_merge_back: true
   needs_review: false
