@@ -1,5 +1,7 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { describe, expect, it } from "vitest";
+import { bakeModuleContentForRender } from "@1stcontact/framework";
+import type { ModuleInstance } from "@1stcontact/site-schema";
 import SplitSection from "../packages/framework/src/modules/split-section/index.astro";
 
 // AC-743: rendering the image-left variant produces a section marked as
@@ -33,5 +35,31 @@ describe("UAT AC-743: image-left variant renders image before text with required
     expect(html).toMatch(/alt="Our team"/);
     expect(html).toMatch(/Trust the team/);
     expect(html).toMatch(/About us\./);
+  });
+
+  // Bake path: the static generator bakes `body` from raw markdown to HTML (it
+  // is declared `markdown` in the meta). This exercises the markdown→HTML
+  // conversion the renderer relies on — not the `set:html` passthrough proven
+  // above — and guards against `split-section` going missing from the render
+  // layer's markdown metadata map.
+  it("test_UAT_AC743_split_section_body_baked_from_markdown_to_html", () => {
+    const instance: ModuleInstance = {
+      id: "s1",
+      type: "split-section",
+      version: 1,
+      variant: "image-left",
+      content: {
+        image: { id: "i1", src: "/assets/photo.jpg", alt: "Our team" },
+        heading: "Trust the team",
+        body: "About **us** today.",
+      },
+    };
+
+    const baked = bakeModuleContentForRender(instance) as Record<string, unknown>;
+    const bakedBody = baked.body as string;
+
+    // Raw markdown is converted to HTML, not passed through verbatim.
+    expect(bakedBody).toContain("<strong>us</strong>");
+    expect(bakedBody).not.toContain("**us**");
   });
 });

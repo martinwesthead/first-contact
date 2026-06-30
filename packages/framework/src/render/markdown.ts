@@ -1,26 +1,15 @@
 import type { AssetRef, ModuleInstance } from "@1stcontact/site-schema";
-import { meta as bannerMeta } from "../modules/banner/meta.js";
-import { meta as headerMeta } from "../modules/header/meta.js";
-import { meta as heroMeta } from "../modules/hero/meta.js";
-import { meta as footerMeta } from "../modules/footer/meta.js";
-import { meta as textBlockMeta } from "../modules/text-block/meta.js";
-import { meta as servicesGridMeta } from "../modules/services-grid/meta.js";
-import { meta as contactFormMeta } from "../modules/contact-form/meta.js";
+// `METAS_BY_ID` is derived from the single module-meta source of truth
+// (`modules/meta.ts` → `ALL_METAS`). Every module that declares a markdown
+// content field is baked here automatically — there is no second hand-synced
+// list to keep in sync. `meta.ts` is browser-safe (no Astro components), so
+// importing it keeps this render module free of server-only deps.
+import { METAS_BY_ID } from "../modules/meta.js";
 import type {
   ContentFieldType,
   ContentSchema,
   ModuleMeta,
 } from "../modules/types.js";
-
-const METAS_BY_ID: Record<string, ModuleMeta> = {
-  [headerMeta.id]: headerMeta,
-  [heroMeta.id]: heroMeta,
-  [bannerMeta.id]: bannerMeta,
-  [footerMeta.id]: footerMeta,
-  [textBlockMeta.id]: textBlockMeta,
-  [servicesGridMeta.id]: servicesGridMeta,
-  [contactFormMeta.id]: contactFormMeta,
-};
 
 export type ResolveAsset = (ref: AssetRef) => string | undefined;
 

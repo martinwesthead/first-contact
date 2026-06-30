@@ -1,25 +1,16 @@
+import type { AstroComponentFactory } from "astro/runtime/server/index.js";
 import Banner from "./banner/index.astro";
-import { meta as bannerMeta } from "./banner/meta.js";
 import ContactForm from "./contact-form/index.astro";
-import { meta as contactFormMeta } from "./contact-form/meta.js";
 import Footer from "./footer/index.astro";
-import { meta as footerMeta } from "./footer/meta.js";
 import Header from "./header/index.astro";
-import { meta as headerMeta } from "./header/meta.js";
 import Hero from "./hero/index.astro";
-import { meta as heroMeta } from "./hero/meta.js";
 import ImageGallery from "./image-gallery/index.astro";
-import { meta as imageGalleryMeta } from "./image-gallery/meta.js";
 import LogoStrip from "./logo-strip/index.astro";
-import { meta as logoStripMeta } from "./logo-strip/meta.js";
+import { ALL_METAS } from "./meta.js";
 import ServicesGrid from "./services-grid/index.astro";
-import { meta as servicesGridMeta } from "./services-grid/meta.js";
 import SplitSection from "./split-section/index.astro";
-import { meta as splitSectionMeta } from "./split-section/meta.js";
 import Testimonials from "./testimonials/index.astro";
-import { meta as testimonialsMeta } from "./testimonials/meta.js";
 import TextBlock from "./text-block/index.astro";
-import { meta as textBlockMeta } from "./text-block/meta.js";
 import type { ModuleEntry } from "./types.js";
 
 export class CatalogMissError extends Error {
@@ -37,33 +28,49 @@ export class CatalogMissError extends Error {
   }
 }
 
-const REGISTRY: Record<string, Record<number, ModuleEntry>> = {
-  [headerMeta.id]: { [headerMeta.version]: { meta: headerMeta, Component: Header } },
-  [heroMeta.id]: { [heroMeta.version]: { meta: heroMeta, Component: Hero } },
-  [bannerMeta.id]: { [bannerMeta.version]: { meta: bannerMeta, Component: Banner } },
-  [footerMeta.id]: { [footerMeta.version]: { meta: footerMeta, Component: Footer } },
-  [textBlockMeta.id]: {
-    [textBlockMeta.version]: { meta: textBlockMeta, Component: TextBlock },
-  },
-  [servicesGridMeta.id]: {
-    [servicesGridMeta.version]: { meta: servicesGridMeta, Component: ServicesGrid },
-  },
-  [splitSectionMeta.id]: {
-    [splitSectionMeta.version]: { meta: splitSectionMeta, Component: SplitSection },
-  },
-  [imageGalleryMeta.id]: {
-    [imageGalleryMeta.version]: { meta: imageGalleryMeta, Component: ImageGallery },
-  },
-  [logoStripMeta.id]: {
-    [logoStripMeta.version]: { meta: logoStripMeta, Component: LogoStrip },
-  },
-  [testimonialsMeta.id]: {
-    [testimonialsMeta.version]: { meta: testimonialsMeta, Component: Testimonials },
-  },
-  [contactFormMeta.id]: {
-    [contactFormMeta.version]: { meta: contactFormMeta, Component: ContactForm },
-  },
+// The Astro component for each module id. This is the one place components are
+// listed; the metas come from `ALL_METAS` (the single source of truth). A
+// mismatch in either direction — a meta with no component, or a component with
+// no meta — is caught at module load by `buildRegistry`.
+const COMPONENTS_BY_ID: Record<string, AstroComponentFactory> = {
+  header: Header,
+  hero: Hero,
+  banner: Banner,
+  footer: Footer,
+  "text-block": TextBlock,
+  "services-grid": ServicesGrid,
+  "split-section": SplitSection,
+  "image-gallery": ImageGallery,
+  "logo-strip": LogoStrip,
+  testimonials: Testimonials,
+  "contact-form": ContactForm,
 };
+
+function buildRegistry(): Record<string, Record<number, ModuleEntry>> {
+  const registry: Record<string, Record<number, ModuleEntry>> = {};
+  const metaIds = new Set<string>();
+  for (const meta of ALL_METAS) {
+    metaIds.add(meta.id);
+    const Component = COMPONENTS_BY_ID[meta.id];
+    if (!Component) {
+      throw new Error(
+        `Module '${meta.id}' is declared in ALL_METAS but has no Astro component in COMPONENTS_BY_ID.`,
+      );
+    }
+    if (!registry[meta.id]) registry[meta.id] = {};
+    registry[meta.id][meta.version] = { meta, Component };
+  }
+  for (const id of Object.keys(COMPONENTS_BY_ID)) {
+    if (!metaIds.has(id)) {
+      throw new Error(
+        `Component '${id}' is registered in COMPONENTS_BY_ID but has no meta in ALL_METAS.`,
+      );
+    }
+  }
+  return registry;
+}
+
+const REGISTRY: Record<string, Record<number, ModuleEntry>> = buildRegistry();
 
 export function getModule(id: string, version: number): ModuleEntry {
   const byId = REGISTRY[id];
