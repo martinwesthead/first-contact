@@ -5,9 +5,9 @@ type: story
 title: Monorepo + two-Worker Cloudflare deploy pipeline
 created_by: xgd
 created_at: '2026-06-25T00:28:15.576460+00:00'
-updated_at: '2026-06-28T22:40:26.898090+00:00'
+updated_at: '2026-06-30T04:55:40.206038+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
@@ -61,6 +61,15 @@ capability stands on:
   `sites/1stcontact/` subdirectory, and the project's CLAUDE.md
   heading — so the deployed identity matches the domain
   (`1stcontact.io`).
+- The workspace npm packages are published under the `@gendev/*`
+  scope (renamed from `@1stcontact/*`) so the productization layer
+  can be shared across products, while the *product* slug
+  `1stcontact` (root package `name`, both Worker names,
+  `sites/1stcontact/`, CLAUDE.md heading) is unchanged. Four empty
+  productization package skeletons (`@gendev/api-contracts`,
+  `@gendev/auth`, `@gendev/billing`, `@gendev/portal-ui`) are seeded
+  under `packages/` ahead of their implementation, and the former
+  `packages/ui-kit` stub is removed.
 
 **Out of scope** for this story (delivered by later stories):
 - Site schema, framework modules, the static generator, the public
@@ -71,6 +80,9 @@ capability stands on:
   generated static assets (covered by the Public Site Worker story).
 - Cloudflare account secret provisioning (`CLOUDFLARE_API_TOKEN`,
   `CLOUDFLARE_ACCOUNT_ID`) — an operator task with no code.
+- Any implementation inside the four seeded `@gendev` productization
+  package skeletons — they ship empty, with their implementations
+  delivered by follow-up REQs.
 
 ## Technical Context
 
@@ -102,6 +114,24 @@ capability stands on:
 - The slug rename from `first-contact` → `1stcontact` (originally
   REQ-2) is configuration alignment with this deploy substrate, not
   a separate user-visible capability — it is folded in as ACs here.
+- The npm *scope* and the *product* slug are independent identifier
+  surfaces. REQ-50 renamed every workspace package from
+  `@1stcontact/*` to `@gendev/*` — `name` fields, dependency keys,
+  every `import` across `apps/**`, `packages/**`, `tools/**`, and
+  `tests/**`, the `pnpm --filter @gendev/...` scripts, the CI/deploy
+  workflow references, and the regenerated `pnpm-lock.yaml` — while
+  leaving the product-slug ACs (AC-389) untouched (root package name
+  `1stcontact`, Worker names `1stcontact-*`, `sites/1stcontact/`). The
+  rename is mechanical with no runtime behaviour change: the built
+  `apps/public-site` and generated `sites/1stcontact` output are
+  byte-stable across it (modulo scope strings), and `apps/control-app`
+  has a pre-existing TS DOM-type build failure (present on the
+  baseline commit) that the rename neither introduces nor fixes — so
+  build parity holds. The four seeded skeletons each carry a
+  `package.json` named `@gendev/<name>`, a `tsconfig.json`, a README
+  of role + design-doc links, and an empty `src/index.ts` that
+  exports nothing real; `packages/ui-kit` (a stub superseded by
+  `packages/portal-ui`) was deleted in the same change.
 - Workflows include a `Generate public-site static output` step
   before tests / dry-run / deploy. That step is owned by the Public
   Site Worker story; this story asserts only the CI/deploy triggers,
