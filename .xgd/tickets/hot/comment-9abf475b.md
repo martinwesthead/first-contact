@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-16
 created_by: xgd
 created_at: '2026-06-29T23:39:14.372099+00:00'
-updated_at: '2026-06-30T00:26:33.267410+00:00'
+updated_at: '2026-06-30T00:29:28.862107+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -254,5 +254,11 @@ Complete. Final full suite: **738 passed | 1 failed (739)** — the +1 is my new
 ## One thing for your attention (not REQ-16)
 
 The single red test, **BUG-7**, is pre-existing on `xgd-working`: REQ-17 changed the build script to emit two bundles (`Built …/{builder,app}.js`), but BUG-7's assertion still expects the old single-bundle `Built …builder.js` message. That belongs to REQ-17 / a BUG-7 fix, not REQ-16 — flagging it since REQ-17 just went `free_coded` with that test failing. Want me to file/fix it separately, or leave it for the REQ-17 reconcile?
+
+<!-- xgd-turn id="2e126a49-3c62-425a-8150-5c588e352732-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-30T00:29:16.934Z" -->
+#### You
+Pleae file a new ticket
 
 <!-- xgd-chat-end -->
