@@ -6,14 +6,14 @@ title: 'Framework module catalog: chrome modules (header, hero, footer) under a 
   registry'
 created_by: xgd
 created_at: '2026-06-25T00:56:14.997576+00:00'
-updated_at: '2026-06-28T21:09:23.953714+00:00'
+updated_at: '2026-06-30T00:03:23.258265+00:00'
 completed_at: null
-last_field_updated: uat_coverage
+last_field_updated: story_kind
 status: reconciling
 fields:
   intent_uid: bundle-94e1d1b6
   capability_uid: capability-3630a42c
-  story_kind: feature
+  story_kind: upgrade
   story_points: 3
   uat_coverage: pass
 ---
@@ -34,8 +34,9 @@ In scope:
 - A typed registry that resolves a module by id and version to its component plus meta, surfaces a clear catalog-miss error on unknown lookups (or on a known id with an unknown version), and exposes the full list of registered modules.
 - Three chrome modules conforming to the contract:
   - **header** (variant `top-nav`): logo (asset ref or text) on the left, navigation entries on the right; collapses to a hamburger control below the `md` breakpoint and expands again at and above `md`.
-  - **hero** (variants `bg-color`, `bg-image`): optional eyebrow, heading, optional markdown subhead, optional `{label, href}` CTA; the `bg-image` variant renders an actual background image element, the `bg-color` variant renders no image element. Dials: `size`, `align`, `spacingTop`, `spacingBottom`, `surface`.
+  - **hero** (variants `bg-color`, `bg-image`): optional eyebrow, heading, optional markdown subhead, optional `{label, href}` CTA; the `bg-image` variant renders an actual background image element, the `bg-color` variant renders no image element. The hero's markdown subhead constrains inline `<img>` elements (`max-width: 100%; height: auto; display: block`) so an embedded image cannot overflow the layout. Dials: `size`, `align`, `spacingTop`, `spacingBottom`, `surface`.
   - **footer** (variant `minimal`): optional logo, optional tagline, required copyright (holder + year), optional small-link row. The copyright year is supplied as a build-time constant so output is deterministic across rebuilds — no `new Date()` at render.
+- **Markdown-body image safety (catalog-wide cross-cutting constraint)** — every module that renders a markdown body constrains inline `<img>` elements within that body to `max-width: 100%; height: auto; display: block`, so oversized inline images cannot break the layout. Because the single behaviour spans modules owned by several stories (hero here; text-block, services-grid in the content-modules story; split-section, testimonials, banner in their own feature stories), this cross-cutting constraint is owned by this story and verified across hero (subhead), text-block (body), services-grid (subhead and item bodies), split-section (body), testimonials (quote), and banner (subhead). The individual modules' existence remains documented by their own stories.
 - Every module ships scoped CSS that references CSS custom properties from the framework's theme tokens only — no inline styles, no hard-coded colors or spacing values.
 - A browser-safe `@1stcontact/framework/meta` subpath that exports only the module metas (no Astro components, no Node-only modules) so the in-browser builder can bundle the catalog without pulling in server-only dependencies.
 
@@ -55,6 +56,7 @@ Out of scope:
 - Module versioning: every module declares a `version` integer. Lookups specify both id and version, so future incompatible changes ship as a new version rather than mutating the existing one. The catalog-miss error distinguishes "unknown id" from "known id, unknown version" in its message.
 - Year-as-constant in footer: passing `copyrightYear` as a prop (rather than computing it at render time) makes the generator's output byte-stable across rebuilds — a property required by the static-asset deploy model.
 - Implementation note (code observation, not a story constraint): the registry resolution mechanism is a plain in-memory map keyed by id then version; future evolution might wrap this for hot reload in the builder, but the contract surface (`getModule(id, version)`, `listRegisteredModules()`, catalog-miss error) is what callers depend on.
+- Image-safety upgrade (REQ-47): the catalog-wide markdown-body `<img>` constraint above was added during reconciliation of bundle-d3d73016. It is realized per module as a scoped CSS rule on the body container (`:global(img)` → `max-width: 100%; height: auto; display: block`). This story owns the single cross-cutting acceptance criterion because one FC UAT verifies all six markdown-rendering modules at once; the content-modules story records the same behaviour for its own modules in its technical context without duplicating the criterion.
 
 ## Dependencies
 
