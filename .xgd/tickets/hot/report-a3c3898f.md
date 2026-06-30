@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-9 (REQ-23 + REQ-24 + REQ-25 + REQ-50 + BUG-8)'
 created_by: xgd
 created_at: '2026-06-30T04:03:56.300792+00:00'
-updated_at: '2026-06-30T04:17:32.641118+00:00'
+updated_at: '2026-06-30T04:30:49.238649+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -107,7 +107,7 @@ fields:
       bucket and no parallel implementation. The memory tools are exposed and executed
       by the existing chat handler, so they belong with this story rather than a new
       AI-tools story. Modifies AC-486 and adds ACs on the existing chat surface.
-    story_uid: null
+    story_uid: story-ba9f2715
   - index: 4
     component: 'Builder UI: durable server-backed chat sessions, infinite scroll,
       auto-session, fetch binding'
