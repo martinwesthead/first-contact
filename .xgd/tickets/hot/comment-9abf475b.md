@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-16
 created_by: xgd
 created_at: '2026-06-29T23:39:14.372099+00:00'
-updated_at: '2026-06-30T00:23:25.108115+00:00'
+updated_at: '2026-06-30T00:26:33.267410+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -202,5 +202,57 @@ Also: I hit the `node_modules/@gendev` symlink-purge flake twice (a full `vitest
 <!-- xgd-chat role="user" ts="2026-06-30T00:23:13.970Z" -->
 #### You
 please cmplete the changes
+
+<!-- xgd-turn id="fcc4be88-5b86-4917-8898-443a7ad74bbb-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-30T00:26:33.234Z" -->
+#### Claude
+On it. This is the remaining REQ-16 integration step (already documented in the ticket as the follow-up). Let me look at how REQ-17's shell registers tabs so I wire the assets tab in correctly.
+
+The factory signature is `(content, chatSlot) => { destroy }`. Let me check the exact `TabRegistration`/factory return type in app-shell.ts to match it precisely:
+
+Factory returns `TabInstance | void` (`{ destroy?() }`). Now making the two integration edits. First, export `createAssetsTab` and `createSplitLayout` from the package index:
+
+Now wire the real assets tab into the shell, replacing the placeholder:
+
+`placeholderTab` is still used by Settings, so no dangling import. Now let me add an end-to-end UAT proving the tab docks into the shell (now possible since REQ-17 is committed). Let me mirror the shell-mounting pattern from REQ-17's test:
+
+Now I have the pattern. Writing the end-to-end shell-integration UAT:
+
+Now typecheck and run the new integration test plus the REQ-16/REQ-17 suites:
+
+All 10 files pass including the new shell-docking integration test. Since `app-entry.ts` now pulls in `assets-tab.ts` (which dynamically imports TipTap/marked), let me confirm the `app.js` bundle actually builds:
+
+Build succeeds (exit 0), `app.js` grew to 1.4mb with TipTap bundled. The build rewrote the bundle artifacts — let me check whether those are tracked (and thus need committing) or gitignored:
+
+Bundles are gitignored — no need to commit them. My changes are exactly 3 files (index export, app-entry registration, new integration test). Now complete the free-coding cycle: version bump + commit `[FREE-CODED]`:
+
+Now register the new commit on the ticket (append to `fields.commits`, bump the `version` field) since it's already `free_coded`:
+
+Both commits recorded, version `0.0.42`, status `free_coded`. Let me append a completion note to the body and run a final full-suite sanity check:
+
+Complete. Final full suite: **738 passed | 1 failed (739)** — the +1 is my new integration test, and the only failure is the pre-existing BUG-7 (REQ-17's build-message regex), unrelated to REQ-16.
+
+## REQ-16 is feature-complete and reachable in the shell
+
+**Second commit `6cd6f9ea`** (version `0.0.42`) — the integration step:
+
+| Change | Detail |
+|---|---|
+| `app-entry.ts` | Assets tab now registers `createAssetsTab` (was a placeholder); panel width persists to `localStorage`, chat stays shell-level |
+| `index.ts` | `createAssetsTab` + `createSplitLayout` (and types) exported from the package public API |
+| `test_UAT_FC_REQ-16_tab_docks_into_app_shell` | End-to-end UAT: mounts the REQ-17 shell, activates the Assets tab, asserts the list renders in the shell content area |
+
+**Verified:**
+- `app.js` bundle builds with TipTap embedded (exit 0, 1.4mb)
+- builder-ui typechecks clean
+- All 9 REQ-16 test files green; REQ-17 shell suite green; REQ-8 layout unchanged
+- Full suite 738/739
+
+**Ticket state:** `free_coded`, `commits: [c066d349, 6cd6f9ea]`, `version: 0.0.42`, body updated with the completion note. The tab is now live at `/app/<site>/assets`.
+
+## One thing for your attention (not REQ-16)
+
+The single red test, **BUG-7**, is pre-existing on `xgd-working`: REQ-17 changed the build script to emit two bundles (`Built …/{builder,app}.js`), but BUG-7's assertion still expects the old single-bundle `Built …builder.js` message. That belongs to REQ-17 / a BUG-7 fix, not REQ-16 — flagging it since REQ-17 just went `free_coded` with that test failing. Want me to file/fix it separately, or leave it for the REQ-17 reconcile?
 
 <!-- xgd-chat-end -->
