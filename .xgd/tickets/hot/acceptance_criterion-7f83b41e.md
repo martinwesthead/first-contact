@@ -2,13 +2,13 @@
 uid: acceptance_criterion-7f83b41e
 id: AC-432
 type: acceptance_criterion
-title: Services-grid content with fewer than 2 or more than 6 items is rejected with
-  a violation identifying the items field
+title: Services-grid content with an empty items array or more than 6 items is rejected
+  with a violation identifying the items field
 created_by: xgd
 created_at: '2026-06-25T01:11:43.817480+00:00'
-updated_at: '2026-06-30T00:51:39.593401+00:00'
+updated_at: '2026-06-30T00:52:27.890930+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-f1e061ba
