@@ -5,9 +5,9 @@ type: story
 title: Analyze a reference URL into an interactive Digest Report in the builder chat
 created_by: xgd
 created_at: '2026-06-27T01:25:03.197100+00:00'
-updated_at: '2026-06-30T06:11:32.963627+00:00'
+updated_at: '2026-06-30T06:11:33.070159+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: updated_by
 status: updated
 fields:
   intent_uid: bundle-bbb1bd9c
@@ -16,6 +16,7 @@ fields:
   story_points: 3
   updated_by:
   - bundle-24c4d23c
+  - bundle-93cd5926
 ---
 
 ## Story
