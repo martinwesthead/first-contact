@@ -6,10 +6,10 @@ title: Render the AI's own draft page into a Preview Digest so the assistant can
   its own work
 created_by: xgd
 created_at: '2026-06-30T06:23:42.812233+00:00'
-updated_at: '2026-06-30T06:23:42.812233+00:00'
+updated_at: '2026-06-30T06:31:37.509691+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-93cd5926
   capability_uid: capability-9395ee51
