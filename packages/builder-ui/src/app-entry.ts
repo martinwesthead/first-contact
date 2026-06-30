@@ -13,6 +13,7 @@
  */
 import type { Site } from "@gendev/site-schema";
 import { createAppShell } from "./components/app-shell.js";
+import { createAssetsTab } from "./components/assets-tab.js";
 import { bootBuilder } from "./main.js";
 
 const root = document.getElementById("fc-app-root");
@@ -69,17 +70,22 @@ void (async () => {
     },
   });
 
-  // Placeholder tabs — content arrives in their own REQs. Chat defaults per
-  // REQ-17: Assets open, Settings collapsed.
+  // Settings is still a placeholder (content arrives in REQ-UI-SETTINGS).
   shell.registerTab("settings", {
     label: "Settings",
     defaultChatOpen: false,
     factory: placeholderTab("Settings"),
   });
+  // REQ-16: the Assets tab content. Mounts into the shell's content area; the
+  // chat panel is shell-level so the factory ignores chatSlot. Panel width
+  // persists in localStorage (key 1stcontact_assets_panel_v1).
   shell.registerTab("assets", {
     label: "Assets",
     defaultChatOpen: true,
-    factory: placeholderTab("Assets"),
+    factory: (content) => {
+      const handle = createAssetsTab(content, { storage: localStorage });
+      return { destroy: handle.destroy };
+    },
   });
 
   shell.activateTab(initialTab, { push: false });

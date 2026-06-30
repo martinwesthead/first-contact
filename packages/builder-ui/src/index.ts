@@ -36,11 +36,32 @@ export {
 } from "./empty-scaffold.js";
 export { renderSiteIntoIframe } from "./preview.js";
 export {
+  createSplitLayout,
+  type SplitLayoutHandle,
+  type SplitLayoutOptions,
+  type SplitLayoutState,
+} from "./components/split-layout.js";
+export {
   createBuilderLayout,
   type BuilderLayoutHandle,
   type BuilderLayoutOptions,
   type PanelState,
 } from "./components/builder-layout.js";
+export {
+  createAssetsTab,
+  pickPreviewKind,
+  assetTypeIcon,
+  htmlToMarkdown,
+  defaultMarkdownEditorLoader,
+  type AssetsTabHandle,
+  type AssetsTabOptions,
+  type AssetListItem,
+  type PreviewKind,
+  type MarkdownEditorHandle,
+  type MarkdownEditorLoader,
+  type MarkdownEditorMountOptions,
+  type VisibleAssetsContext,
+} from "./components/assets-tab.js";
 export {
   createAppShell,
   CHAT_STATE_STORAGE_KEY,
