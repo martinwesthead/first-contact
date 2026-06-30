@@ -6,10 +6,10 @@ title: 'AI closed-loop preview: render generated draft pages so the AI can see i
   own work'
 created_by: xgd
 created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-25T19:42:02.521476+00:00'
+updated_at: '2026-06-30T05:59:25.260390+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   priority: high
   story_points: 5
@@ -22,6 +22,7 @@ fields:
   - 61e805ecd9008327756e601271046eacc5413e0f
   - 3dcf34955191b829e9854a5c2d3e4b2da61663a3
   version: 0.0.37
+  bundled_in: bundle-93cd5926
 ---
 
 ## Problem
