@@ -5,9 +5,9 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-9 (REQ-23 + REQ-24 + REQ-25 + REQ-50 + BUG-8)'
 created_by: xgd
 created_at: '2026-06-30T04:03:56.300792+00:00'
-updated_at: '2026-06-30T04:03:56.300792+00:00'
+updated_at: '2026-06-30T04:08:10.709141+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: items
 fields:
   report_kind: reconciliation_plan
   subject_uid: bundle-44f53d53
@@ -32,7 +32,7 @@ fields:
       and covers only accounts/sites/revisions/slug. This is a genuinely new persistence
       capability bucket (per-site chat sessions + platform reference-doc library with
       FTS5), so a new feature story is required rather than an upgrade.
-    story_uid: null
+    story_uid: story-1e174b7c
   - index: 2
     component: Chat Session & Reference-Doc HTTP API (control-app)
     item_type: feature
