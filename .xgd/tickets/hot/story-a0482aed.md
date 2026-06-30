@@ -5,10 +5,10 @@ type: story
 title: External fetch safety contract
 created_by: xgd
 created_at: '2026-06-27T00:33:03.009061+00:00'
-updated_at: '2026-06-30T06:34:45.862664+00:00'
+updated_at: '2026-06-30T06:42:05.428377+00:00'
 completed_at: null
-last_field_updated: updated_by
-status: updated
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-bbb1bd9c
   capability_uid: capability-f446e94d
