@@ -5,9 +5,9 @@ type: request
 title: 'Assets tab: TipTap WYSIWYG markdown editor and image preview'
 created_by: xgd
 created_at: '2026-06-16T23:14:45.765175+00:00'
-updated_at: '2026-06-30T00:05:42.783147+00:00'
+updated_at: '2026-06-30T00:25:35.922695+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: version
 status: free_coded
 fields:
   story_points: 3
@@ -16,7 +16,8 @@ fields:
   needs_review: false
   commits:
   - c066d34955dc4c62b0b421ddda99dc363791c4c2
-  version: 0.0.41
+  - 6cd6f9eafcd99eae512aebbaf4a03373f0d54b70
+  version: 0.0.42
 ---
 
 # Assets tab: TipTap WYSIWYG markdown editor and image preview
