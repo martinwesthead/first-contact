@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-16
 created_by: xgd
 created_at: '2026-06-29T23:39:14.372099+00:00'
-updated_at: '2026-06-30T00:32:06.838429+00:00'
+updated_at: '2026-06-30T00:33:08.765732+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -286,5 +286,25 @@ I've left it unscoped/unfixed per your request — just filed. Say the word if y
 I am separately free coding bug 22
 
 Should I see a tab control at the top of the dashboard? I do not
+
+<!-- xgd-turn id="d1ce142a-cccf-4ae3-93be-e76939a95a45-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-30T00:33:08.734Z" -->
+#### Claude
+Good — I'll stay clear of BUG-7/build (yours). Let me do the legwork on the tab bar. The tab control lives in the **app shell (REQ-17)**, which is served at `/app/<site>/<tab>` — not at the legacy `/builder` route. Let me confirm the routing and where the "dashboard" actually points.
+
+Routing is clear, and it points straight at the answer. The tab bar only exists on the **REQ-17 app shell**, served at `/app/<site>/<tab>` (e.g. `/app/1stcontact/builder`). The legacy `/builder` route — and the root `/` — render the old chat+preview SPA with **no tabs**. Let me confirm the `/app` surface is actually wired (mount point + bundle) and check for a running dev server so I can give you the exact URL:
+
+The dev server is live — `wrangler dev` on **port 8788**. Let me confirm what each route actually serves so I can give you the exact URL:
+
+Confirmed by hitting your running dev server (port 8788). The tab control is real and working — it's just on a different route than where you're probably looking:
+
+- **`http://localhost:8788/app`** → 302-redirects to **`/app/1stcontact/builder`**, which serves the app shell (`#fc-app-root` + `/_assets/app.js`) — **this is the surface with the `Builder | Settings | Assets` tab bar**.
+- `http://localhost:8788/builder` → the **legacy** chat+preview SPA, **no `fc-app-root`, no tabs** (0 matches).
+- `http://localhost:8788/` → just the `Hello from app.1stcontact.io` placeholder.
+
+So: **you're almost certainly on `/builder` (or `/`).** Open **`http://localhost:8788/app`** instead and you'll get the tab bar. Click **Assets** there and you'll now see the REQ-16 content (file list + editor/preview) rather than the old "coming soon" placeholder — the `app.js` bundle was rebuilt at 17:31 with the tab wired in (1.4mb, TipTap included), and your `build:bundle:watch` keeps it current.
+
+One nuance worth knowing: the tab bar is rendered client-side by `createAppShell` inside `app.js` — the served `app.html` only contains the empty `#fc-app-root` mount (with `data-site="1stcontact" data-tab="builder"` stamped on by the Worker). So if you ever load `/app` and see a *blank* page (not just missing tabs), that'd point to a JS/bundle error — tell me and I'll check the console path. But the routing and wiring are all correct; this is just the `/builder`-vs-`/app` distinction.
 
 <!-- xgd-chat-end -->
