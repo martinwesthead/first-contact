@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-9 (REQ-23 + REQ-24 + REQ-25 + REQ-50 + BUG-8)'
 created_by: xgd
 created_at: '2026-06-30T04:03:56.300792+00:00'
-updated_at: '2026-06-30T04:45:11.898058+00:00'
+updated_at: '2026-06-30T04:56:42.319198+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -210,7 +210,7 @@ fields:
       1stcontact slug'', toolchain/lockfile ACs). No new capability bucket and no
       new runtime behavior (REQ-50 is explicitly a no-behavior rename + empty skeletons),
       so this is an in-place upgrade, not a feature. Targets STORY-38 (story-067dc2f8).'
-    story_uid: null
+    story_uid: story-067dc2f8
 ---
 
 # Reconciliation Plan: BUNDLE-9
