@@ -5,9 +5,9 @@ type: request
 title: 'Assets tab: TipTap WYSIWYG markdown editor and image preview'
 created_by: xgd
 created_at: '2026-06-16T23:14:45.765175+00:00'
-updated_at: '2026-06-30T00:05:15.669908+00:00'
+updated_at: '2026-06-30T00:05:42.783147+00:00'
 completed_at: null
-last_field_updated: status
+last_field_updated: body
 status: free_coded
 fields:
   story_points: 3
@@ -180,3 +180,14 @@ To free-code REQ-16 **independently** without entangling REQ-17's uncommitted wo
 - Public re-exports from `packages/builder-ui/src/index.ts` / `package.json` (also REQ-17-owned) are likewise deferred; UATs import the new components by relative source path, the established convention in this test suite.
 
 Net: REQ-16 lands as a self-contained, independently-tested bundle. The only integration step remaining at reconcile time is wiring `createAssetsTab` into the shell's tab registry — a one-line addition owned by whichever of REQ-16/REQ-17 reconciles second.
+
+
+---
+
+## As-built note (2026-06-29)
+
+REQ-17 (app shell) was committed mid-session (`98c668cd … [FREE-CODED]`, ticket request-7af3c503 → free_coded), so the shell now exists in `main`'s lineage rather than as uncommitted working-tree changes. REQ-16 was committed independently on top: `c066d349` (version 0.0.41), touching only its own files (`split-layout.ts`, `builder-layout.ts` adapter refactor, `assets-tab.ts`, and `tests/test_UAT_FC_REQ-16_*`) plus the root version bump — no overlap with REQ-17's committed files.
+
+**Delivered:** `createSplitLayout` (generic splitter) + `builder-layout` refactored onto it (REQ-8 tests unchanged); `createAssetsTab` with list / upload / delete / content-type dispatch (TipTap editor, image preview+metadata, download fallback) / dirty-tracked save / `getVisibleContext()`; pure `htmlToMarkdown` + `pickPreviewKind`; 8 UAT/unit tests against a mock asset server. `builder-ui` typechecks; full suite 282/283 (the one failure, BUG-7, pre-exists and is REQ-17's build-script message, unrelated to REQ-16).
+
+**Remaining integration (follow-up, now unblocked by REQ-17):** register the tab into the shell — `appShell.registerTab("assets", { label: "Assets", defaultChatOpen: true, factory: (content) => createAssetsTab(content, { storage: localStorage }) })` — and export `createAssetsTab` from `packages/builder-ui/src/index.ts`. Deferred from this commit to keep the bundle free of REQ-17's just-landed entry files; it is a small additive change owned by whichever ticket reconciles second.
