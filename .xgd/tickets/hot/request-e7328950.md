@@ -5,10 +5,10 @@ type: request
 title: 'Module: services-grid@v2 (upgrade existing)'
 created_by: xgd
 created_at: '2026-06-20T21:15:17.398197+00:00'
-updated_at: '2026-06-25T18:45:25.631222+00:00'
+updated_at: '2026-06-30T00:40:18.975450+00:00'
 completed_at: null
 last_field_updated: status
-status: ready_to_reconcile
+status: bundled
 fields:
   auto_merge_back: true
   needs_review: false
@@ -24,6 +24,7 @@ fields:
   version: 0.0.25
   fields.commits:
   - 83a8041bf92eee0ee71eb5a69b63ae68c08001ce
+  bundled_in: bundle-30021526
 ---
 
 The current `services-grid@v1` is text-only. This upgrade adds per-item images and a CTA, making it viable for real service showcases.
