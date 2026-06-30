@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
@@ -6,15 +6,19 @@ import {
   consumeChatSSE,
   makeAnthropicStreamingFetch,
 } from "./_helpers_REQ-36_chat_sse.js";
+import { insertMessage } from "./_helpers_REQ-23_db.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 /**
- * AC-486 (redefined by REQ-36): POST /api/chat now runs the multi-turn
- * Anthropic tool loop and re-emits the turn to the browser as a
- * Server-Sent Events stream (token / tool_call / tool_result / done /
- * error) — NOT a single JSON block. The tool surface is derived from the
- * OPERATOR_ACTIONS registry filtered by plan tier (default trial), the
- * upstream request carries `stream: true`, and the system-prompt site
- * snapshot is recomputed each turn from the working definition.
+ * AC-486 (server-resident, REQ-24/REQ-36): POST /api/chat runs the multi-turn
+ * Anthropic tool loop and re-emits the turn to the browser as a Server-Sent
+ * Events stream (token / tool_call / tool_result / done / error). The transcript
+ * is server-resident: the client sends {sessionId, userMessage, ...}; the server
+ * appends the new user message and primes Anthropic from the stored session tail
+ * (user/assistant only — system rows are filtered). The tool surface is derived
+ * from the OPERATOR_ACTIONS registry filtered by plan tier (default trial), the
+ * upstream request carries `stream: true`, and the system-prompt site snapshot is
+ * recomputed each turn from the working definition.
  */
 
 const REQUIRED_TOOL_NAMES = [
@@ -49,7 +53,41 @@ function findToolResult(messages: Msg[]): MsgBlock {
 }
 
 describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser as Server-Sent Events", () => {
+  let env: SeededChatEnv;
+
+  afterEach(async () => {
+    if (env) await env.cleanup();
+  });
+
   it("test_UAT_AC486_chat_endpoint_streams_sse_token_tool_call_tool_result_done", async () => {
+    env = await seedChatSession({ sessionId: "sess_ac486_a" });
+    // Prior turn lives server-side: the server primes Anthropic from this tail
+    // (user/assistant only — the system row is filtered out of the prompt).
+    await insertMessage(env.db, {
+      id: "m_a0",
+      session_id: env.sessionId,
+      ord: 0,
+      role: "user",
+      content: "Make the primary color pink.",
+      ts: 1_700_000_000_000,
+    });
+    await insertMessage(env.db, {
+      id: "m_a1",
+      session_id: env.sessionId,
+      ord: 1,
+      role: "assistant",
+      content: "On it.",
+      ts: 1_700_000_000_001,
+    });
+    await insertMessage(env.db, {
+      id: "m_a2",
+      session_id: env.sessionId,
+      ord: 2,
+      role: "system",
+      content: "internal note",
+      ts: 1_700_000_000_002,
+    });
+
     // Upstream streams a tool_use (a valid state-edit) then a terminating
     // text turn. The handler executes the tool server-side and re-emits SSE.
     const { fetch: stubFetch, calls } = makeAnthropicStreamingFetch([
@@ -74,12 +112,8 @@ describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser a
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [
-          { role: "user", content: "Make the primary color pink." },
-          { role: "assistant", content: "On it." },
-          // Filtered out of the upstream request (only user/assistant kept).
-          { role: "system", content: "internal note" },
-        ],
+        sessionId: env.sessionId,
+        userMessage: "Now make it pinker.",
         siteDefinition: load1stContactSite(),
         frameworkCatalog: buildFrameworkCatalog(),
       }),
@@ -87,7 +121,7 @@ describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser a
 
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key-abc" },
+      { CLAUDE_API_KEY: "test-key-abc", SITES_DB: env.db },
       { fetch: stubFetch },
     );
 
@@ -113,10 +147,13 @@ describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser a
     expect(first.system).toContain("palette.primary");
     // First turn sees the ORIGINAL working site (primary #2563eb).
     expect(first.system).toContain("#2563eb");
-    // History filtered to user/assistant only (the 'system' note is dropped).
+    // Server-resident priming: the stored tail (user/assistant only — the
+    // 'system' note is filtered) primes Anthropic, and the just-sent user
+    // message is appended as the final turn.
     expect(first.messages).toEqual([
       { role: "user", content: "Make the primary color pink." },
       { role: "assistant", content: "On it." },
+      { role: "user", content: "Now make it pinker." },
     ]);
 
     // (2) token events for the text deltas, a tool_call event for the call,
@@ -159,6 +196,7 @@ describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser a
   });
 
   it("test_UAT_AC486_rejected_tool_call_is_flagged_is_error_and_leaves_working_site_unchanged", async () => {
+    env = await seedChatSession({ sessionId: "sess_ac486_b" });
     const { fetch: stubFetch, calls } = makeAnthropicStreamingFetch([
       {
         id: "msg_bad",
@@ -182,7 +220,8 @@ describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser a
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [{ role: "user", content: "Set primary via a bad token." }],
+        sessionId: env.sessionId,
+        userMessage: "Set primary via a bad token.",
         siteDefinition: load1stContactSite(),
         frameworkCatalog: buildFrameworkCatalog(),
       }),
@@ -190,7 +229,7 @@ describe("UAT AC-486: POST /api/chat streams the Anthropic turn to the browser a
 
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key-abc" },
+      { CLAUDE_API_KEY: "test-key-abc", SITES_DB: env.db },
       { fetch: stubFetch },
     );
     expect(response.status).toBe(200);

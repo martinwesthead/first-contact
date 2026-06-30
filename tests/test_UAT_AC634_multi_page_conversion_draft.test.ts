@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { applyToolCall, type ToolName } from "@gendev/builder-ui/tools";
@@ -9,6 +9,11 @@ import {
   type ReferenceDigest,
 } from "../packages/extractor/src/schema.js";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
+import {
+  consumeChatSSE,
+  makeAnthropicStreamingFetch,
+} from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession } from "./_helpers_REQ-24_chat.js";
 
 const STATE_EDIT_TOOLS = new Set<string>([
   "set_module_content",
@@ -120,55 +125,41 @@ describe("UAT AC-634: end-to-end multi-page conversion yields a multi-page draft
     expect(new Set(planSlugs).size).toBe(planSlugs.length);
     const nonHomeSlugs = plan.filter((p) => p.slug !== "/").map((p) => p.slug);
 
-    // Drive the chat: AI calls add_page for each non-home plan entry.
-    let turn = 0;
-    const upstreamFetch = vi.fn(async () => {
-      turn++;
-      if (turn === 1) {
-        return new Response(
-          JSON.stringify({
-            id: "msg_t1",
-            content: [
-              { type: "text", text: "Reading the digest." },
-              {
-                type: "tool_use",
-                id: "tu_read",
-                name: "read_transcription_digest",
-                input: { siteId },
-              },
-            ],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        );
-      }
-      if (turn === 2) {
-        const addCalls = nonHomeSlugs.map((slug, i) => ({
-          type: "tool_use" as const,
-          id: `tu_add_${i}`,
-          name: "add_page",
-          input: {
-            slug: slug.replace(/^\//, ""),
-            title: slug
-              .replace(/^\//, "")
-              .replace(/^./, (c) => c.toUpperCase()),
+    // Drive the chat: AI calls add_page for each non-home plan entry. The chat
+    // handler consumes Anthropic's streaming SSE protocol, so serve the scripted
+    // turns as SSE (read digest → add the discovered pages → terminating text).
+    const addCalls = nonHomeSlugs.map((slug, i) => ({
+      type: "tool_use" as const,
+      id: `tu_add_${i}`,
+      name: "add_page",
+      input: {
+        slug: slug.replace(/^\//, ""),
+        title: slug.replace(/^\//, "").replace(/^./, (c) => c.toUpperCase()),
+      },
+    }));
+    const { fetch: upstreamFetch } = makeAnthropicStreamingFetch([
+      {
+        id: "msg_t1",
+        content: [
+          { type: "text", text: "Reading the digest." },
+          {
+            type: "tool_use",
+            id: "tu_read",
+            name: "read_transcription_digest",
+            input: { siteId },
           },
-        }));
-        return new Response(
-          JSON.stringify({
-            id: "msg_t2",
-            content: [{ type: "text", text: "Adding pages." }, ...addCalls],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        );
-      }
-      return new Response(
-        JSON.stringify({ id: "msg_t3", content: [{ type: "text", text: "Done." }] }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      );
-    });
+        ],
+      },
+      {
+        id: "msg_t2",
+        content: [{ type: "text", text: "Adding pages." }, ...addCalls],
+      },
+      { id: "msg_t3", content: [{ type: "text", text: "Done." }] },
+    ]);
 
     const catalog = buildFrameworkCatalog();
     const baseSite = load1stContactSite();
+    const chatSession = await seedChatSession({ sessionId: "sess_ac634" });
     const request = new Request("https://app.test/api/chat", {
       method: "POST",
       headers: {
@@ -178,26 +169,25 @@ describe("UAT AC-634: end-to-end multi-page conversion yields a multi-page draft
         "x-plan-tier": "trial",
       },
       body: JSON.stringify({
-        history: [
-          { role: "user", content: "convert https://acme.test/ — keep all pages" },
-        ],
+        sessionId: chatSession.sessionId,
+        userMessage: "convert https://acme.test/ — keep all pages",
         siteDefinition: baseSite,
         frameworkCatalog: catalog,
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key", ASSETS_BUCKET: h.env.ASSETS_BUCKET },
-      { fetch: upstreamFetch as unknown as typeof fetch },
+      {
+        CLAUDE_API_KEY: "test-key",
+        ASSETS_BUCKET: h.env.ASSETS_BUCKET,
+        SITES_DB: chatSession.db,
+      },
+      { fetch: upstreamFetch },
     );
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      toolCalls: Array<{
-        name: string;
-        input: Record<string, unknown>;
-        result: { ok: boolean };
-      }>;
-    };
+    const consumed = await consumeChatSSE(response);
+    await chatSession.cleanup();
+    const body = consumed.done!;
 
     // Reconstruct the working draft from the AI's successful add_page edits.
     const draft = reconstructDraft(load1stContactSite(), catalog, body.toolCalls);

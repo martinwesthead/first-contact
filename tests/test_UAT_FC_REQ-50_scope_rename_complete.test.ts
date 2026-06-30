@@ -33,6 +33,10 @@ describe("REQ-50 scope rename", () => {
         "--exclude-dir=tickets",
         "--exclude=pnpm-lock.yaml",
         "--exclude=test_UAT_FC_REQ-50_*",
+        // The AC-819 rename test legitimately references the legacy
+        // `@1stcontact/` scope as test data (asserting it no longer survives in
+        // source); it documents the rename rather than consuming the old scope.
+        "--exclude=test_UAT_AC819_*",
         "packages",
         "apps",
         "tools",

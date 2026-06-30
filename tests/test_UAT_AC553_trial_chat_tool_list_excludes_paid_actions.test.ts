@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 const STATE_EDIT_TOOLS = [
   "set_module_content",
@@ -14,6 +16,16 @@ const STATE_EDIT_TOOLS = [
   "set_site_config",
 ];
 
+let env: SeededChatEnv;
+
+beforeAll(async () => {
+  env = await seedChatSession({ sessionId: "sess_ac553" });
+});
+
+afterAll(async () => {
+  await env.cleanup();
+});
+
 function makeChatRequest(headers: Record<string, string>): Request {
   return new Request("https://app.1stcontact.io/api/chat", {
     method: "POST",
@@ -22,7 +34,8 @@ function makeChatRequest(headers: Record<string, string>): Request {
       ...headers,
     },
     body: JSON.stringify({
-      history: [{ role: "user", content: "hi" }],
+      sessionId: env.sessionId,
+      userMessage: "hi",
       siteDefinition: load1stContactSite(),
       frameworkCatalog: buildFrameworkCatalog(),
     }),
@@ -50,10 +63,11 @@ describe("UAT AC-553: Trial-plan chat session is offered state-edit tools but no
     const defaulted = makeMockFetch();
     const defaultedResponse = await handleChatRequest(
       makeChatRequest({}),
-      { CLAUDE_API_KEY: "test-key-abc" },
+      { CLAUDE_API_KEY: "test-key-abc", SITES_DB: env.db },
       { fetch: defaulted.fetch as unknown as typeof fetch, log: () => {} },
     );
     expect(defaultedResponse.status).toBe(200);
+    await consumeChatSSE(defaultedResponse);
     expect(defaulted.capturedBodies).toHaveLength(1);
     const defaultedToolNames = defaulted.capturedBodies[0].tools.map((t) => t.name);
     for (const tool of STATE_EDIT_TOOLS) {
@@ -65,10 +79,11 @@ describe("UAT AC-553: Trial-plan chat session is offered state-edit tools but no
     const explicit = makeMockFetch();
     const explicitResponse = await handleChatRequest(
       makeChatRequest({ "x-plan-tier": "trial" }),
-      { CLAUDE_API_KEY: "test-key-abc" },
+      { CLAUDE_API_KEY: "test-key-abc", SITES_DB: env.db },
       { fetch: explicit.fetch as unknown as typeof fetch, log: () => {} },
     );
     expect(explicitResponse.status).toBe(200);
+    await consumeChatSSE(explicitResponse);
     expect(explicit.capturedBodies).toHaveLength(1);
     const explicitToolNames = explicit.capturedBodies[0].tools.map((t) => t.name);
     for (const tool of STATE_EDIT_TOOLS) {

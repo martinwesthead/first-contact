@@ -11,6 +11,12 @@ import {
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { loadFixture, makeHarness } from "./_helpers_REQ-21_analyze_page.js";
 import { makeMemKv } from "./_helpers_REQ-20_kv.js";
+import { makeStubChatDb } from "./_helpers_REQ-24_chat.js";
+import {
+  consumeChatSSE,
+  encodeAnthropicSSE,
+  type StubContentBlock,
+} from "./_helpers_REQ-36_chat_sse.js";
 
 const TARGET_URL = "https://x.test/";
 
@@ -311,10 +317,16 @@ function installChatFetch(
       if (Array.isArray(reqBody.tools)) {
         const r = chatTurns[Math.min(chatTurn, chatTurns.length - 1)];
         chatTurn++;
-        return new Response(JSON.stringify({ id: `msg_${chatTurn}`, ...r }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        });
+        // The chat handler consumes Anthropic's streaming SSE protocol — serve
+        // the scripted chat turn as SSE (the no-tools commentary call below
+        // stays plain JSON, as the analyze_page action parses it directly).
+        return new Response(
+          encodeAnthropicSSE({
+            id: `msg_${chatTurn}`,
+            content: r.content as StubContentBlock[],
+          }),
+          { status: 200, headers: { "content-type": "text/event-stream" } },
+        );
       }
       // analyze_page commentary call.
       return new Response(
@@ -333,6 +345,8 @@ function installChatFetch(
   }) as unknown as typeof fetch;
 }
 
+const CHAT_SESSION_ID = "sess_chat";
+
 function chatEnv(): Record<string, unknown> {
   return {
     CLAUDE_API_KEY: "test-key",
@@ -340,6 +354,9 @@ function chatEnv(): Record<string, unknown> {
     FETCH_CACHE_KV: makeMemKv(),
     FETCH_ROBOTS_KV: makeMemKv(),
     FETCH_RATE_KV: makeMemKv(),
+    // Server-resident transcript: an in-memory D1 stub stands in for SITES_DB
+    // (these tests stub globalThis.fetch, which deadlocks Miniflare's D1 proxy).
+    SITES_DB: makeStubChatDb({ sessionId: CHAT_SESSION_ID }).binding,
   };
 }
 
@@ -348,9 +365,8 @@ function chatRequest(): Request {
     method: "POST",
     headers: { "content-type": "application/json", "x-session-id": "session-chat" },
     body: JSON.stringify({
-      history: [
-        { role: "user", content: `please analyze ${TARGET_URL} as a reference` },
-      ],
+      sessionId: CHAT_SESSION_ID,
+      userMessage: `please analyze ${TARGET_URL} as a reference`,
       siteDefinition: { businessName: "Acme", pages: [] },
       frameworkCatalog: { modules: [], themeTokenNames: [] },
     }),
@@ -383,7 +399,8 @@ describe("UAT AC-605: a successful analysis through chat surfaces a kind-tagged 
         chatEnv() as never,
       );
       expect(response.status).toBe(200);
-      const body = (await response.json()) as ChatBody;
+      const consumed = await consumeChatSSE(response);
+      const body = consumed.done as unknown as ChatBody;
 
       const call = body.toolCalls.find((c) => c.name === "analyze_page");
       expect(call).toBeDefined();
@@ -437,7 +454,8 @@ describe("UAT AC-606: kind-tagged system-action results surface to the front-end
         chatEnv() as never,
       );
       expect(response.status).toBe(200);
-      const body = (await response.json()) as ChatBody;
+      const consumed = await consumeChatSSE(response);
+      const body = consumed.done as unknown as ChatBody;
 
       // Kind-tagged action surfaces in toolCalls with applied.kind + data.
       const kindCall = body.toolCalls.find(

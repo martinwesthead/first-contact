@@ -10,6 +10,8 @@ import { sessionEventBus } from "../apps/control-app/src/operator/events.js";
 import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { waitForSseFrame } from "./_helpers_REQ-9_sse.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { seedChatSession } from "./_helpers_REQ-24_chat.js";
+import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
 
 const STATE_EDIT_TOOL_NAMES = [
   "set_module_content",
@@ -436,6 +438,7 @@ describe("Story story-a07c8ed3: Operator action dispatch namespace, plan-tier au
       },
     );
 
+    const chatSession = await seedChatSession({ sessionId: "sess-ac551" });
     const makeChatRequest = (planTier: string): Request =>
       new Request("https://app.1stcontact.io/api/chat", {
         method: "POST",
@@ -445,7 +448,8 @@ describe("Story story-a07c8ed3: Operator action dispatch namespace, plan-tier au
           "x-plan-tier": planTier,
         },
         body: JSON.stringify({
-          history: [{ role: "user", content: "hi" }],
+          sessionId: chatSession.sessionId,
+          userMessage: "hi",
           siteDefinition: load1stContactSite(),
           frameworkCatalog: buildFrameworkCatalog(),
         }),
@@ -453,7 +457,7 @@ describe("Story story-a07c8ed3: Operator action dispatch namespace, plan-tier au
 
     const trialResp = await handleChatRequest(
       makeChatRequest("trial"),
-      { CLAUDE_API_KEY: "k" },
+      { CLAUDE_API_KEY: "k", SITES_DB: chatSession.db },
       { fetch: mockFetch as unknown as typeof fetch },
     );
     expect(trialResp.status).toBe(200);
@@ -463,11 +467,12 @@ describe("Story story-a07c8ed3: Operator action dispatch namespace, plan-tier au
     }
     expect(trialToolNames).toContain("report_validation_rejection");
     expect(trialToolNames).not.toContain("publish_stub");
+    await consumeChatSSE(trialResp);
 
     captured.length = 0;
     const paidResp = await handleChatRequest(
       makeChatRequest("paid"),
-      { CLAUDE_API_KEY: "k" },
+      { CLAUDE_API_KEY: "k", SITES_DB: chatSession.db },
       { fetch: mockFetch as unknown as typeof fetch },
     );
     expect(paidResp.status).toBe(200);
@@ -476,6 +481,8 @@ describe("Story story-a07c8ed3: Operator action dispatch namespace, plan-tier au
     for (const t of STATE_EDIT_TOOL_NAMES) {
       expect(paidToolNames).toContain(t);
     }
+    await consumeChatSSE(paidResp);
+    await chatSession.cleanup();
 
     // (d) Parity-audit classification (the logic the CLI implements):
     //     every action's status is "chat-only" (ui_route === null) or

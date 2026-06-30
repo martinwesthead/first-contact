@@ -1,10 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 /**
  * AC-631: The system prompt sent to the builder AI on each chat turn includes
@@ -14,6 +16,16 @@ import { load1stContactSite } from "./_helpers_REQ-8_site.js";
  * low-confidence sections.
  */
 describe("UAT AC-631: builder AI system prompt includes the reproduce-a-website how-to", () => {
+  let env: SeededChatEnv;
+
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_ac631" });
+  });
+
+  afterAll(async () => {
+    await env.cleanup();
+  });
+
   it("test_UAT_AC631_builder_system_prompt_includes_reproduce_website_howto", async () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const howtoPath = resolve(here, "../docs/llm-context/reproducing-a-website.md");
@@ -50,17 +62,19 @@ describe("UAT AC-631: builder AI system prompt includes the reproduce-a-website 
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [{ role: "user", content: "hi" }],
+        sessionId: env.sessionId,
+        userMessage: "hi",
         siteDefinition: load1stContactSite(),
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key" },
+      { CLAUDE_API_KEY: "test-key", SITES_DB: env.db },
       { fetch: upstreamFetch as unknown as typeof fetch },
     );
     expect(response.status).toBe(200);
+    await consumeChatSSE(response);
     expect(capturedSystem).toContain("read_transcription_digest");
     expect(capturedSystem).toMatch(/\/assets\//);
   });

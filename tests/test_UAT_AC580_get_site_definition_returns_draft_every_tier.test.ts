@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { visibleToolSpecs } from "../apps/control-app/src/operator/registry.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { makeAnthropicSequenceFetch } from "./_helpers_REQ-13_anthropic.js";
 import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 /**
  * AC-580: the AI can read the current draft site definition on demand via a
@@ -14,6 +15,16 @@ import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
  * does not mutate state. Verified through the streaming /api/chat handler.
  */
 describe("UAT AC-580: get_site_definition read tool returns the current draft and is available on every plan tier", () => {
+  let env: SeededChatEnv;
+
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_ac580" });
+  });
+
+  afterAll(async () => {
+    await env.cleanup();
+  });
+
   it("test_UAT_AC580_get_site_definition_returns_draft_on_every_tier", async () => {
     const site = load1stContactSite();
     const original = JSON.parse(JSON.stringify(site));
@@ -52,7 +63,8 @@ describe("UAT AC-580: get_site_definition read tool returns the current draft an
         method: "POST",
         headers,
         body: JSON.stringify({
-          history: [{ role: "user", content: "what does the site look like?" }],
+          sessionId: env.sessionId,
+          userMessage: "what does the site look like?",
           siteDefinition: site,
           frameworkCatalog: buildFrameworkCatalog(),
         }),
@@ -60,7 +72,7 @@ describe("UAT AC-580: get_site_definition read tool returns the current draft an
 
       const response = await handleChatRequest(
         request,
-        { CLAUDE_API_KEY: "test-key" },
+        { CLAUDE_API_KEY: "test-key", SITES_DB: env.db },
         { fetch: stubFetch },
       );
       expect(response.status).toBe(200);

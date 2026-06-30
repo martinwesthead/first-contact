@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { buildFrameworkCatalog } from "@gendev/builder-ui";
 import { applyToolCall, type ToolName } from "@gendev/builder-ui/tools";
@@ -9,6 +9,11 @@ import {
   type ReferenceDigest,
 } from "../packages/extractor/src/schema.js";
 import { makeTranscribeHarness } from "./_helpers_REQ-28_transcribe_site.js";
+import {
+  consumeChatSSE,
+  makeAnthropicStreamingFetch,
+} from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession } from "./_helpers_REQ-24_chat.js";
 
 const pngBytes = new Uint8Array([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
@@ -131,70 +136,58 @@ describe("UAT AC-633: end-to-end single-page conversion yields a source-styled d
       theme: { palette: { primary: string } };
     }).theme.palette.primary;
 
-    let turn = 0;
-    const upstreamFetch = vi.fn(async () => {
-      turn++;
-      if (turn === 1) {
-        return new Response(
-          JSON.stringify({
-            id: "msg_t1",
-            content: [
-              { type: "text", text: "Reading the digest…" },
-              {
-                type: "tool_use",
-                id: "tu_read",
-                name: "read_transcription_digest",
-                input: { siteId },
-              },
-            ],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        );
-      }
-      if (turn === 2) {
-        return new Response(
-          JSON.stringify({
-            id: "msg_t2",
-            content: [
-              { type: "text", text: "Applying source palette + hero." },
-              {
-                type: "tool_use",
-                id: "tu_token",
-                name: "set_theme_token",
-                input: { name: "palette.primary", value: "#7c3aed" },
-              },
-              {
-                type: "tool_use",
-                id: "tu_img",
-                name: "set_module_content",
-                input: {
-                  instance_id: heroModuleId,
-                  field: "image",
-                  value: { id: "hero-img", src: `/assets/${heroR2Key}`, alt: "Hero" },
-                },
-              },
-              {
-                type: "tool_use",
-                id: "tu_text",
-                name: "set_module_content",
-                input: {
-                  instance_id: heroModuleId,
-                  field: "heading",
-                  value: "Acme Catering Co.",
-                },
-              },
-            ],
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        );
-      }
-      return new Response(
-        JSON.stringify({ id: "msg_t3", content: [{ type: "text", text: "Done." }] }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      );
-    });
+    // The chat handler consumes Anthropic's streaming SSE protocol; serve the
+    // scripted turns as SSE (read digest → apply palette+hero → terminating text).
+    const { fetch: upstreamFetch } = makeAnthropicStreamingFetch([
+      {
+        id: "msg_t1",
+        content: [
+          { type: "text", text: "Reading the digest…" },
+          {
+            type: "tool_use",
+            id: "tu_read",
+            name: "read_transcription_digest",
+            input: { siteId },
+          },
+        ],
+      },
+      {
+        id: "msg_t2",
+        content: [
+          { type: "text", text: "Applying source palette + hero." },
+          {
+            type: "tool_use",
+            id: "tu_token",
+            name: "set_theme_token",
+            input: { name: "palette.primary", value: "#7c3aed" },
+          },
+          {
+            type: "tool_use",
+            id: "tu_img",
+            name: "set_module_content",
+            input: {
+              instance_id: heroModuleId,
+              field: "image",
+              value: { id: "hero-img", src: `/assets/${heroR2Key}`, alt: "Hero" },
+            },
+          },
+          {
+            type: "tool_use",
+            id: "tu_text",
+            name: "set_module_content",
+            input: {
+              instance_id: heroModuleId,
+              field: "heading",
+              value: "Acme Catering Co.",
+            },
+          },
+        ],
+      },
+      { id: "msg_t3", content: [{ type: "text", text: "Done." }] },
+    ]);
 
     const catalog = buildFrameworkCatalog();
+    const chatSession = await seedChatSession({ sessionId: "sess_ac633" });
     const request = new Request("https://app.test/api/chat", {
       method: "POST",
       headers: {
@@ -204,24 +197,25 @@ describe("UAT AC-633: end-to-end single-page conversion yields a source-styled d
         "x-plan-tier": "trial",
       },
       body: JSON.stringify({
-        history: [{ role: "user", content: "convert https://acme.test/ for me" }],
+        sessionId: chatSession.sessionId,
+        userMessage: "convert https://acme.test/ for me",
         siteDefinition: baseSite,
         frameworkCatalog: catalog,
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key", ASSETS_BUCKET: h.env.ASSETS_BUCKET },
-      { fetch: upstreamFetch as unknown as typeof fetch },
+      {
+        CLAUDE_API_KEY: "test-key",
+        ASSETS_BUCKET: h.env.ASSETS_BUCKET,
+        SITES_DB: chatSession.db,
+      },
+      { fetch: upstreamFetch },
     );
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      toolCalls: Array<{
-        name: string;
-        input: Record<string, unknown>;
-        result: { ok: boolean };
-      }>;
-    };
+    const consumed = await consumeChatSSE(response);
+    await chatSession.cleanup();
+    const body = consumed.done!;
 
     // Reconstruct the working draft from the AI's successful edits.
     const draft = reconstructDraft(load1stContactSite(), catalog, body.toolCalls);

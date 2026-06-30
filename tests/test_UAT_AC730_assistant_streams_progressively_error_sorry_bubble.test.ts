@@ -66,6 +66,7 @@ describe("UAT AC-730: assistant responses stream progressively; an error event s
     await runChatTurn("hi", {
       store,
       catalog,
+      chatSessionId: "sess_ac730",
       fetch: okFetch as unknown as typeof fetch,
     });
 
@@ -101,6 +102,7 @@ describe("UAT AC-730: assistant responses stream progressively; an error event s
     await runChatTurn("hi", {
       store: storeErr,
       catalog,
+      chatSessionId: "sess_ac730",
       fetch: errFetch as unknown as typeof fetch,
     });
     const errLast = storeErr.getState().chatHistory.at(-1)!;
@@ -123,6 +125,7 @@ describe("UAT AC-730: assistant responses stream progressively; an error event s
     await runChatTurn("hi", {
       store: storeHttp,
       catalog,
+      chatSessionId: "sess_ac730",
       fetch: httpFetch as unknown as typeof fetch,
     });
     const httpLast = storeHttp.getState().chatHistory.at(-1)!;

@@ -113,6 +113,7 @@ describe("UAT AC-735: rejected tool calls surface in a dismissable failure banne
     const turn1 = await runChatTurn("update the hero", {
       store,
       catalog,
+      chatSessionId: "sess_ac735",
       fetch: vi.fn(async () => sseResponse(turn1Frames)) as unknown as typeof fetch,
     });
     expect(turn1.toolCalls).toHaveLength(1);
@@ -123,16 +124,38 @@ describe("UAT AC-735: rejected tool calls surface in a dismissable failure banne
     expect(pending[0].name).toBe("set_module_content");
     expect(pending[0].error.length).toBeGreaterThan(0);
 
-    // Turn 2: capture the POSTed history. A synthetic `system` message naming
-    // the failed tool and mentioning failure must be prepended and sent, and
-    // the pending buffer cleared once it ships.
-    let capturedBody: {
-      history: Array<{ role: string; content: string }>;
-    } | null = null;
-    const fetchTurn2 = vi.fn(async (_url: string, init?: RequestInit) => {
-      capturedBody = JSON.parse(String(init?.body ?? "{}")) as {
-        history: Array<{ role: string; content: string }>;
-      };
+    // Turn 2 (server-resident reinjection): the dead in-band `history` field is
+    // gone — the driver persists the synthetic `system` note via the session
+    // messages endpoint (POST /api/chats/:id/messages) so the server's
+    // tail-load picks it up on the next /api/chat call. Capture that POST and
+    // assert it names the failed tool and mentions failure; the pending buffer
+    // is cleared once it ships, and the /api/chat body carries no `history`.
+    let appendedSystemNote: { role: string; content: string } | null = null;
+    let chatTurnBody: Record<string, unknown> | null = null;
+    const fetchTurn2 = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const u = typeof url === "string" ? url : url.toString();
+      const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      if (/\/api\/chats\/[^/]+\/messages\/?$/.test(u)) {
+        if (body.role === "system") {
+          appendedSystemNote = {
+            role: String(body.role),
+            content: String(body.content),
+          };
+        }
+        return new Response(
+          JSON.stringify({
+            id: "m_sys",
+            session_id: "sess_ac735",
+            ord: 99,
+            role: body.role,
+            content: body.content,
+            ts: 1,
+          }),
+          { status: 201, headers: { "content-type": "application/json" } },
+        );
+      }
+      // POST /api/chat
+      chatTurnBody = body;
       return sseResponse(
         sseFrame("done", {
           text: "Retrying.",
@@ -146,15 +169,19 @@ describe("UAT AC-735: rejected tool calls surface in a dismissable failure banne
     await runChatTurn("try again", {
       store,
       catalog,
+      chatSessionId: "sess_ac735",
       fetch: fetchTurn2 as unknown as typeof fetch,
     });
 
-    expect(capturedBody).not.toBeNull();
-    const systemNote = capturedBody!.history.find((m) => m.role === "system");
-    expect(systemNote).toBeDefined();
-    expect(systemNote!.content).toMatch(/set_module_content/);
-    expect(systemNote!.content.toLowerCase()).toMatch(/fail/);
+    expect(appendedSystemNote).not.toBeNull();
+    expect(appendedSystemNote!.role).toBe("system");
+    expect(appendedSystemNote!.content).toMatch(/set_module_content/);
+    expect(appendedSystemNote!.content.toLowerCase()).toMatch(/fail/);
     expect(store.getState().pendingToolFailures).toEqual([]);
+    // The outbound chat turn no longer carries the dead in-band `history` field.
+    expect(chatTurnBody).not.toBeNull();
+    expect(chatTurnBody!.history).toBeUndefined();
+    expect(chatTurnBody!.sessionId).toBe("sess_ac735");
 
     // ---- Part 3: an all-accepted turn leaves the buffer empty -----------
     const okStore = new BuilderStore({
@@ -190,6 +217,7 @@ describe("UAT AC-735: rejected tool calls surface in a dismissable failure banne
     const okResult = await runChatTurn("change primary color", {
       store: okStore,
       catalog,
+      chatSessionId: "sess_ac735_ok",
       fetch: vi.fn(async () => sseResponse(okFrames)) as unknown as typeof fetch,
     });
     expect(okResult.toolCalls[0].accepted).toBe(true);

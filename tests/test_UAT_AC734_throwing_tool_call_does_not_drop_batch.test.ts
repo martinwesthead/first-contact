@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import {
   applyToolCall as realApplyToolCall,
@@ -10,8 +10,19 @@ import {
   consumeChatSSE,
   makeAnthropicStreamingFetch,
 } from "./_helpers_REQ-36_chat_sse.js";
+import { seedChatSession, type SeededChatEnv } from "./_helpers_REQ-24_chat.js";
 
 describe("UAT AC-734: a throwing tool call in a batch yields one structured ok:false result without dropping the sibling calls' results", () => {
+  let env: SeededChatEnv;
+
+  beforeAll(async () => {
+    env = await seedChatSession({ sessionId: "sess_ac734" });
+  });
+
+  afterAll(async () => {
+    await env.cleanup();
+  });
+
   it("test_UAT_AC734_one_thrower_yields_one_error_result_siblings_survive", async () => {
     const site = load1stContactSite();
 
@@ -63,16 +74,15 @@ describe("UAT AC-734: a throwing tool call in a batch yields one structured ok:f
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [
-          { role: "user", content: "make hero medium and left-aligned" },
-        ],
+        sessionId: env.sessionId,
+        userMessage: "make hero medium and left-aligned",
         siteDefinition: site,
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key" },
+      { CLAUDE_API_KEY: "test-key", SITES_DB: env.db },
       {
         fetch: stubFetch,
         applyToolCall,

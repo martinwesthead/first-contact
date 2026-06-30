@@ -1,107 +1,106 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
-  BuilderStore,
+  bootBuilder,
   buildFrameworkCatalog,
   runChatTurn,
 } from "@gendev/builder-ui";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
 import { MemoryStorage } from "./_helpers_REQ-8_storage.js";
-import { makeChatSSEResponse } from "./_helpers_REQ-36_chat_sse.js";
+import { createMockChatApi } from "./_helpers_REQ-25_chat_api.js";
 
 /**
- * AC-585: chat-turn history is persisted to browser storage after every
- * turn (user message + assistant turn, including the structured outcome of
- * accepted/rejected tool calls) and restored when the builder is re-mounted
- * against the same storage. REQ-36 switched /api/chat to SSE, so the driver
- * is exercised with streamed (token/tool_call/tool_result/done) responses.
+ * AC-585 (server-resident, REQ-25): chat-turn history is NOT stored as a
+ * transcript in the operator's browser storage. Each turn is persisted into the
+ * active session ON THE SERVER (the /api/chat handler appends the user + assistant
+ * messages to the session's D1 rows). When the builder is re-mounted — even
+ * against a brand-new, empty browser storage — its chat log is restored by
+ * loading the active session's tail from the API, preserving message order and
+ * content. The only possible source of the restored transcript is the server.
  */
-describe("UAT AC-585: chat-turn history is persisted to browser storage and restored on builder re-mount", () => {
+const flushBoot = async (): Promise<void> => {
+  for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+};
+
+describe("UAT AC-585: chat-turn history is server-resident and restored from the session API tail on builder re-mount", () => {
   afterEach(() => {
     document.body.innerHTML = "";
   });
 
-  it("test_UAT_AC585_chat_history_persisted_and_restored_with_accepted_and_rejected_turns", async () => {
-    const storage = new MemoryStorage();
+  it("test_UAT_AC585_history_persisted_server_side_and_restored_from_api_tail_on_remount", async () => {
+    const siteId = "site_ac585";
     const catalog = buildFrameworkCatalog();
-    const site = load1stContactSite();
+    // One mock chat API shared across both builder mounts — it IS the server,
+    // holding sessions and per-session messages across re-mounts.
+    const mock = createMockChatApi({ chatResponseText: "Updated." });
 
-    // A hero instance gives us a dial whose value we can drive out-of-enum to
-    // produce a *rejected* tool call (DOC-8 §6 — size: [sm, md, lg]).
-    const heroInstance = site.pages[0].modules.find((m) => m.type === "hero")!;
-    expect(heroInstance).toBeDefined();
+    // --- First mount: boot auto-creates and activates exactly one session ----
+    const storage1 = new MemoryStorage();
+    const root1 = document.createElement("div");
+    document.body.appendChild(root1);
+    const boot1 = bootBuilder({
+      root: root1,
+      initialSite: load1stContactSite(),
+      siteId,
+      storage: storage1,
+      sessionStorageFacility: null,
+      fetch: mock.fetch,
+    });
+    await flushBoot();
+    const sid = boot1.store.getState().activeSessionId;
+    expect(sid).toBeTruthy();
 
-    // First builder: empty chat history, backed by the shared storage.
-    const first = new BuilderStore(
-      { siteDefinition: site, chatHistory: [] },
-      { storage },
-    );
-
-    // Turn 1 — accepted set_theme_token. Turn 2 — rejected set_module_dial
-    // (value outside the declared enum). Both delivered as SSE.
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(
-        makeChatSSEResponse({
-          text: "Primary set to pink.",
-          toolCalls: [
-            {
-              name: "set_theme_token",
-              input: { name: "palette.primary", value: "#ff0099" },
-            },
-          ],
-        }),
-      )
-      .mockResolvedValueOnce(
-        makeChatSSEResponse({
-          text: "Trying to make the hero huge.",
-          toolCalls: [
-            {
-              name: "set_module_dial",
-              input: { instance_id: heroInstance.id, dial: "size", value: "huge" },
-            },
-          ],
-        }),
-      );
-
+    // Two turns. The /api/chat handler appends the user message + assistant
+    // turn to the session on the server (server-resident transcript).
     await runChatTurn("make the primary color pink", {
-      store: first,
+      store: boot1.store,
       catalog,
-      fetch: fetchMock as unknown as typeof fetch,
+      chatSessionId: sid,
+      fetch: mock.fetch,
     });
     await runChatTurn("make the hero huge", {
-      store: first,
+      store: boot1.store,
       catalog,
-      fetch: fetchMock as unknown as typeof fetch,
+      chatSessionId: sid,
+      fetch: mock.fetch,
     });
 
-    // Working chat log has four turns.
-    const liveHistory = first.getState().chatHistory;
-    expect(liveHistory).toHaveLength(4);
-    expect(liveHistory.map((m) => m.role)).toEqual([
+    // The server holds the full transcript for this session (4 messages,
+    // alternating user/assistant), keyed by the session id.
+    const serverMessages = mock.messagesBySession.get(sid!) ?? [];
+    expect(serverMessages).toHaveLength(4);
+    expect(serverMessages.map((m) => m.role)).toEqual([
       "user",
       "assistant",
       "user",
       "assistant",
     ]);
-    expect(liveHistory[1].toolCalls?.[0].accepted).toBe(true);
-    expect(liveHistory[3].toolCalls?.[0].accepted).toBe(false);
+    expect(serverMessages[0]!.content).toBe("make the primary color pink");
+    expect(serverMessages[2]!.content).toBe("make the hero huge");
 
-    // Storage now holds a serialised chat-turn history under the chat key.
-    const persistedChat = storage.getItem("1stcontact_builder_site_v1_chat");
-    expect(persistedChat).toBeTruthy();
-    const parsedChat = JSON.parse(persistedChat!) as Array<unknown>;
-    expect(parsedChat).toHaveLength(4);
+    boot1.destroy();
 
-    // Discard the builder; mount a fresh one against the same storage with an
-    // empty initial chat history. It hydrates from storage — not empty —
-    // preserving order and accepted/rejected outcomes.
-    const reloaded = new BuilderStore(
-      { siteDefinition: load1stContactSite(), chatHistory: [] },
-      { storage },
-    );
+    // --- Re-mount against a FRESH, EMPTY browser storage --------------------
+    // If history were browser-resident, an empty storage would yield an empty
+    // log. The transcript can only come back via the server tail-load.
+    const storage2 = new MemoryStorage();
+    expect(storage2.getItem("1stcontact_builder_site_v1_chat")).toBeNull();
+    const root2 = document.createElement("div");
+    document.body.appendChild(root2);
+    const boot2 = bootBuilder({
+      root: root2,
+      initialSite: load1stContactSite(),
+      siteId,
+      storage: storage2,
+      sessionStorageFacility: null,
+      fetch: mock.fetch,
+    });
+    await flushBoot();
 
-    const restored = reloaded.getState().chatHistory;
+    // The same session is reactivated and its tail restored into chatHistory
+    // from the API — order and content preserved across the re-mount.
+    expect(boot2.store.getState().activeSessionId).toBe(sid);
+    const restored = boot2.store.getState().chatHistory;
     expect(restored).toHaveLength(4);
     expect(restored.map((m) => m.role)).toEqual([
       "user",
@@ -109,12 +108,17 @@ describe("UAT AC-585: chat-turn history is persisted to browser storage and rest
       "user",
       "assistant",
     ]);
-    expect(restored[0].content).toBe("make the primary color pink");
-    expect(restored[2].content).toBe("make the hero huge");
-    expect(restored[1].toolCalls?.[0].accepted).toBe(true);
-    expect(restored[1].toolCalls?.[0].name).toBe("set_theme_token");
-    expect(restored[3].toolCalls?.[0].accepted).toBe(false);
-    expect(restored[3].toolCalls?.[0].error ?? "").toContain("size");
-    expect(restored[3].toolCalls?.[0].error ?? "").toContain("huge");
+    expect(restored[0]!.content).toBe("make the primary color pink");
+    expect(restored[2]!.content).toBe("make the hero huge");
+
+    // The restore was a genuine server round-trip — a GET on the session
+    // messages endpoint — not a browser-storage rehydrate.
+    const tailLoads = mock.calls.filter(
+      (c) =>
+        c.method === "GET" && /\/api\/chats\/[^/]+\/messages/.test(c.url),
+    );
+    expect(tailLoads.length).toBeGreaterThan(0);
+
+    boot2.destroy();
   });
 });

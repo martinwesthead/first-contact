@@ -8,6 +8,8 @@ import { validateSite } from "@gendev/site-schema";
 import { findAction } from "../apps/control-app/src/operator/registry.js";
 import { handleChatRequest } from "../apps/control-app/src/chat.js";
 import { load1stContactSite } from "./_helpers_REQ-8_site.js";
+import { seedChatSession } from "./_helpers_REQ-24_chat.js";
+import { consumeChatSSE } from "./_helpers_REQ-36_chat_sse.js";
 import type { NavEntry, Site } from "@gendev/site-schema";
 
 const catalog = buildFrameworkCatalog();
@@ -375,21 +377,27 @@ describe("Reconciliation: AI nav/metadata/duplicate editing surface (story-e893e
         );
       },
     );
+    const chatSession = await seedChatSession({ sessionId: "sess_ac717" });
     const request = new Request("https://app.test/api/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        history: [{ role: "user", content: "hi" }],
+        sessionId: chatSession.sessionId,
+        userMessage: "hi",
         siteDefinition: load1stContactSite(),
         frameworkCatalog: buildFrameworkCatalog(),
       }),
     });
     const response = await handleChatRequest(
       request,
-      { CLAUDE_API_KEY: "test-key" },
+      { CLAUDE_API_KEY: "test-key", SITES_DB: chatSession.db },
       { fetch: upstreamFetch as unknown as typeof fetch },
     );
     expect(response.status).toBe(200);
+    // Drain the handler's SSE so the deferred server-side append completes
+    // before the session DB is torn down.
+    await consumeChatSSE(response);
+    await chatSession.cleanup();
     // The system-prompt editing rules surface the tools and the nav-wiring step
     // (chat.ts Rules section). The canonical "Wire up the nav" how-to heading is
     // asserted against the doc file above; byte-parity between that doc and the
