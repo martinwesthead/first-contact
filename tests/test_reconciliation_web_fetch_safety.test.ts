@@ -380,90 +380,175 @@ describe("Story story-a0482aed: External fetch safety contract", () => {
   });
 
   // ─────────────────────────────────────────────────────────────────────
-  // AC-565: Browser-render budget exhausts per chat session at 50s.
+  // AC-565 (BUG-17): per-chat-session browser budget is infinite by default;
+  // a finite session cap is enforced only under an explicit config override.
   // ─────────────────────────────────────────────────────────────────────
-  it("test_UAT_AC565_browser_budget_exhausts_per_chat_session_at_fifty_seconds", async () => {
-    const env = { BROWSER_BUDGET_KV: makeMemKv() };
+  it("test_UAT_AC565_session_budget_infinite_by_default_finite_only_under_config_override", async () => {
     const clock = () => 1_700_000_000_000;
-    for (let i = 0; i < 10; i++) {
-      const d = await chargeBrowserBudget(env, {
+
+    // Default path: NO config override → the session budget is effectively
+    // infinite. Charge a cumulative total far above the old 50s ceiling to a
+    // single session; every check returns ok.
+    const envDefault = { BROWSER_BUDGET_KV: makeMemKv() };
+    for (let i = 0; i < 20; i++) {
+      const d = await chargeBrowserBudget(envDefault, {
         accountId: "acct-565",
         sessionId: "sess-565",
-        costSeconds: 5,
+        costSeconds: 1_000, // 20 × 1000 = 20_000s, 400× the old 50s cap
         clock,
       });
       expect(d.ok).toBe(true);
     }
-    const exhausted = await chargeBrowserBudget(env, {
-      accountId: "acct-565",
-      sessionId: "sess-565",
-      costSeconds: 1,
+    expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBe(1_000_000_000);
+
+    // Override path: an explicit small sessionMaxSeconds re-arms the cap.
+    const envOverride = { BROWSER_BUDGET_KV: makeMemKv() };
+    const config = { sessionMaxSeconds: 50 };
+    for (let i = 0; i < 10; i++) {
+      const d = await chargeBrowserBudget(envOverride, {
+        accountId: "acct-565b",
+        sessionId: "sess-565b",
+        costSeconds: 5,
+        clock,
+        config,
+      });
+      expect(d.ok).toBe(true);
+    }
+    // Counter has reached the 50s cap (inclusive: spent >= cap exhausts).
+    const exhausted = await checkBrowserBudget(envOverride, {
+      accountId: "acct-565b",
+      sessionId: "sess-565b",
       clock,
+      config,
     });
     expect(exhausted.ok).toBe(false);
     if (exhausted.ok) return;
     expect(exhausted.reason).toBe("budget_exhausted");
     expect(exhausted.exhausted).toBe("session");
     expect(exhausted.remainingSeconds).toBe(0);
-    expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBe(50);
 
-    // A different session for the same account still has its own budget.
-    const otherSession = await checkBrowserBudget(env, {
-      accountId: "acct-565",
-      sessionId: "sess-565-other",
+    // A different session for the same account still has its own budget under
+    // the same override.
+    const otherSession = await checkBrowserBudget(envOverride, {
+      accountId: "acct-565b",
+      sessionId: "sess-565b-other",
       clock,
+      config,
     });
     expect(otherSession.ok).toBe(true);
   });
 
   // ─────────────────────────────────────────────────────────────────────
-  // AC-566: Browser-render budget exhausts per account-day at 200s.
+  // AC-566 (BUG-17): per-account-day browser budget is infinite by default;
+  // a finite day cap is enforced only under an explicit config override and
+  // resets at the next UTC day boundary.
   // ─────────────────────────────────────────────────────────────────────
-  it("test_UAT_AC566_browser_budget_exhausts_per_account_day_at_two_hundred_seconds", async () => {
-    const env = { BROWSER_BUDGET_KV: makeMemKv() };
-    let t = 1_700_000_000_000; // arbitrary UTC instant
-    const clock = () => t;
+  it("test_UAT_AC566_account_day_budget_infinite_by_default_finite_only_under_config_override", async () => {
+    const clock = () => 1_700_000_000_000;
 
-    // Charge 200 seconds across 5 separate sessions (40s each — well under
-    // the 50s session cap), so the day counter hits 200 before any single
-    // session does.
-    for (let i = 0; i < 5; i++) {
-      const sessionId = `sess-566-${i}`;
-      const d = await chargeBrowserBudget(env, {
+    // Default path: NO config override → large cumulative day total across
+    // many distinct sessions for one account is always accepted.
+    const envDefault = { BROWSER_BUDGET_KV: makeMemKv() };
+    for (let i = 0; i < 10; i++) {
+      const d = await chargeBrowserBudget(envDefault, {
         accountId: "acct-566",
-        sessionId,
-        costSeconds: 40,
+        sessionId: `sess-566-${i}`,
+        costSeconds: 1_000, // 10_000s total, 50× the old 200s ceiling
         clock,
       });
       expect(d.ok).toBe(true);
     }
+    expect(DEFAULT_BROWSER_BUDGET.dayMaxSeconds).toBe(1_000_000_000);
 
-    // The 6th session attempts ANY charge → day budget exhausted.
-    const exhausted = await checkBrowserBudget(env, {
-      accountId: "acct-566",
-      sessionId: "sess-566-6",
-      clock,
+    // Override path: an explicit small dayMaxSeconds re-arms the per-account
+    // day cap. Charge 200s across 5 sessions (40s each, under the infinite
+    // session window) so the day counter hits the override before any session.
+    let t = 1_700_000_000_000; // arbitrary UTC instant
+    const movingClock = () => t;
+    const envOverride = { BROWSER_BUDGET_KV: makeMemKv() };
+    const config = { dayMaxSeconds: 200 };
+    for (let i = 0; i < 5; i++) {
+      const d = await chargeBrowserBudget(envOverride, {
+        accountId: "acct-566b",
+        sessionId: `sess-566b-${i}`,
+        costSeconds: 40,
+        clock: movingClock,
+        config,
+      });
+      expect(d.ok).toBe(true);
+    }
+
+    // A fresh 6th session attempts ANY charge → account-day budget exhausted.
+    const exhausted = await checkBrowserBudget(envOverride, {
+      accountId: "acct-566b",
+      sessionId: "sess-566b-6",
+      clock: movingClock,
+      config,
     });
     expect(exhausted.ok).toBe(false);
     if (exhausted.ok) return;
     expect(exhausted.reason).toBe("budget_exhausted");
     expect(exhausted.exhausted).toBe("day");
     expect(exhausted.remainingSeconds).toBe(0);
-    expect(DEFAULT_BROWSER_BUDGET.dayMaxSeconds).toBe(200);
 
-    // Advance the clock past the next UTC day boundary; full budget back.
+    // Advance the clock past the next UTC day boundary; full day budget back.
     const ONE_DAY_MS = 86_400_000;
     t += ONE_DAY_MS + 5_000;
-    (env.BROWSER_BUDGET_KV as ReturnType<typeof makeMemKv>).__advance(
+    (envOverride.BROWSER_BUDGET_KV as ReturnType<typeof makeMemKv>).__advance(
       ONE_DAY_MS + 5_000,
     );
-    const fresh = await checkBrowserBudget(env, {
-      accountId: "acct-566",
-      sessionId: "sess-566-fresh",
-      clock,
+    const fresh = await checkBrowserBudget(envOverride, {
+      accountId: "acct-566b",
+      sessionId: "sess-566b-fresh",
+      clock: movingClock,
+      config,
     });
     expect(fresh.ok).toBe(true);
     if (fresh.ok) expect(fresh.remaining.day).toBe(200);
+  });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // AC-839 (BUG-17): under default configuration the browser budget accepts
+  // an arbitrarily large browser-second charge — the cap never fires.
+  // ─────────────────────────────────────────────────────────────────────
+  it("test_UAT_AC839_default_budget_accepts_arbitrarily_large_charges", async () => {
+    const env = { BROWSER_BUDGET_KV: makeMemKv() };
+    const clock = () => 1_700_000_000_000;
+
+    // A single very large charge against a fresh session, no override → ok.
+    const big = await chargeBrowserBudget(env, {
+      accountId: "acct-839",
+      sessionId: "sess-839",
+      costSeconds: 100_000,
+      clock,
+    });
+    expect(big.ok).toBe(true);
+
+    // Repeating many large charges within the same session/account-day never
+    // trips the cap (100 × 1000s = 100_000s more).
+    for (let i = 0; i < 100; i++) {
+      const d = await chargeBrowserBudget(env, {
+        accountId: "acct-839",
+        sessionId: "sess-839",
+        costSeconds: 1_000,
+        clock,
+      });
+      expect(d.ok).toBe(true);
+    }
+    const probe = await checkBrowserBudget(env, {
+      accountId: "acct-839",
+      sessionId: "sess-839",
+      clock,
+    });
+    expect(probe.ok).toBe(true);
+
+    // The default ceilings are each effectively infinite.
+    expect(DEFAULT_BROWSER_BUDGET.sessionMaxSeconds).toBeGreaterThanOrEqual(
+      1_000_000_000,
+    );
+    expect(DEFAULT_BROWSER_BUDGET.dayMaxSeconds).toBeGreaterThanOrEqual(
+      1_000_000_000,
+    );
   });
 
   // ─────────────────────────────────────────────────────────────────────
