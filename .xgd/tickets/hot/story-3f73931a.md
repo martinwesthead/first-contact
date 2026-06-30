@@ -5,10 +5,10 @@ type: story
 title: Extract a reference website's design signals into a canonical Reference Digest
 created_by: xgd
 created_at: '2026-06-27T01:09:57.646726+00:00'
-updated_at: '2026-06-30T01:26:12.448275+00:00'
+updated_at: '2026-06-30T01:27:21.649848+00:00'
 completed_at: null
-last_field_updated: story_kind
-status: reconciling
+last_field_updated: status
+status: updated
 fields:
   intent_uid: bundle-bbb1bd9c
   capability_uid: capability-9395ee51
