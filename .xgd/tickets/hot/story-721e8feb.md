@@ -5,10 +5,10 @@ type: story
 title: Chat session & reference-doc HTTP API
 created_by: xgd
 created_at: '2026-06-30T04:15:34.254567+00:00'
-updated_at: '2026-06-30T04:15:34.254567+00:00'
+updated_at: '2026-06-30T04:23:47.205068+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-44f53d53
   capability_uid: capability-c67fb2e2
