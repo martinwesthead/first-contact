@@ -1,29 +1,49 @@
 ---
-uid: request-67e3e495
-id: REQ-51
-type: request
-title: 'AI closed-loop preview: render generated draft pages so the AI can see its
-  own work'
+uid: bundle-93cd5926
+id: BUNDLE-10
+type: bundle
+title: REQ-53 + REQ-51 + BUG-15 + BUG-17
 created_by: xgd
-created_at: '2026-06-24T20:27:13.141203+00:00'
-updated_at: '2026-06-30T05:59:25.260390+00:00'
+created_at: '2026-06-30T05:59:25.137245+00:00'
+updated_at: '2026-06-30T05:59:26.474066+00:00'
 completed_at: null
 last_field_updated: status
-status: bundled
+status: reconciling
 fields:
-  priority: high
-  story_points: 5
-  auto_merge_back: true
-  needs_review: false
   commits:
+  - 72effe61b59d4bbb4b360f13d4d59d08a8398c7d
   - 9947c6900313173f6048441f3e0af5a1f42f04d5
   - 1ece0cc5b8e8513846a9c861de64fbec9873490b
   - 93a59ebbec4735fc5afbff279f1cc400d53688e2
   - 61e805ecd9008327756e601271046eacc5413e0f
   - 3dcf34955191b829e9854a5c2d3e4b2da61663a3
-  version: 0.0.37
-  bundled_in: bundle-93cd5926
+  - d8b762d378520fee43dac98b245e03bdedf8296e
+  - ed5168a3a5e3d52215d82c89e033a5b3e119e21f
+  - 313216d72f2cd3043d38b065b8acea35b5965663
+  auto_merge_back: true
+  priority: medium
 ---
+
+# Bundle
+
+This ticket bundles the following source tickets:
+
+
+---
+
+## REQ-53: [split from REQ-22] straggler commits
+
+Auto-split from REQ-22 (Browser Rendering integration: JS-rendered fetch path with screenshots and computed-CSS signals).
+These commits were separated from the main cluster by a large git-position gap.
+
+## Commits
+
+- 72effe61 feat(extractor,control-app): analyze_page renders by default [FREE-CODED]
+
+
+---
+
+## REQ-51: AI closed-loop preview: render generated draft pages so the AI can see its own work
 
 ## Problem
 
@@ -321,3 +341,117 @@ second consecutive failure bubbles to the handler.
   includes the draft's headings (proves the rendered HTML reaches the
   browser without a network hop).
 - Full vitest suite: 701/701.
+
+
+---
+
+## BUG-15: Preview screenshots don't render /assets/ images — breaks hero bg-image and service card photos
+
+When preview_generated_page renders a screenshot, images stored at /assets/sites/anonymous/imports/... are not loading. The hero module uses variant bg-image with a valid assetRef (id: sites/anonymous/imports/17cfe3cb0fe61c5b.jpg, src: /assets/sites/anonymous/imports/17cfe3cb0fe61c5b.jpg) but the screenshot shows no background image — just the inverse surface colour. Service card images in services-grid are also missing. The preview digest flags 'no hero image inferred' even though the content field is correctly populated.
+
+This makes the preview comparison tool useless for image-heavy sites because:
+1. The hero bg-image variant is visually indistinguishable from bg-color in screenshots
+2. The inspirationDelta comparison cannot detect image-related differences
+3. Operators cannot verify photo placement visually before publishing
+
+## Root cause
+
+`preview-generated-page.ts` wraps the rendered HTML in a `data:text/html;...;base64,...` URL and hands that to Cloudflare's Browser Rendering binding. A data URL has no origin, so `/assets/<key>` references inside the HTML — emitted by the hero `bg-image` variant, by `services-grid` item images, and by header/footer logos — cannot be resolved by the headless browser and 404 silently. The screenshot has no images; the visual signals downstream (palette background, imagery counts) reflect the bare background colour, not the intended image.
+
+The data-URL approach itself is correct (it sidesteps the wrangler-dev problem where the CF-cloud browser cannot reach the operator's localhost) — what's missing is that local R2-backed assets must be inlined into the HTML before it becomes the data URL.
+
+## Fix
+
+In `preview-generated-page.ts`, after `renderSiteToHtml` and before `htmlToDataUrl`, scan the rendered HTML for `/assets/<key>` references in both `src="..."` attributes and CSS `url(...)` expressions. For each unique key, fetch the bytes and content type from `ASSETS_BUCKET` (R2) and rewrite the reference to `data:<contentType>;base64,<bytes>`. Each key is fetched once and shared across all references. Missing keys preserve the original src (don't silently destroy information — the operator can still spot a broken link).
+
+The inlined HTML is what the browser sees; the un-inlined HTML still drives `draftId` so content-addressing remains stable regardless of asset availability.
+
+This only affects the preview path; production rendering (`tools/generate`) serves images via Cloudflare static assets normally.
+
+## Steps to reproduce (pre-fix)
+
+1. Run transcribe_site on any image-heavy site
+2. Call preview_generated_page
+3. Observe: hero background image absent, service card images absent despite valid assetRef objects in site definition
+
+## Test plan
+
+UATs in `tests/test_UAT_FC_BUG-15_*.test.ts`:
+
+- AC1: hero `bg-image` variant with an `/assets/<key>` src — after rendering through `previewGeneratedPageHandler`, the URL passed to the browser driver decodes to HTML whose hero `<img>` `src="data:image/...;base64,..."` matches the bytes stored in R2.
+- AC2: services-grid item images and header logo references are inlined identically.
+- AC3: when an `/assets/<key>` reference points at an R2 key that does not exist, the original `src="/assets/<key>"` is preserved (graceful degradation; no crash, no silent dropping of the page).
+- AC4: no `/assets/` references appear in `src` attributes that have valid R2 backings — i.e. the inliner is exhaustive across all such references in one render.
+
+
+---
+
+## BUG-17: Browser Rendering: raise default budget to effectively infinite
+
+## Symptom
+
+`analyze_page`, `transcribe_site`, and `preview_generated_page` repeatedly
+fail in testing with:
+
+  "Visual signals unavailable — Browser Rendering budget exhausted
+   (session) for this session."
+
+The cap (50 browser-seconds per session, 200 per day) trips during
+normal test/dev flows where one session_id accumulates seconds across
+many calls, leaving only static signals with no screenshots.
+
+## Root cause
+
+`packages/web-fetch-safety/src/browser-budget.ts` exports a hard-coded
+DEFAULT_BROWSER_BUDGET = { sessionMaxSeconds: 50, dayMaxSeconds: 200 }.
+The three operator handlers (analyze-page, transcribe-site,
+preview-generated-page) call checkBrowserBudget / chargeBrowserBudget
+without passing any `config` override, so they always use those defaults.
+
+## Fix
+
+Raise the two default constants to 1_000_000_000 each so the cap is
+effectively infinite for production callers. The budget infrastructure
+(KV counters, config override plumbing, BROWSER_BUDGET_KV binding) stays
+intact — a future re-tightening is a one-constant edit or a per-call
+`config: { sessionMaxSeconds: N, dayMaxSeconds: M }` override.
+
+Rate limiting via FETCH_RATE_KV (separate mechanism) remains the
+runaway-cost safety net.
+
+## Test plan
+
+- New UAT: tests/test_UAT_FC_BUG-17_browser_budget_effectively_infinite.test.ts
+  - Charge a large costSeconds (e.g. 100_000) against a fresh session with
+    no config override; assert the result is { ok: true } and the cap
+    constants are ≥ 1e9.
+- Update tests/test_UAT_FC_REQ-20_browser_budget.test.ts to pass an
+  explicit small `config` to checkBrowserBudget / chargeBrowserBudget so
+  the cap mechanism is still exercised — without coupling the test to
+  the (now-huge) default values.
+
+## Files
+
+- packages/web-fetch-safety/src/browser-budget.ts (constant bump)
+- tests/test_UAT_FC_BUG-17_browser_budget_effectively_infinite.test.ts (new)
+- tests/test_UAT_FC_REQ-20_browser_budget.test.ts (update to pass explicit config)
+
+
+## Outcome (as shipped)
+
+Commits:
+- ed5168a3 — defaults bump + 3 test updates + new BUG-17 UAT
+- 313216d7 — version bump 0.0.38 → 0.0.39
+
+Files changed:
+- packages/web-fetch-safety/src/browser-budget.ts (defaults raised to 1_000_000_000)
+- tests/test_UAT_FC_REQ-20_browser_budget.test.ts (charge calls now pass an explicit config: { sessionMaxSeconds: 50, dayMaxSeconds: 200 } so the cap mechanism is still exercised under tight values; default-constant assertion updated to >= 1e9)
+- tests/test_UAT_FC_REQ-22_budget_exhausted_fallback.test.ts (operator handler doesn't accept a config override, so instead of burning 10×5s the test now seeds the session KV counter directly with spentSeconds = DEFAULT_BROWSER_BUDGET.sessionMaxSeconds to trip the exhausted-fallback path)
+- tests/test_UAT_FC_REQ-51_preview_generated_page.test.ts (same KV-seed treatment for AC5's budget-exhausted parity test)
+- tests/test_UAT_FC_BUG-17_browser_budget_effectively_infinite.test.ts (new — 3 ITs covering: defaults are >= 1e9; a 100_000s charge against a fresh session is accepted; 100 × 1_000s charges still leave checkBrowserBudget reporting ok)
+- package.json (0.0.38 → 0.0.39)
+
+Verification:
+- pnpm vitest run on the 4 affected test files: 15/15 pass.
+- xgd quality run --lint-only / --build-only: both SUCCESS.
+- xgd quality run with --test-filter-expression reports SUCCESS but vacuous (the project's quality.yaml has test_dirs set to a plugin id rather than a directory pattern, so vitest reports "no test files found"; preexisting condition, not introduced by this fix).

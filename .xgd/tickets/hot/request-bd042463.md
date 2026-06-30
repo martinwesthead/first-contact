@@ -5,10 +5,10 @@ type: request
 title: Chat session API + AI memory tools (tail-prime + search/read tools)
 created_by: xgd
 created_at: '2026-06-16T23:27:02.331402+00:00'
-updated_at: '2026-06-30T03:27:30.997432+00:00'
-completed_at: null
+updated_at: '2026-06-30T05:59:18.742723+00:00'
+completed_at: '2026-06-30T05:59:18.742723+00:00'
 last_field_updated: status
-status: bundled
+status: free_and_reconciled
 fields:
   priority: medium
   story_points: 5
