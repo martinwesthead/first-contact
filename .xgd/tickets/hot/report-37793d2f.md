@@ -6,7 +6,7 @@ title: 'Reconciliation Plan: bundle-d3d73016 (split-section, testimonials, banne
   logo-strip, contrast, image-sizing)'
 created_by: xgd
 created_at: '2026-06-29T23:09:27.460545+00:00'
-updated_at: '2026-06-29T23:54:12.905974+00:00'
+updated_at: '2026-06-30T00:04:19.985834+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -171,7 +171,7 @@ fields:
       image-gallery) plus the three new modules from items 1-3; it is owned here to
       avoid splitting one UAT across stories. Therefore upgrade targeting the existing
       module-catalog stories.
-    story_uid: null
+    story_uid: story-1d5b450f
     target_story_ids:
     - story-1d5b450f
     - story-f1e061ba
