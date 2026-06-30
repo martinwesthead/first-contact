@@ -5,9 +5,9 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-8 (REQ-44 + REQ-46 + BUG-13 + REQ-49)'
 created_by: xgd
 created_at: '2026-06-30T00:46:13.495951+00:00'
-updated_at: '2026-06-30T00:46:13.495951+00:00'
+updated_at: '2026-06-30T00:52:55.080235+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: items
 fields:
   report_kind: reconciliation_plan
   subject_uid: bundle-30021526
@@ -31,7 +31,7 @@ fields:
       new variant, new dial, changed item-count bounds) without introducing a parallel
       module or new bucket. The v1->v2 bump is a breaking in-place evolution of the
       same module, so this is an upgrade, not a new feature.
-    story_uid: null
+    story_uid: story-f1e061ba
     target_story_ids:
     - story-f1e061ba
     acceptance_criteria_changes:
