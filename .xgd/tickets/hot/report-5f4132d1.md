@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-8 (REQ-44 + REQ-46 + BUG-13 + REQ-49)'
 created_by: xgd
 created_at: '2026-06-30T00:46:13.495951+00:00'
-updated_at: '2026-06-30T01:27:21.765266+00:00'
+updated_at: '2026-06-30T01:40:14.157245+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -202,7 +202,7 @@ fields:
       flow is introduced, so this is an upgrade. It depends on item 4 because the
       upgraded rendered digest carries the new computed signals (fonts/bounding boxes)
       merged there.
-    story_uid: null
+    story_uid: story-b3866352
     target_story_ids:
     - story-b3866352
     - story-f45a5e61
