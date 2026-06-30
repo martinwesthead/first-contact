@@ -5,7 +5,7 @@ type: comment
 title: Comment on request REQ-16
 created_by: xgd
 created_at: '2026-06-29T23:39:14.372099+00:00'
-updated_at: '2026-06-30T00:29:28.862107+00:00'
+updated_at: '2026-06-30T00:30:10.274429+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -260,5 +260,23 @@ The single red test, **BUG-7**, is pre-existing on `xgd-working`: REQ-17 changed
 <!-- xgd-chat role="user" ts="2026-06-30T00:29:16.934Z" -->
 #### You
 Pleae file a new ticket
+
+<!-- xgd-turn id="2e126a49-3c62-425a-8150-5c588e352732-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-30T00:30:10.247Z" -->
+#### Claude
+The user explicitly asked to file a new ticket — that's the authorized exception. This is a bug ticket for the BUG-7 failure. Let me gather the precise details and check the create interface.
+
+Root cause confirmed: the build script prints `Built …/{builder,app}.js` (lines 50, 53) after REQ-17 added the `app.js` entry, but the test asserts `/Built .*builder\.js/` — which the literal `{builder,app}.js` doesn't match. Filing the bug ticket:
+
+Filed as **BUG-22** (`bug-756913ee`), status `draft`.
+
+It captures:
+- **Symptom** — BUG-7's one-shot test fails on `expect(result.stdout).toMatch(/Built .*builder\.js/)` (line 78); build itself still succeeds.
+- **Root cause** — REQ-17 made `build-builder-bundle.mjs` emit a combined `Built …/{builder,app}.js` line (lines 50/53); `builder` is followed by `,app}.js`, so the old regex no longer matches. Pre-existing on `xgd-working`, not introduced by REQ-16.
+- **Fix options** — recommends emitting one log line per bundle (`Built …/builder.js`, `Built …/app.js`) so the assertion holds and future entries stay greppable; alternative is updating the test regex.
+- **Acceptance** + references to the exact test/script lines, linked to `[[REQ-17]]` (cause) and `[[REQ-16]]` (where it surfaced).
+
+I've left it unscoped/unfixed per your request — just filed. Say the word if you want me to take it (it's a ~2-line change) or assign it to the REQ-17 reconcile.
 
 <!-- xgd-chat-end -->
