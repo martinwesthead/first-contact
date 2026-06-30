@@ -44,11 +44,21 @@ const buildOptions = {
   logLevel: "info",
 };
 
+// One log line per built bundle so each entry is independently greppable and
+// adding future entries never breaks a `Built …/<name>.js` assertion.
+const builtPaths = buildOptions.entryPoints.map(
+  ({ out }) => `${outDir}/${out}.js`,
+);
+
 if (watch) {
   const ctx = await esbuild.context(buildOptions);
   await ctx.watch();
-  console.log(`Watching builder-ui entries → ${outDir}/{builder,app}.js`);
+  for (const path of builtPaths) {
+    console.log(`Watching builder-ui entry → ${path}`);
+  }
 } else {
   await esbuild.build(buildOptions);
-  console.log(`Built ${outDir}/{builder,app}.js`);
+  for (const path of builtPaths) {
+    console.log(`Built ${path}`);
+  }
 }
