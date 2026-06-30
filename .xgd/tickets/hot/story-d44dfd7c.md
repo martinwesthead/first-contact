@@ -5,10 +5,10 @@ type: story
 title: Dev-only xgd_ticket tool for the builder chat AI
 created_by: xgd
 created_at: '2026-06-30T01:10:01.079427+00:00'
-updated_at: '2026-06-30T01:10:01.079427+00:00'
+updated_at: '2026-06-30T01:14:52.024636+00:00'
 completed_at: null
-last_field_updated: created_at
-status: unplanned
+last_field_updated: status
+status: reconciling
 fields:
   intent_uid: bundle-30021526
   capability_uid: capability-2e2c9a0a
