@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-23
 created_by: xgd
 created_at: '2026-06-30T00:36:00.443789+00:00'
-updated_at: '2026-06-30T00:39:00.284269+00:00'
+updated_at: '2026-06-30T00:40:07.849129+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -54,5 +54,33 @@ reference/...
 imports/...
 
 These were all downloaded from potential conversion websites. For testing I need a clean slate can you remove them please
+
+<!-- xgd-turn id="4737f361-0fb6-4e7e-b6b6-716b8369fb96-assistant" -->
+
+<!-- xgd-chat role="assistant" ts="2026-06-30T00:40:07.818Z" -->
+#### Claude
+Now I understand — these are stored objects (downloaded HTML from conversion sites) that the Assets tab lists, and you want to wipe them for a clean test slate. Let me find where they're stored and how they're served.
+
+These assets live in a Cloudflare R2 bucket (`ASSETS_BUCKET`). For a clean slate I need to wipe that bucket. Let me find the bucket name and whether you're running local (Miniflare) or remote.
+
+83 objects in local Miniflare R2 state. Let me confirm the storage layout and whether a dev server is currently running (which affects how I safely wipe it).
+
+No dev server running, so it's safe to wipe. Let me confirm exactly which keys are stored (so we delete knowingly) before removing anything.
+
+All 79 objects are `anonymous` test data — previews, references, and `sites/anonymous/{imports,copy,transcription}`. Exactly the downloaded conversion-site material you described; nothing else lives in the bucket. Let me confirm this state is gitignored (so I'm not deleting anything tracked), then wipe it.
+
+Confirmed: gitignored, local ephemeral dev state, no dev server running. This is a data wipe — not a code/config change — so the free-coding protocol doesn't apply. Wiping the local R2 store now.
+
+Done. Clean slate.
+
+**What I did:** Deleted the local Miniflare R2 store at `apps/control-app/.wrangler/state/v3/r2`, which held all 79 objects the Assets tab was listing — the `previews/anonymous/...`, `references/...`, and `sites/anonymous/{imports,copy,transcription}/...` material downloaded from conversion sites (~25 MB).
+
+**Safe because:** it's local, gitignored, ephemeral dev state; the dev server wasn't running; and the bucket contained only `anonymous` test data — nothing else. The other `.wrangler` dirs (public-site, repo root) had no R2 objects.
+
+**Next time you run `pnpm dev`,** Miniflare recreates an empty `1stcontact-assets` bucket, so the Assets tab will start empty.
+
+Two notes:
+- This wiped the **local** bucket only. The remote/production `1stcontact-assets` bucket (per `wrangler.toml`) is untouched — say the word if you actually meant remote.
+- No scope ticket created since this was data deletion, not a code change. Let me know if you'd rather track it.
 
 <!-- xgd-chat-end -->
