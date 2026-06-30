@@ -5,7 +5,7 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-8 (REQ-44 + REQ-46 + BUG-13 + REQ-49)'
 created_by: xgd
 created_at: '2026-06-30T00:46:13.495951+00:00'
-updated_at: '2026-06-30T01:17:49.843150+00:00'
+updated_at: '2026-06-30T01:27:21.765266+00:00'
 completed_at: null
 last_field_updated: items
 fields:
@@ -156,7 +156,7 @@ fields:
       the same patterns AC-613 already established for computed background images.
       This extends the existing extraction bucket in place, so it is an upgrade adding
       ACs to STORY-55, not a new feature.
-    story_uid: null
+    story_uid: story-3f73931a
     target_story_ids:
     - story-3f73931a
     acceptance_criteria_changes:
