@@ -5,7 +5,7 @@ type: comment
 title: Comment on chat CHAT-24
 created_by: xgd
 created_at: '2026-06-30T00:49:10.741533+00:00'
-updated_at: '2026-06-30T00:49:52.294771+00:00'
+updated_at: '2026-06-30T00:53:07.141028+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -58,5 +58,11 @@ The first opens a browser to authorize the added scope; the second does the irre
 2. **Remote-only commits.** The remote was pushed to as recently as today. Anything pushed there but not in your local checkout would be gone forever after deletion. If you want, I can verify your local branches contain everything before you pull the trigger — just say so.
 
 When you're ready to actually start over more slowly, I'm happy to help lay out a leaner plan. Want me to hold here, or check the local-vs-remote sync first?
+
+<!-- xgd-turn id="2b131a66-a0e1-49d2-b1d2-5cefdaf43a8f-user" -->
+
+<!-- xgd-chat role="user" ts="2026-06-30T00:52:54.614Z" -->
+#### You
+please can you connect this repo to `martinwesthead/first-contact`
 
 <!-- xgd-chat-end -->
