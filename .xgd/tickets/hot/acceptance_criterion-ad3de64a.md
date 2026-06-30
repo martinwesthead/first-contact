@@ -5,9 +5,9 @@ type: acceptance_criterion
 title: Reference Digest conforms to a versioned schema enforced by a validator
 created_by: xgd
 created_at: '2026-06-27T01:11:05.942611+00:00'
-updated_at: '2026-06-27T01:11:05.942611+00:00'
+updated_at: '2026-06-30T01:26:22.609533+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: body
 status: pending
 fields:
   story_uid: story-3f73931a
@@ -16,7 +16,7 @@ fields:
 ---
 
 ## Criterion
-The Reference Digest is a stable, versioned contract carrying `schemaVersion: 1`, `sourceUrl`, `fetchedAt`, `fetchPath` (`static | rendered`), `summary`, the five signal categories plus `assetInventory`, a `commentary` block (`perSection` map + `whatsMissing` list), and `screenshotKeys`. An exported validator accepts a well-formed digest and rejects one that violates the contract (e.g. wrong `schemaVersion`, missing required field, or an asset record with an out-of-range `kind`/`classification`), so downstream consumers can validate digests at their boundaries.
+The Reference Digest is a stable, versioned contract carrying `schemaVersion: 1`, `sourceUrl`, `fetchedAt`, `fetchPath` (`static | rendered`), `summary`, the five signal categories plus `assetInventory`, a `commentary` block (`perSection` map + `whatsMissing` list), and `screenshotKeys`. Each asset record's `kind` must be one of `img | background | video | font`, and the layout signal may carry an optional `boundingBoxes` structure (optional `hero`/`nav` rects plus `sections`/`cards` arrays of rects, each rect an `{x, y, width, height}` number set). An exported validator accepts a well-formed digest and rejects one that violates the contract (e.g. wrong `schemaVersion`, missing required field, or an asset record with an out-of-range `kind`/`classification`), so downstream consumers can validate digests at their boundaries.
 
 ## Verification
-Validate a fully-populated digest → assert it passes. Mutate copies to (a) set `schemaVersion` to a different number, (b) drop a required signal category, and (c) give an asset record an invalid `kind` → assert each is rejected by the validator.
+Validate a fully-populated digest that includes an asset record with `kind: 'font'` and a layout `boundingBoxes` object → assert it passes. Mutate copies to (a) set `schemaVersion` to a different number, (b) drop a required signal category, and (c) give an asset record an out-of-range `kind` (e.g. `audio`) → assert each is rejected by the validator.
