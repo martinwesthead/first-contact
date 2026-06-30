@@ -5,9 +5,9 @@ type: report
 title: 'Reconciliation Plan: BUNDLE-10 (REQ-53 + REQ-51 + BUG-15 + BUG-17)'
 created_by: xgd
 created_at: '2026-06-30T06:04:31.112127+00:00'
-updated_at: '2026-06-30T06:04:31.112127+00:00'
+updated_at: '2026-06-30T06:11:33.392205+00:00'
 completed_at: null
-last_field_updated: created_at
+last_field_updated: items
 fields:
   report_kind: reconciliation_plan
   subject_uid: bundle-93cd5926
@@ -28,7 +28,7 @@ fields:
       / conditional-escalation / forceRendered model the code no longer implements.
       This extends the existing capability bucket in place — no new action, no parallel
       implementation, no new capability bucket.
-    story_uid: null
+    story_uid: STORY-56
     target_story_ids:
     - STORY-56
     - STORY-55
