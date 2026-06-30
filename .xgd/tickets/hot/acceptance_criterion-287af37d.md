@@ -2,12 +2,13 @@
 uid: acceptance_criterion-287af37d
 id: AC-585
 type: acceptance_criterion
-title: Chat-turn history is persisted to browser storage and restored on builder re-mount
+title: Chat-turn history is server-resident and restored from the session API tail
+  on builder re-mount
 created_by: xgd
 created_at: '2026-06-27T00:56:39.715426+00:00'
-updated_at: '2026-06-30T04:43:08.866488+00:00'
+updated_at: '2026-06-30T05:43:58.026399+00:00'
 completed_at: null
-last_field_updated: body
+last_field_updated: title
 status: pending
 fields:
   story_uid: story-ba9f2715
